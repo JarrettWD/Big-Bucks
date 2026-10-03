@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 7 part 1 (Home) done, local only. **Next: fix the Alberta time-zone issue** (see stage 7 part 1 below), then stage 7 part 2.
+- Current stage: stage 7 part 1 (Home) done, and the Alberta time-zone fix done, both local only. **Next: stage 7 part 2.**
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,63 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Alberta time-zone fix, local only (2026-10-03)
+
+- **Why:** Alberta stays on UTC−6 all year from November 1, 2026 (Official Time Act). The local Postgres still has the old rule and would turn Alberta to UTC−7 on Nov 1. Production's may do the same. Details are under stage 7 part 1 below.
+- **Decisions Dad made:**
+  1. The glossary and spec wording for the market close (below).
+  2. The nightly run moves to **4:30 pm Alberta time, all year**. That's 90 minutes after the latest close (3:00 pm in winter).
+  3. SPEC "Build decisions" now says: if Alberta's rule ever changes again, write a new migration to the pinned rule, then do a time machine run.
+- **Built:**
+  - **`20261006000000_alberta_time.sql`** (new; no committed migration was edited):
+    - **The pinned rule:** `edmonton_local(moment)` and `edmonton_at(clock time)`. From 2026‑03‑08 09:00 UTC on, Alberta is UTC−6, worked out with plain arithmetic. Earlier moments use the server's history.
+    - **Recreated functions:** `app_now`, `app_today`, `edmonton_start`, `fmt_moment`, `request_trade`, `send_rate_notices`, `run_daily`, `fund_return`, `reconcile_account` and `my_activity`, copied from their latest versions. Only the time-zone conversion changed.
+    - **Closes stay in Toronto time:** 4:00 pm, or the early-close time. In Alberta a close is now **2:00 pm** (early: 11:00 am) from the second Sunday in March to the first Sunday in November, and **3:00 pm** (early: 12:00 pm) the rest of the year. Messages such as "settles Nov 2 at 3:00 pm" follow automatically.
+    - **Glossary "Market close":** "The end of the stock market's day, at 4:00 pm in Toronto. In Alberta that's 2:00 pm from March to early November, and 3:00 pm the rest of the year. …"
+    - **`check_time_rules()`:** the production check (see "Dad to do by hand"). It gives 20 known answers plus one information-only row about the server's own time-zone data. Only the database owner can run it.
+  - **Browser:** the notices list no longer uses the phone's time-zone data. `albertaDate()` in `src/lib/format.ts` applies the same pinned rule.
+  - **Time machine:**
+    - **The reference model** now has its own Toronto clock-change rule and Alberta's UTC−6. Closes are the Toronto close converted, written separately from the database code.
+    - **4:30 pm run:** the run happens at `NIGHTLY_RUN` = 4:30 pm. `jobs:local` and the demo now use 4:30 pm too.
+    - **New scenario trades:** at 2:30 pm on the weekdays either side of Nov 7, 2027 and Mar 12, 2028.
+    - **Early closes:** these settle at 12:00 pm in winter.
+    - **Moved to 5:00 pm:** steps that must come after the nightly run.
+  - **Docs:**
+    - SPEC: nightly job, settlement, day-count and Build decisions (time and dates).
+    - GLOSSARY.md.
+    - BUILD-PLAN: stage 4's cron window, the new check step and the stage 7 wording.
+    - ACCEPTANCE: two new boxes.
+- **Tests:**
+  - `supabase test db`: **634 of 634 passed**.
+    - **New `alberta_time_test.sql`** (45):
+      - the pinned rule either side of Nov 1, 2026 and the 2026 history;
+      - the clock override across Nov 1;
+      - closes on both sides of each Toronto clock change;
+      - 2:30 pm settlement in summer and winter;
+      - one trade per fund per Alberta day at midnight in winter;
+      - activity dates at New Year;
+      - `check_time_rules()`;
+      - a guard that fails if any other function or view names `America/Edmonton`.
+    - **Changed known answers:**
+      - Winter noon is 18:00 UTC.
+      - Winter closes are an hour later than before (3:00 pm, and 12:00 pm for early closes).
+      - The early-close "after" request moved from 11:30 am to 12:30 pm.
+      - Tests that run the nightly jobs now set the clock to 4:30 pm.
+  - `npm test` (Vitest): **138 of 138 passed**. New tests cover the model's clock rules, its closes either side of each clock change, and `albertaDate()`.
+  - `npm run test:e2e` (Playwright): **25 of 25 passed**.
+  - `npm run timemachine`: **PASS, 14 of 14**. 75 of 75 actions agreed with the model, including the 4 new trades either side of the clock changes. 367 nightly reconciles found no problems. The report is regenerated in `docs/TIMEMACHINE-REPORT.md`.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes now testable:** none can be ticked yet (live). Two new boxes were added: settlement times in summer and winter, and `check_time_rules()` on production.
+- **Known issues:**
+  - The notices list still reads a timestamp from a table. Stage 7 part 2 should take its dates from the database, like Home does.
+  - Toronto times still use the server's `America/Toronto` data. Its rules haven't changed since 2007, and `check_time_rules()` confirms them.
+- **Dad to do by hand:**
+  - Nothing now.
+  - **At stage 4**, right after pushing migrations to production:
+    1. In the Supabase Dashboard, open **SQL Editor**.
+    2. Run `select * from public.check_time_rules();`.
+    3. Every row should show ok = **true**, except the last, information-only row (ok is empty), which only says whether production's own time-zone data is up to date. Any **false** row means stop and tell Claude.
 
 ### Stage 7, part 1 — Kid Home and the GIC choice, local only (2026-10-03)
 

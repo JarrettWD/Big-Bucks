@@ -108,7 +108,7 @@ select is((tests.bal('kid_r')).savings_cents, 0::bigint, 'nothing lands in savin
 select tests.as_parent();
 select lives_ok($$select public.approve_request(pg_temp.id('d1'))$$, 'Dad approves the $900 deposit');
 select results_eq($$select status::text, decided_at from public.requests where id = pg_temp.id('d1')$$,
-  $$values ('approved', '2026-10-05 10:00 America/Edmonton'::timestamptz)$$, 'the request is approved');
+  $$values ('approved', '2026-10-05 10:00-06'::timestamptz)$$, 'the request is approved');
 select results_eq(
   $$select type::text, vehicle::text, amount_cents, posting_key from public.transactions where request_id = pg_temp.id('d1')$$,
   $$values ('deposit', 'savings', 90000::bigint, 'request:' || pg_temp.id('d1'))$$,
@@ -185,10 +185,10 @@ select is((tests.bal('kid_r')).available_cents, 87000::bigint, 'the new withdraw
 select tests.clock('2026-10-12 09:00');
 select is(tests.run('expire_requests', '2026-10-12'), 'ok', 'at 9:00 am on Oct 12...');
 select is((tests.req(pg_temp.id('d2'))).status::text, 'pending', '...the Oct 5, 10:00 am deposit has not expired yet');
-select tests.clock('2026-10-12 15:30');
+select tests.clock('2026-10-12 16:30');
 select 'ran: ' || tests.run('expire_requests', '2026-10-12');
 select results_eq($$select status::text, decided_at from public.requests where id = pg_temp.id('d2')$$,
-  $$values ('expired', '2026-10-12 10:00 America/Edmonton'::timestamptz)$$,
+  $$values ('expired', '2026-10-12 10:00-06'::timestamptz)$$,
   'an unanswered request expires 7 days after it was made');
 select is(
   (select title || ' / ' || body from public.notifications where related_request_id = pg_temp.id('d2')),
@@ -201,7 +201,7 @@ select is((tests.req(pg_temp.id('w2'))).status::text, 'pending', 'catching up Oc
 select tests.clock('2026-10-14 10:01');
 select tests.as_parent();
 select throws_like($$select public.approve_request(pg_temp.id('w2'))$$, '%7 days%', 'after 7 days Dad can no longer approve it');
-select tests.clock('2026-10-14 15:30');
+select tests.clock('2026-10-14 16:30');
 select 'ran: ' || tests.run('expire_requests', '2026-10-14');
 select results_eq(
   $$select status::text from public.requests where id in (pg_temp.id('w2'), pg_temp.id('d4')) order by id$$,
@@ -233,7 +233,7 @@ select results_eq($$select status::text, transaction_id, message from public.que
 select tests.as_parent();
 select lives_ok($$select public.answer_question(pg_temp.id('qn'), 'Yes, that was your birthday money.')$$, 'Dad answers');
 select results_eq($$select status::text, parent_reply, answered_at from public.questions where id = pg_temp.id('qn')$$,
-  $$values ('answered', 'Yes, that was your birthday money.', '2026-10-14 15:30 America/Edmonton'::timestamptz)$$,
+  $$values ('answered', 'Yes, that was your birthday money.', '2026-10-14 16:30-06'::timestamptz)$$,
   'the answer is kept with the question');
 select is(
   (select count(*) from public.notifications where account_id = tests.acct('kid_r') and type = 'question'),

@@ -105,12 +105,13 @@ Stage 4 of the Big Bucks build: scheduled jobs, real fund prices and alerts. Thi
 
 Build:
 1. An Edge Function fetch-prices: for each fund and each trading day since its last stored close (using market_holidays), fetch the close from the chosen provider, retry on failure, record split events, and never fill a gap with a guess. A close still missing at 9 pm Mountain time raises an alert.
-2. The nightly orchestration: pg_cron (which runs in UTC) wakes every 30 minutes from 21:00 to 04:30 UTC, covering 3:30–9:30 pm Mountain time in summer and winter. The job does nothing before 3:30 pm Mountain time and never repeats finished work, so it stays correct through daylight-saving changes. Order: fetch prices, then run_daily for every date not yet completed, then reconcile.
+2. The nightly orchestration: pg_cron (which runs in UTC) wakes every 30 minutes from 22:30 to 04:30 UTC, which is 4:30–10:30 pm Alberta time all year (Alberta is UTC−6 all year from Nov 1, 2026). The job does nothing before 4:30 pm Alberta time (worked out with `edmonton_local()`, never the server's time-zone data) and never repeats finished work. Order: fetch prices, then run_daily for every date not yet completed, then reconcile.
 3. A one-time backfill of 2 years of closes, so graphs and what-ifs work from day one.
 4. A daily GitHub Actions health check that calls health_check() with a secret key and fails when there's an open problem, so GitHub emails me. Include a manual "send test alert" option.
 5. docs/RUNBOOK.md with numbered steps for production setup: linking the project, pushing migrations, setting secrets, turning off public sign-ups, turning on MFA, and checking the cron job.
+6. The time-rule check on production, right after the migrations are pushed: in the Supabase Dashboard, SQL Editor, run `select * from public.check_time_rules();`. Every row must show ok = true, except the one information-only row (ok empty), which only reports whether production's own time-zone data is up to date. Any ok = false row means stop before going further. Add this to RUNBOOK.md too.
 
-Done when the local run catches up after a skipped day, production has a few days of real closes, and a test alert reaches my email. Then stop.
+Done when the local run catches up after a skipped day, check_time_rules() passes on production, production has a few days of real closes, and a test alert reaches my email. Then stop.
 ```
 
 ### Stage 5 — Backups and data protection
@@ -153,7 +154,7 @@ Stage 7 of the Big Bucks build: the kid screens for phase 1. Read CLAUDE.md, doc
 Build:
 1. Home: total worth, savings, each GIC (amount, rate, maturity date), the fund mix with daily % change and 30-day sparklines, the action banner (maturity choices, approvals, declines, notices), recent activity with "See all" history, and the maturity choice flow.
 2. Graphs: total worth over time (stacked area, one colour per option) and growth by option (% since first deposit), with 1M / 3M / 1Y / All ranges, a $ / % switch, dots for deposits and withdrawals, and the standard market-move notes.
-3. Buy / Sell: from and to choices (always through savings), buy or sell, amount with the available balance and cap room, every warning in the spec (interest lost on an early break, in dollars; a fund worth less than she paid; over the available balance; one trade per fund per day; when the trade will settle, such as "at Monday's 2 pm close"), and a confirmation summary before submitting.
+3. Buy / Sell: from and to choices (always through savings), buy or sell, amount with the available balance and cap room, every warning in the spec (interest lost on an early break, in dollars; a fund worth less than she paid; over the available balance; one trade per fund per day; when the trade will settle, such as "at Monday's 3:00 pm close", always worked out by the database), and a confirmation summary before submitting.
 4. Transparency: "How was this calculated?" on every interest, dividend and penalty line, and "Something looks wrong?" on any line, starting a question thread I can answer.
 5. The notifications list, marking notices as read.
 6. Accessibility: touch targets of at least 44 px, readable contrast, labelled controls, and option colours that differ in lightness, not just hue.

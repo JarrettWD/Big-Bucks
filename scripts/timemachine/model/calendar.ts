@@ -93,8 +93,15 @@ export function* daysFrom(from: Day, through: Day): Generator<Day> {
   for (let n = toNum(from); n <= toNum(through); n++) yield fromNum(n);
 }
 
-// Edmonton daylight saving (since 2007): from 2:00 am on the second Sunday of
-// March to 2:00 am on the first Sunday of November. UTC−6 in summer, UTC−7 otherwise.
+// Clock rules, written independently of the database's pinned rule.
+//
+// Toronto (and New York) daylight saving, since 2007: from 2:00 am on the second
+// Sunday of March to 2:00 am on the first Sunday of November. UTC−4 in summer,
+// UTC−5 otherwise.
+//
+// Alberta: the same daylight saving until March 8, 2026, when the clocks went
+// forward for the last time. From 3:00 am that day Alberta is UTC−6 all year
+// (Official Time Act, 2026). Before then: UTC−6 in summer, UTC−7 otherwise.
 function nthSunday(y: number, m: number, nth: number): Day {
   const first = mk(y, m, 1);
   const offset = (7 - weekday(first)) % 7;
@@ -108,30 +115,58 @@ function isSummerTime(t: Moment): boolean {
   return t >= start && t < end;
 }
 
+/** Alberta's last clock change: from this Alberta time on it is UTC−6 all year. */
+export const ALBERTA_FIXED_FROM: Moment = '2026-03-08 03:00';
+
+function edmontonOffsetH(t: Moment): number {
+  if (t >= ALBERTA_FIXED_FROM) return 6;
+  return isSummerTime(t) ? 6 : 7;
+}
+
+function torontoOffsetH(t: Moment): number {
+  return isSummerTime(t) ? 4 : 5;
+}
+
 function minutesOfDay(t: Moment): number {
   const [hh, mm] = t.slice(11).split(':').map(Number);
   return hh * 60 + mm;
 }
 
-/** Minutes since 1970-01-01 00:00 UTC for an Edmonton wall-clock moment. */
-export function utcMinutes(t: Moment): number {
-  const offsetH = isSummerTime(t) ? 6 : 7;
+function wallToUtc(t: Moment, offsetH: number): number {
   return toNum(dayOf(t)) * 1440 + minutesOfDay(t) + offsetH * 60;
 }
 
+function wallFromUtc(u: number, offsetH: number): Moment {
+  const local = u - offsetH * 60;
+  const d = fromNum(Math.floor(local / 1440));
+  const mins = local - Math.floor(local / 1440) * 1440;
+  return `${d} ${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
+}
+
+/** Minutes since 1970-01-01 00:00 UTC for an Edmonton wall-clock moment. */
+export function utcMinutes(t: Moment): number {
+  return wallToUtc(t, edmontonOffsetH(t));
+}
+
 function fromUtcMinutes(u: number): Moment {
-  // Try summer time first, then winter time; pick the one that round-trips.
+  // Try each offset Alberta has used; pick the one that round-trips.
   for (const offsetH of [6, 7]) {
-    const local = u - offsetH * 60;
-    const d = fromNum(Math.floor(local / 1440));
-    const mins = local - Math.floor(local / 1440) * 1440;
-    const t = `${d} ${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
+    const t = wallFromUtc(u, offsetH);
     if (utcMinutes(t) === u) return t;
   }
   throw new Error(`no Edmonton time for ${u}`);
 }
 
-/** Add real elapsed hours to an Edmonton moment (daylight saving included). */
+/** Add real elapsed hours to an Edmonton moment (clock changes included). */
 export function addHours(t: Moment, h: number): Moment {
   return fromUtcMinutes(utcMinutes(t) + h * 60);
 }
+
+/** The Edmonton wall-clock moment of a Toronto wall-clock time on day d. */
+export function torontoToEdmonton(d: Day, hhmm: string): Moment {
+  const t = at(d, hhmm);
+  return fromUtcMinutes(wallToUtc(t, torontoOffsetH(t)));
+}
+
+/** The nightly run, in Alberta time, all year: after the latest close (3:00 pm in winter). */
+export const NIGHTLY_RUN = '16:30';

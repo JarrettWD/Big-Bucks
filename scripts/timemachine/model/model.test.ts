@@ -3,7 +3,14 @@
 // the model itself before it's trusted to check the database.
 import { describe, expect, it } from 'vitest';
 import { Q } from './rational.ts';
-import { addHours, addMonths, daysInYear, weekday } from './calendar.ts';
+import {
+  NIGHTLY_RUN,
+  addHours,
+  addMonths,
+  daysInYear,
+  torontoToEdmonton,
+  weekday,
+} from './calendar.ts';
 import { Model, type Holiday } from './model.ts';
 
 const holidays: Holiday[] = [
@@ -43,10 +50,29 @@ describe('calendar', () => {
     expect(weekday('2028-02-29')).toBe(2); // Tuesday
     expect(weekday('2027-11-26')).toBe(5); // Friday
   });
-  it('7 × 24 hours across the November clock change ends an hour earlier on the clock', () => {
-    expect(addHours('2027-11-03 10:00', 168)).toBe('2027-11-10 09:00');
-    expect(addHours('2028-03-08 10:00', 168)).toBe('2028-03-15 11:00');
+  it('Alberta has no clock changes from Nov 1, 2026: 7 × 24 hours is the same time a week later', () => {
+    expect(addHours('2026-10-29 10:00', 168)).toBe('2026-11-05 10:00');
+    expect(addHours('2027-11-03 10:00', 168)).toBe('2027-11-10 10:00');
+    expect(addHours('2028-03-08 10:00', 168)).toBe('2028-03-15 10:00');
     expect(addHours('2027-08-03 10:00', 168)).toBe('2027-08-10 10:00');
+  });
+  it('before Alberta stopped changing clocks, the old rule still applies', () => {
+    expect(addHours('2025-10-29 10:00', 168)).toBe('2025-11-05 09:00');
+    expect(addHours('2026-03-04 10:00', 168)).toBe('2026-03-11 11:00');
+  });
+  it('4:00 pm Toronto is 2:00 pm in Alberta in Toronto summer time, 3:00 pm otherwise', () => {
+    expect(torontoToEdmonton('2026-10-30', '16:00')).toBe('2026-10-30 14:00');
+    expect(torontoToEdmonton('2026-11-02', '16:00')).toBe('2026-11-02 15:00');
+    expect(torontoToEdmonton('2026-11-27', '13:00')).toBe('2026-11-27 12:00');
+    expect(torontoToEdmonton('2027-03-12', '16:00')).toBe('2027-03-12 15:00');
+    expect(torontoToEdmonton('2027-03-15', '16:00')).toBe('2027-03-15 14:00');
+    expect(torontoToEdmonton('2027-11-05', '16:00')).toBe('2027-11-05 14:00');
+    expect(torontoToEdmonton('2027-11-08', '16:00')).toBe('2027-11-08 15:00');
+    expect(torontoToEdmonton('2028-03-10', '16:00')).toBe('2028-03-10 15:00');
+    expect(torontoToEdmonton('2028-03-13', '16:00')).toBe('2028-03-13 14:00');
+  });
+  it('the nightly run is after every close', () => {
+    expect(NIGHTLY_RUN > '15:00').toBe(true);
   });
 });
 
@@ -111,22 +137,22 @@ describe('savings interest', () => {
 describe('stock funds', () => {
   it('buying $100 at a close of 420 gives 0.23809524 units; shown nearest, sold rounded up', () => {
     const m = funded('2027-03-01 09:00', 20000n);
-    m.addClose('dow', '2027-03-01', '420', '2027-03-01 14:30');
-    m.addClose('dow', '2027-03-02', '430', '2027-03-02 14:30');
+    m.addClose('dow', '2027-03-01', '420', '2027-03-01 15:30');
+    m.addClose('dow', '2027-03-02', '430', '2027-03-02 15:30');
     m.act('2027-03-01 10:00', { kind: 'buy', kid: 'k', fund: 'dow', cents: 10000n, label: 't1' });
-    m.advanceTo('2027-03-01 15:00');
+    m.advanceTo('2027-03-01 16:00');
     let s = m.snapshot('k');
     expect(s.units.get('dow')!.toFixed(8)).toBe('0.23809524');
     expect(s.fundValue.get('dow')).toBe(10000n); // 100.0000008 shown as $100.00
-    m.advanceTo('2027-03-02 15:00');
+    m.advanceTo('2027-03-02 16:00');
     s = m.snapshot('k');
     expect(s.fundValue.get('dow')).toBe(10238n); // 102.3809532 shown as $102.38
     m.act('2027-03-02 16:00', { kind: 'sell_all', kid: 'k', fund: 'dow', label: 't2' });
-    m.addClose('dow', '2027-03-03', '430', '2027-03-03 14:30');
-    m.advanceTo('2027-03-03 15:00');
+    m.addClose('dow', '2027-03-03', '430', '2027-03-03 15:30');
+    m.advanceTo('2027-03-03 16:00');
     expect(m.postings.find((p) => p.kind === 'sell')!.cents).toBe(10239n); // paid rounded up
   });
-  it('Friday evening settles at Monday close; early close at 11:00 Edmonton; TSX holiday skipped', () => {
+  it('Friday evening settles at Monday close; early close at 12:00 Edmonton in winter; TSX holiday skipped', () => {
     const m = new Model('2027-10-01 09:00', holidays);
     expect(m.nextClose('dow', '2027-10-08 16:00')).toEqual({
       day: '2027-10-11',
@@ -136,17 +162,36 @@ describe('stock funds', () => {
       day: '2027-10-12',
       at: '2027-10-12 14:00',
     });
-    expect(m.nextClose('dow', '2027-11-26 10:30')).toEqual({
-      day: '2027-11-26',
-      at: '2027-11-26 11:00',
-    });
     expect(m.nextClose('dow', '2027-11-26 11:30')).toEqual({
-      day: '2027-11-29',
-      at: '2027-11-29 14:00',
+      day: '2027-11-26',
+      at: '2027-11-26 12:00',
     });
-    expect(m.nextClose('dow', '2027-11-29 14:00')).toEqual({
+    expect(m.nextClose('dow', '2027-11-26 12:30')).toEqual({
+      day: '2027-11-29',
+      at: '2027-11-29 15:00',
+    });
+    expect(m.nextClose('dow', '2027-11-29 15:00')).toEqual({
       day: '2027-11-30',
-      at: '2027-11-30 14:00',
+      at: '2027-11-30 15:00',
+    });
+  });
+  it('2:30 pm settles the same day in winter, the next day in summer', () => {
+    const m = new Model('2027-10-01 09:00', holidays);
+    expect(m.nextClose('dow', '2027-11-05 14:30')).toEqual({
+      day: '2027-11-08',
+      at: '2027-11-08 15:00',
+    });
+    expect(m.nextClose('dow', '2027-11-08 14:30')).toEqual({
+      day: '2027-11-08',
+      at: '2027-11-08 15:00',
+    });
+    expect(m.nextClose('dow', '2028-03-10 14:30')).toEqual({
+      day: '2028-03-10',
+      at: '2028-03-10 15:00',
+    });
+    expect(m.nextClose('dow', '2028-03-13 14:30')).toEqual({
+      day: '2028-03-14',
+      at: '2028-03-14 14:00',
     });
   });
   it('one trade per fund per day', () => {
@@ -169,22 +214,22 @@ describe('stock funds', () => {
 describe('selling by dollar amount (Dad, stage 3: units round down)', () => {
   it('pays exactly the amount asked for and she keeps the sliver of a unit', () => {
     const m = funded('2027-03-01 09:00', 20000n);
-    m.addClose('tsx', '2027-03-01', '40.747', '2027-03-01 14:30');
-    m.addClose('tsx', '2027-03-02', '40.747', '2027-03-02 14:30');
+    m.addClose('tsx', '2027-03-01', '40.747', '2027-03-01 15:30');
+    m.addClose('tsx', '2027-03-02', '40.747', '2027-03-02 15:30');
     m.act('2027-03-01 10:00', { kind: 'buy', kid: 'k', fund: 'tsx', cents: 10000n, label: 'b' });
     m.act('2027-03-02 09:00', { kind: 'sell', kid: 'k', fund: 'tsx', cents: 3000n, label: 's' });
-    m.advanceTo('2027-03-02 15:00');
+    m.advanceTo('2027-03-02 16:00');
     const sale = m.postings.find((p) => p.kind === 'sell')!;
     expect(sale.units!.toFixed(8)).toBe('0.73625052'); // 30 ÷ 40.747 = 0.7362505215…, rounded down
     expect(sale.cents).toBe(3000n); // 0.73625052 × 40.747 = $29.99999994 → rounded up to $30.00
   });
   it('sells everything when the price falls below what the amount needs', () => {
     const m = funded('2027-03-01 09:00', 20000n);
-    m.addClose('dow', '2027-03-01', '100', '2027-03-01 14:30');
-    m.addClose('dow', '2027-03-02', '90', '2027-03-02 14:30');
+    m.addClose('dow', '2027-03-01', '100', '2027-03-01 15:30');
+    m.addClose('dow', '2027-03-02', '90', '2027-03-02 15:30');
     m.act('2027-03-01 10:00', { kind: 'buy', kid: 'k', fund: 'dow', cents: 5000n, label: 'b' });
     m.act('2027-03-02 09:00', { kind: 'sell', kid: 'k', fund: 'dow', cents: 5000n, label: 's' });
-    m.advanceTo('2027-03-02 15:00');
+    m.advanceTo('2027-03-02 16:00');
     expect(m.snapshot('k').units.get('dow')!.isZero()).toBe(true);
     expect(m.postings.find((p) => p.kind === 'sell')!.cents).toBe(4500n);
   });

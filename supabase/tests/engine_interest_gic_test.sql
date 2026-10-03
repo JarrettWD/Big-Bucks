@@ -122,7 +122,7 @@ select is(
   '$250 in savings at 2% for 30 days in a non-leap year posts $0.42 ($0.4110 rounded up)');
 select is(
   (select effective_at from public.transactions where posting_key = 'interest:2027-09:' || tests.acct('kid_s')),
-  '2027-10-01 00:00 America/Edmonton'::timestamptz, 'the interest counts from the start of the 1st');
+  '2027-10-01 00:00-06'::timestamptz, 'the interest counts from the start of the 1st');
 select is(
   (select note from public.transactions where posting_key = 'interest:2027-09:' || tests.acct('kid_s')),
   'September: $250.00 × 2.0% ÷ 365 = $0.0137 a day, for 30 days = $0.4110, rounded up to $0.42',
@@ -242,7 +242,7 @@ select is(tests.gic_balance(tests.gic('kid_g', 1, '2027-02-06')), 0::bigint, 'on
 select is(
   (select effective_at from public.transactions
     where gic_id = tests.gic('kid_g', 1, '2027-02-06') and vehicle = 'savings' and type = 'transfer_in'),
-  '2027-03-13 00:00 America/Edmonton'::timestamptz, '...and lands in savings at the start of day 7');
+  '2027-03-13 00:00-06'::timestamptz, '...and lands in savings at the start of day 7');
 select is((tests.bal('kid_g')).savings_cents, 19042::bigint, 'savings now holds the $100.42');
 select is((select maturity_choice::text from public.gic_holdings where id = tests.gic('kid_g', 1, '2027-02-06')), 'to_savings',
   'the GIC records the automatic move to savings');

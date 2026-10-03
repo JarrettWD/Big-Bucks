@@ -29,7 +29,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Liquidity:** How quickly you can get your money out. Savings is very liquid. A GIC isn't, because you promised to wait.
 - **Locked-in rate:** The rate you get on the day you buy a GIC. It stays the same until the GIC matures, even if rates change later.
 - **Loss:** When something is worth less than you paid for it. If you sell while it's down, you get less money back. Losses are real.
-- **Market close:** The end of the stock market's day, at 2:00 pm in Alberta. The price at that moment is called the close.
+- **Market close:** The end of the stock market's day, at 4:00 pm in Toronto. In Alberta that's 2:00 pm from March to early November, and 3:00 pm the rest of the year. The price at that moment is called the close.
 - **Market holiday:** A day the stock market is closed, like Christmas. Trades wait for the next day the market is open.
 - **Maturity:** The day your GIC's promise is finished. You get your money back plus the interest, and you choose what to do next.
 - **Nasdaq-100:** An index of 100 of the biggest companies on the Nasdaq stock market, mostly technology companies. It's the thrill ride: bigger ups and bigger downs.

@@ -162,7 +162,7 @@ select tests.as_kid('kid_a');
 select public.request_trade('dow', 'buy', 5000);
 select public.request_withdrawal(1000);
 insert into public.fund_prices (fund_id, price_date, close) values ('dow', '2026-10-05', 400), ('dow', '2026-10-06', 410);
-select tests.clock('2026-10-05 15:30');
+select tests.clock('2026-10-05 16:30');
 select 'ran: ' || tests.run('settle_trades', '2026-10-05');
 
 select tests.clock('2026-10-06 16:00');
@@ -191,7 +191,7 @@ select results_eq(
   'daily balances for the graphs: savings, GICs, each fund''s value, total, and money in or out that day (for the dots)');
 select is(public.fund_return(tests.acct('kid_a'), 'dow', '2026-10-05'), 2.50::numeric,
   'the fund''s return since Oct 5, excluding money moved in or out, is +2.5%');
-select is(public.next_settlement('dow') , '2026-10-07 14:00 America/Edmonton'::timestamptz,
+select is(public.next_settlement('dow') , '2026-10-07 14:00-06'::timestamptz,
   'the Buy / Sell screen can ask when a trade made now would settle');
 reset role;
 
@@ -254,10 +254,10 @@ select is(
 select results_eq(
   $$select type::text, vehicle::text, posted_at, effective_at from public.transactions
      where account_id = tests.acct('kid_a') order by id$$,
-  $$values ('deposit', 'savings', '2026-10-05 09:00 America/Edmonton'::timestamptz, '2026-10-05 09:00 America/Edmonton'::timestamptz),
-           ('transfer_out', 'savings', '2026-10-05 15:30 America/Edmonton'::timestamptz, '2026-10-05 14:00 America/Edmonton'::timestamptz),
-           ('transfer_in', 'stock', '2026-10-05 15:30 America/Edmonton'::timestamptz, '2026-10-05 14:00 America/Edmonton'::timestamptz)$$,
-  'a deposit counts from when it was approved; a trade written at 3:30 pm counts from the 2:00 pm close');
+  $$values ('deposit', 'savings', '2026-10-05 09:00-06'::timestamptz, '2026-10-05 09:00-06'::timestamptz),
+           ('transfer_out', 'savings', '2026-10-05 16:30-06'::timestamptz, '2026-10-05 14:00-06'::timestamptz),
+           ('transfer_in', 'stock', '2026-10-05 16:30-06'::timestamptz, '2026-10-05 14:00-06'::timestamptz)$$,
+  'a deposit counts from when it was approved; a trade written at 4:30 pm counts from the 2:00 pm close');
 select ok((select bool_and(effective_at is not null) from public.transactions), 'every ledger row says when its money counts');
 
 select * from finish();

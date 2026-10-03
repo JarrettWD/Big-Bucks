@@ -275,7 +275,7 @@ Use the same stack as Dad's existing food inventory app (React PWA on GitHub Pag
 | Scheduled jobs | Supabase Edge Function + pg_cron | See below |
 | Avatars | Microsoft Fluent Emoji animals, plus accessory overlays | Free under the MIT licence; bundled with the app, so no outside service is needed |
 
-**Nightly job (after the markets close at 2 pm Mountain time; run about 3:30 pm)**
+**Nightly job (after the markets close at 4:00 pm Toronto time, which is 2:00 or 3:00 pm in Alberta; runs at 4:30 pm Alberta time all year)**
 
 1. Fetch each fund's close and save it to `fund_prices`. If that fund's market was closed (weekend or its own holiday), reuse its last close.
 2. Settle pending stock buys and sells at that fund's close.
@@ -310,7 +310,7 @@ The girls will only trust Big Bucks, and stay interested, if the numbers are alw
 
 - **One place does the maths.** Interest, dividends, penalties and trades are calculated only by server-side database functions, never in the app on a phone. Each one runs as a single database transaction, so it either fully happens or doesn't happen at all.
 - **Rounding favours the girl.** Interest accrues daily in fractions of a cent and is rounded only when it's posted. Any rounding goes up to the next cent, never down.
-- **Clear day-count rule:** interest uses actual days out of 365 (366 in a leap year), and every date is in Mountain time (America/Edmonton), so "today" means the same thing everywhere.
+- **Clear day-count rule:** interest uses actual days out of 365 (366 in a leap year), and every date is in Alberta time (UTC−6 all year from Nov 1, 2026), so "today" means the same thing everywhere.
 - **Weekends and holidays:** a GIC that matures on a weekend or holiday still matures that day, with interest to that day. A trade waits for the fund's next real market close.
 
 **Nothing is ever missed or counted twice**
@@ -438,7 +438,11 @@ These settle details the sections above leave open. Where they differ from an ea
 
 ### Time and dates
 
-- All dates are in the America/Edmonton time zone. "Today" comes from `app_today()` and "now" from `app_now()`.
+- All dates are in Alberta time. "Today" comes from `app_today()` and "now" from `app_now()`.
+- **Alberta's time rule is pinned in the database.** Alberta's Official Time Act (2026) keeps the province on UTC−6 all year from November 1, 2026. The database works this out with its own rule (`edmonton_local()` and `edmonton_at()`) rather than each server's time-zone data, which may be out of date; the browser uses the same rule. `check_time_rules()` confirms a server agrees.
+- **If Alberta's time rule ever changes again:** write a new migration that replaces the pinned rule (`edmonton_local()` and `edmonton_at()`), update the time machine's reference model and the browser's `albertaDate()` to match, then run the tests and `npm run timemachine` before deploying.
+- **Market closes are set in Toronto time** (4:00 pm, or 1:00 pm on an early close) and converted to Alberta time, never hard-coded in Alberta time. In Alberta a close is 2:00 pm (early: 11:00 am) from the second Sunday in March to the first Sunday in November, and 3:00 pm (early: 12:00 pm) the rest of the year.
+- **The nightly run is at 4:30 pm Alberta time, all year**, at least 90 minutes after the latest close.
 - In local development, a `clock_override` setting moves the clock for the time machine. Production ignores it.
 
 ### Interest
@@ -462,7 +466,7 @@ These settle details the sections above leave open. Where they differ from an ea
 ### Stock funds
 
 - **Unit price** = the proxy ETF's daily close (DIA, QQQ, XIC), used as a number in Canadian dollars. Only the percentage change matters, so there's no exchange-rate effect.
-- **Settlement:** a trade settles at the first close of that fund's market that comes after the request. US and Canadian markets both close at 4:00 pm Eastern (2:00 pm in Edmonton).
+- **Settlement:** a trade settles at the first close of that fund's market that comes after the request. US and Canadian markets both close at 4:00 pm Toronto time: 2:00 pm in Alberta from March to early November, and 3:00 pm the rest of the year.
 - **Buys:** units = amount ÷ close, rounded up at 8 decimal places. **Sells:** proceeds = units × close, rounded up to the cent, into savings. "Sell all" sells every unit.
 - **Cost basis** uses average cost. "Since first purchase" return = (current value − cost of the units she holds) ÷ that cost. The 1M, 3M and 6M returns = change in her holding's value over the window, excluding money moved in or out (a simple Modified Dietz calculation is fine).
 - **Market holidays:** a `market_holidays` table, seeded from the official NYSE and TSX calendars for 2026–2028. The parent dashboard warns 60 days before the table runs out. A missing close on a trading day is retried, never filled in.

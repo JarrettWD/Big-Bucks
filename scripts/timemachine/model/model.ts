@@ -17,6 +17,7 @@ import {
   dayOf,
   daysInYear,
   parts,
+  torontoToEdmonton,
   weekday,
   mk,
 } from './calendar.ts';
@@ -258,14 +259,15 @@ export class Model {
     return this.holidays.get(`${market}|${d}`)?.kind !== 'closed';
   }
 
-  /** The close moment in Edmonton time: 2:00 pm, or two hours before an early Eastern close. */
+  /**
+   * The close moment in Edmonton time. Closes are set in Toronto time: 4:00 pm, or
+   * the early-close time. In Alberta that's 2:00 pm (early: 11:00 am) while Toronto
+   * is on summer time, and 3:00 pm (early: 12:00 pm) the rest of the year.
+   */
   closeMoment(market: 'nyse' | 'tsx', d: Day): Moment {
     const h = this.holidays.get(`${market}|${d}`);
-    if (h?.kind === 'early_close' && h.closesAt) {
-      const [hh, mm] = h.closesAt.split(':').map(Number);
-      return at(d, `${String(hh - 2).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
-    }
-    return at(d, '14:00');
+    const toronto = h?.kind === 'early_close' && h.closesAt ? h.closesAt.slice(0, 5) : '16:00';
+    return torontoToEdmonton(d, toronto);
   }
 
   /** The first close of this fund's market strictly after moment t. */

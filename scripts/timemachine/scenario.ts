@@ -126,7 +126,7 @@ export const STEPS: Step[] = [
     why: 'request left unanswered',
   },
   {
-    at: '2027-07-27 16:00',
+    at: '2027-07-27 17:00',
     do: { kind: 'request_status', label: 'dB2', status: 'expired' },
     why: 'expired 7 × 24 hours later (10:00 Jul 27)',
   },
@@ -228,24 +228,34 @@ export const STEPS: Step[] = [
     why: 'NYSE open on Canadian Thanksgiving: settles that day',
   },
 
-  // November: a request expiring across the clock change, the split, an NYSE early close ------
+  // November: a request expiring across Toronto's clock change, the split, an NYSE early close
   {
     at: '2027-11-03 10:00',
     do: { kind: 'withdraw', kid: 'A', cents: $(25), label: 'wA1' },
-    why: 'left unanswered across the clock change',
+    why: "left unanswered across Toronto's clock change",
   },
   {
-    at: '2027-11-10 16:00',
+    at: '2027-11-10 17:00',
     do: { kind: 'request_status', label: 'wA1', status: 'expired' },
-    why: 'expired 7 × 24 hours later (9:00 am Nov 10 after clocks went back)',
+    why: 'expired 7 × 24 hours later (10:00 am Nov 10: Alberta no longer changes clocks)',
+  },
+  {
+    at: '2027-11-05 14:30',
+    do: { kind: 'buy', kid: 'A', fund: 'dow', cents: $(10), label: 'tA_tz1' },
+    why: "Toronto summer time: after Friday's 2:00 pm close, settles Mon Nov 8 at 3:00 pm",
+  },
+  {
+    at: '2027-11-08 14:30',
+    do: { kind: 'buy', kid: 'B', fund: 'dow', cents: $(10), label: 'tB_tz1' },
+    why: 'first Monday after Toronto falls back: before the 3:00 pm close, settles that day',
   },
   {
     at: '2027-11-26 10:30',
     do: { kind: 'buy', kid: 'A', fund: 'dow', cents: $(40), label: 'tA4' },
-    why: 'NYSE early close: settles at 11:00 am',
+    why: 'NYSE early close (1:00 pm Toronto): settles at 12:00 pm',
   },
   {
-    at: '2027-11-26 11:30',
+    at: '2027-11-26 12:30',
     do: { kind: 'sell', kid: 'B', fund: 'nasdaq100', cents: $(20), label: 'tB7' },
     why: 'after the early close: settles Mon Nov 29',
   },
@@ -276,12 +286,12 @@ export const STEPS: Step[] = [
   {
     at: '2027-12-24 10:00',
     do: { kind: 'buy', kid: 'B', fund: 'tsx', cents: $(20), label: 'tB8' },
-    why: 'TSX early close: settles at 11:00 am',
+    why: 'TSX early close (1:00 pm Toronto): settles at 12:00 pm',
   },
   {
     at: '2027-12-24 12:00',
     do: { kind: 'buy', kid: 'A', fund: 'tsx', cents: $(20), label: 'tA6' },
-    why: 'after the TSX early close, closed Dec 27–28: settles Dec 29',
+    why: 'exactly at the 12:00 pm TSX early close, so it waits; closed Dec 27–28: settles Dec 29',
   },
 
   // 2028: renewal, a leap-day maturity, the crash, the inverted month --------------------------
@@ -353,6 +363,16 @@ export const STEPS: Step[] = [
     why: 'short term pays more in the inverted month (matures in the missed week)',
   },
   {
+    at: '2028-03-10 14:30',
+    do: { kind: 'buy', kid: 'A', fund: 'dow', cents: $(10), label: 'tA_tz2' },
+    why: 'last Friday of Toronto standard time: before the 3:00 pm close, settles that day',
+  },
+  {
+    at: '2028-03-13 14:30',
+    do: { kind: 'buy', kid: 'B', fund: 'dow', cents: $(10), label: 'tB_tz2' },
+    why: 'first Monday of Toronto summer time: after the 2:00 pm close, settles Tue Mar 14',
+  },
+  {
     at: '2028-03-15 10:00',
     do: { kind: 'break_gic', gic: 'gA9m' },
     why: 'early break: principal back, interest given up',
@@ -420,7 +440,7 @@ export const STEPS: Step[] = [
     why: 'the health check notices the jobs are a week behind',
   },
   {
-    at: '2028-04-08 16:00',
+    at: '2028-04-08 17:00',
     do: { kind: 'health', ok: true },
     why: 'after the catch-up run, all clear',
   },

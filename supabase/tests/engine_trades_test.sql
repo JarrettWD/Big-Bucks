@@ -92,7 +92,7 @@ $$;
 create function tests.trade(p_username text, p_fund text, p_created date) returns public.requests language sql as $$
   select * from public.requests
    where account_id = tests.acct(p_username) and fund_id = p_fund
-     and (created_at at time zone 'America/Edmonton')::date = p_created
+     and public.edmonton_local(created_at)::date = p_created
    order by id desc limit 1;
 $$;
 create function tests.units(p_username text, p_fund text) returns numeric language sql as $$
@@ -100,13 +100,13 @@ create function tests.units(p_username text, p_fund text) returns numeric langua
    where account_id = tests.acct(p_username) and fund_id = p_fund and vehicle = 'stock';
 $$;
 create function tests.edm(p text) returns timestamptz language sql as $$
-  select p::timestamp at time zone 'America/Edmonton';
+  select public.edmonton_at(p::timestamp);
 $$;
 
 select tests.clock('2026-10-16 09:00');
 select tests.new_kid('kid_t1');  -- Friday-evening buy, dividends, a split, sell all
-select tests.new_kid('kid_t2');  -- early closes, before 11:00 am
-select tests.new_kid('kid_t3');  -- early close, after 11:00 am
+select tests.new_kid('kid_t2');  -- early closes, before 12:00 pm
+select tests.new_kid('kid_t3');  -- early close, after 12:00 pm
 select tests.new_kid('kid_t4');  -- a missing close
 select tests.new_kid('kid_t5');  -- partial sells
 
@@ -120,17 +120,17 @@ select is(public.next_settlement('dow', tests.edm('2026-10-19 14:00')), tests.ed
   'a request at exactly the close waits for the next close');
 select is(public.next_settlement('tsx', tests.edm('2027-03-26 10:00')), tests.edm('2027-03-29 14:00'),
   'on Good Friday both markets are closed: the TSX fund settles Monday');
-select is(public.next_settlement('dow', tests.edm('2026-11-26 09:00')), tests.edm('2026-11-27 11:00'),
-  'US Thanksgiving is closed, and the next day closes early at 11:00 am Edmonton');
-select is(public.next_settlement('tsx', tests.edm('2026-11-26 09:00')), tests.edm('2026-11-26 14:00'),
+select is(public.next_settlement('dow', tests.edm('2026-11-26 09:00')), tests.edm('2026-11-27 12:00'),
+  'US Thanksgiving is closed, and the next day closes early at 12:00 pm Edmonton (1:00 pm Toronto)');
+select is(public.next_settlement('tsx', tests.edm('2026-11-26 09:00')), tests.edm('2026-11-26 15:00'),
   'the TSX stays open on US Thanksgiving (each fund follows its own market)');
-select is(public.next_settlement('dow', tests.edm('2026-11-27 10:30')), tests.edm('2026-11-27 11:00'),
-  'early close (NYSE): a request at 10:30 am settles at that day''s 11:00 am close');
-select is(public.next_settlement('dow', tests.edm('2026-11-27 11:30')), tests.edm('2026-11-30 14:00'),
-  'early close (NYSE): a request at 11:30 am settles at the next trading day''s close');
-select is(public.next_settlement('tsx', tests.edm('2026-12-24 12:00')), tests.edm('2026-12-29 14:00'),
-  'early close (TSX): after 11:00 am on Christmas Eve, it skips Christmas and Boxing Day (Dec 28) to Dec 29');
-select is(public.next_settlement('dow', tests.edm('2026-12-24 12:00')), tests.edm('2026-12-28 14:00'),
+select is(public.next_settlement('dow', tests.edm('2026-11-27 10:30')), tests.edm('2026-11-27 12:00'),
+  'early close (NYSE): a request at 10:30 am settles at that day''s 12:00 pm close');
+select is(public.next_settlement('dow', tests.edm('2026-11-27 12:30')), tests.edm('2026-11-30 15:00'),
+  'early close (NYSE): a request at 12:30 pm settles at the next trading day''s close');
+select is(public.next_settlement('tsx', tests.edm('2026-12-24 12:00')), tests.edm('2026-12-29 15:00'),
+  'early close (TSX): a request at exactly the 12:00 pm close on Christmas Eve waits, skips Christmas and Boxing Day (Dec 28) to Dec 29');
+select is(public.next_settlement('dow', tests.edm('2026-12-24 12:00')), tests.edm('2026-12-28 15:00'),
   '...while the US fund settles Monday Dec 28');
 
 -- 2. A Friday-evening buy (kid_t1) --------------------------------------------------
@@ -154,10 +154,10 @@ select is((select count(*) from public.requests where account_id = tests.acct('k
   'refused requests leave nothing behind (just the deposit and the buy)');
 
 select tests.price('dow', '2026-10-19', 420);
-select tests.clock('2026-10-17 15:30');
+select tests.clock('2026-10-17 16:30');
 select is(tests.run('settle_trades', '2026-10-16'), 'ok', 'nothing is due on Friday...');
 select is((tests.trade('kid_t1', 'dow', '2026-10-16')).status::text, 'pending', '...so the buy is still pending over the weekend');
-select tests.clock('2026-10-19 15:30');
+select tests.clock('2026-10-19 16:30');
 select is(tests.run('settle_trades', '2026-10-19'), 'ok', 'Monday''s settlement runs');
 select results_eq(
   $$select status::text, settled_at from public.requests where id = (tests.trade('kid_t1', 'dow', '2026-10-16')).id$$,
@@ -189,7 +189,7 @@ select tests.clock('2026-11-02 15:00');
 select tests.as_kid('kid_t4');
 select public.request_trade('dow', 'buy', 10000);
 select tests.price('dow', '2026-11-04', 430);
-select tests.clock('2026-11-04 15:30');
+select tests.clock('2026-11-04 16:30');
 select is(tests.run('settle_trades', '2026-11-03'), 'waiting', 'with Nov 3''s close missing, settlement waits');
 select is(tests.run('settle_trades', '2026-11-04'), 'waiting', '...and still waits the next day');
 select is((tests.trade('kid_t4', 'dow', '2026-11-02')).status::text, 'pending', 'the trade did not settle on Nov 4''s price');
@@ -198,37 +198,37 @@ select is(tests.run('settle_trades', '2026-11-04'), 'ok', 'once Nov 3''s close a
 select results_eq(
   $$select r.settled_at, t.unit_price from public.requests r join public.transactions t on t.request_id = r.id and t.vehicle = 'stock'
      where r.id = (tests.trade('kid_t4', 'dow', '2026-11-02')).id$$,
-  $$values (tests.edm('2026-11-03 14:00'), 425::numeric(20,8))$$,
+  $$values (tests.edm('2026-11-03 15:00'), 425::numeric(20,8))$$,
   '...the trade settles at Nov 3''s real close');
 
--- 4. Early closes, settled for real (kid_t2 before 11:00, kid_t3 after) -----------
+-- 4. Early closes, settled for real (kid_t2 before 12:00 pm, kid_t3 after) -----------
 
 select tests.clock('2026-11-27 09:00');
 select tests.fund('kid_t2', 30000);
 select tests.clock('2026-11-27 10:30');
 select tests.as_kid('kid_t2');
 select public.request_trade('dow', 'buy', 10000);
-select tests.clock('2026-11-27 11:30');
+select tests.clock('2026-11-27 12:30');
 select tests.as_kid('kid_t2');
 select public.request_trade('nasdaq100', 'buy', 10000);
 select tests.price('dow', '2026-11-27', 400);
 select tests.price('nasdaq100', '2026-11-27', 500);
 select tests.price('dow', '2026-11-30', 410);
 select tests.price('nasdaq100', '2026-11-30', 520);
-select tests.clock('2026-11-27 15:30');
+select tests.clock('2026-11-27 16:30');
 select 'ran: ' || tests.run('settle_trades', '2026-11-27');
 select results_eq(
   $$select status::text, settled_at from public.requests where id = (tests.trade('kid_t2', 'dow', '2026-11-27')).id$$,
-  $$values ('settled', tests.edm('2026-11-27 11:00'))$$,
-  'early close: the 10:30 am request settled at the 11:00 am close the same day');
+  $$values ('settled', tests.edm('2026-11-27 12:00'))$$,
+  'early close: the 10:30 am request settled at the 12:00 pm close the same day');
 select is(tests.units('kid_t2', 'dow'), 0.25, '...at that day''s price: $100 ÷ 400 = 0.25 units');
 select is((tests.trade('kid_t2', 'nasdaq100', '2026-11-27')).status::text, 'pending',
-  'early close: the 11:30 am request did not settle that day');
-select tests.clock('2026-11-30 15:30');
+  'early close: the 12:30 pm request did not settle that day');
+select tests.clock('2026-11-30 16:30');
 select 'ran: ' || tests.run('settle_trades', '2026-11-30');
 select results_eq(
   $$select status::text, settled_at from public.requests where id = (tests.trade('kid_t2', 'nasdaq100', '2026-11-27')).id$$,
-  $$values ('settled', tests.edm('2026-11-30 14:00'))$$,
+  $$values ('settled', tests.edm('2026-11-30 15:00'))$$,
   '...it settled at the next trading day''s close');
 select is(tests.units('kid_t2', 'nasdaq100'), 0.19230770, '...at that day''s price: $100 ÷ 520 = 0.19230770 units (rounded up)');
 
@@ -242,21 +242,21 @@ select tests.as_kid('kid_t3');
 select public.request_trade('tsx', 'buy', 1000);
 select tests.price('tsx', '2026-12-24', 40);
 select tests.price('tsx', '2026-12-29', 41);
-select tests.clock('2026-12-24 15:30');
+select tests.clock('2026-12-24 16:30');
 select 'ran: ' || tests.run('settle_trades', '2026-12-24');
-select is((tests.trade('kid_t2', 'tsx', '2026-12-24')).settled_at, tests.edm('2026-12-24 11:00'),
-  'TSX early close: a 10:00 am request on Christmas Eve settled at 11:00 am');
+select is((tests.trade('kid_t2', 'tsx', '2026-12-24')).settled_at, tests.edm('2026-12-24 12:00'),
+  'TSX early close: a 10:00 am request on Christmas Eve settled at 12:00 pm');
 select is((tests.trade('kid_t3', 'tsx', '2026-12-24')).status::text, 'pending',
-  'TSX early close: a noon request did not');
-select tests.clock('2026-12-28 15:30');
+  'TSX early close: a request at exactly the 12:00 pm close did not');
+select tests.clock('2026-12-28 16:30');
 select is(tests.run('settle_trades', '2026-12-28'), 'ok', 'Dec 28 is a TSX holiday: nothing is due');
 select is((tests.trade('kid_t3', 'tsx', '2026-12-24')).status::text, 'pending', '...so it is still pending');
-select tests.clock('2026-12-29 15:30');
+select tests.clock('2026-12-29 16:30');
 select 'ran: ' || tests.run('settle_trades', '2026-12-29');
 select results_eq(
   $$select r.settled_at, t.units from public.requests r join public.transactions t on t.request_id = r.id and t.vehicle = 'stock'
      where r.id = (tests.trade('kid_t3', 'tsx', '2026-12-24')).id$$,
-  $$values (tests.edm('2026-12-29 14:00'), 0.24390244::numeric(20,8))$$,
+  $$values (tests.edm('2026-12-29 15:00'), 0.24390244::numeric(20,8))$$,
   '...it settled at Dec 29''s close: $10 ÷ 41 = 0.24390244 units');
 
 -- 5. Dividends (kid_t1 holds 0.23809524 Dow units) -----------------------------------
@@ -303,7 +303,7 @@ select is((tests.trade('kid_t1', 'dow', '2027-01-04')).held_units, 0.47619048::n
 select tests.price('dow', '2027-01-05', 215);
 select is(ceil(tests.units('kid_t1', 'dow') * 215 * 100), ceil(0.23809524 * 430 * 100),
   'her holding is worth the same after the split ($102.39)');
-select tests.clock('2027-01-05 15:30');
+select tests.clock('2027-01-05 16:30');
 select 'ran: ' || tests.run('settle_trades', '2027-01-05');
 select results_eq(
   $$select amount_cents, note from public.transactions
@@ -322,7 +322,7 @@ select tests.clock('2027-02-01 10:00');
 select tests.as_kid('kid_t5');
 select public.request_trade('dow', 'buy', 10000);
 select tests.price('dow', '2027-02-01', 420);
-select tests.clock('2027-02-01 15:30');
+select tests.clock('2027-02-01 16:30');
 select 'ran: ' || tests.run('settle_trades', '2027-02-01');
 select tests.clock('2027-02-01 16:00');
 select tests.as_kid('kid_t5');
@@ -337,7 +337,7 @@ select lives_ok($$select public.request_trade('dow', 'sell', 5000)$$, 'the next 
 select is((tests.trade('kid_t5', 'dow', '2027-02-02')).held_units, 0.11904762::numeric(20,8),
   'the units for $50 at the latest close (420) are held');
 select tests.price('dow', '2027-02-02', 430);
-select tests.clock('2027-02-02 15:30');
+select tests.clock('2027-02-02 16:30');
 select 'ran: ' || tests.run('settle_trades', '2027-02-02');
 select is(tests.units('kid_t5', 'dow'), 0.12181618,
   'at 430 she sold 0.11627906 units ($50 ÷ 430, rounded down so she keeps more) and kept 0.12181618');
@@ -350,7 +350,7 @@ select tests.clock('2027-02-03 09:00');
 select tests.as_kid('kid_t5');
 select public.request_trade('dow', 'sell', 5200);
 select tests.price('dow', '2027-02-03', 400);
-select tests.clock('2027-02-03 15:30');
+select tests.clock('2027-02-03 16:30');
 select 'ran: ' || tests.run('settle_trades', '2027-02-03');
 select is(tests.units('kid_t5', 'dow'), 0::numeric, 'when $52 needs more units than she has, she sells all of them');
 select results_eq(

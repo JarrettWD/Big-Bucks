@@ -63,7 +63,7 @@ $$;
 insert into public.settings (key, value, effective_date) values ('clock_override', '2027-03-15 10:00', '2026-10-02');
 insert into public.accounts (id, name) values ('cccccccc-0000-0000-0000-000000000003', 'Clock Test');
 select is((select created_at from public.accounts where id = 'cccccccc-0000-0000-0000-000000000003'),
-  '2027-03-15 10:00 America/Edmonton'::timestamptz, 'created_at defaults to app_now()');
+  '2027-03-15 10:00-06'::timestamptz, 'created_at defaults to app_now()');
 insert into public.settings (key, value, effective_date) values ('clock_override', '', '2026-10-02');
 
 -- Ledger signs: + adds, - takes away

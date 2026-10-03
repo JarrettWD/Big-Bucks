@@ -90,7 +90,7 @@ select public.request_trade('nasdaq100', 'buy', 30000, false); -- 0.6 units at 5
 select public.request_trade('tsx', 'buy', 20000, false);       -- 5 units at 40
 select public.buy_gic(10000, 12);                              -- $100 at 5.0%
 select tests.nobody();
-select tests.clock('2026-10-01 15:30');
+select tests.clock('2026-10-01 16:30');
 select public.settle_trades('2026-10-01');
 
 -- Oct 2: sells $101 of the TSX (2.5 units at 40.40), then a withdrawal and a deposit Dad declines.
@@ -98,7 +98,7 @@ select tests.clock('2026-10-02 09:00');
 select tests.as_kid('kid_a');
 select public.request_trade('tsx', 'sell', 10100, false);
 select tests.nobody();
-select tests.clock('2026-10-02 15:30');
+select tests.clock('2026-10-02 16:30');
 select public.settle_trades('2026-10-02');
 select tests.clock('2026-10-02 16:00');
 select tests.as_kid('kid_a');
@@ -195,7 +195,7 @@ select results_eq(
   'the deposit, the waiting withdrawal, and the declined deposit with Dad''s reason');
 select is(
   (select at from public.my_activity(tests.acct('kid_a'), 50) where kind = 'fund_sell'),
-  '2026-10-02 14:00 America/Edmonton'::timestamptz,
+  '2026-10-02 14:00-06'::timestamptz,
   'a trade is dated at the close it settled at');
 
 -- Paging: 3 at a time, then the rest after the 3rd.
@@ -260,11 +260,11 @@ select is((select count(*) from public.notifications where account_id = tests.ac
 
 select is(public.mark_notices_read(array(select id from a_notices order by id limit 2)), 2, 'kid A marks two as read');
 select is((select read_at from public.notifications where id = (select min(id) from a_notices)),
-  '2026-10-05 09:00 America/Edmonton'::timestamptz, 'stamped with the app clock');
+  '2026-10-05 09:00-06'::timestamptz, 'stamped with the app clock');
 select is(public.mark_notices_read(array(select id from a_notices order by id limit 2)), 0,
   'marking them again changes nothing');
 select is((select read_at from public.notifications where id = (select min(id) from a_notices)),
-  '2026-10-05 09:00 America/Edmonton'::timestamptz, 'and keeps the first time she read it');
+  '2026-10-05 09:00-06'::timestamptz, 'and keeps the first time she read it');
 select is(public.mark_notices_read('{}'), 0, 'an empty list is fine');
 
 select tests.as_parent();

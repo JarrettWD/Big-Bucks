@@ -93,7 +93,7 @@ select public.buy_gic(5000, 1);
 select tests.as_kid('kid_q');
 select public.buy_gic(3000, 3);
 select tests.nobody();
-select tests.clock('2026-12-02 15:30');
+select tests.clock('2026-12-02 16:30');
 select public.run_daily('2026-12-02');
 
 -- 1. A clean ledger passes --------------------------------------------------------
@@ -228,7 +228,7 @@ rollback to savepoint f;
 
 savepoint f;
 -- The monthly job marked done for Dec 1 although November's interest was never posted.
-select tests.clock('2026-12-02 15:30');
+select tests.clock('2026-12-02 16:30');
 insert into public.accounts (name, is_test) values ('Test kid_m', true);
 insert into public.interest_accruals (account_id, accrual_date, balance_cents, rate, days_in_year, accrued)
 select a.id, date '2026-11-15', 0, 2.0, 365, 0.5 from public.accounts a where a.name = 'Test kid_m';

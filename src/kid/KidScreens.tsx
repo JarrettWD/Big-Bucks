@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { albertaDate, formatDate } from '../lib/format';
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -52,13 +53,7 @@ export function KidNotices() {
             <li key={n.id} className={n.read_at ? '' : 'is-new'}>
               <strong>{n.title}</strong>
               {n.body && <span>{n.body}</span>}
-              <time dateTime={n.created_at}>
-                {new Date(n.created_at).toLocaleDateString('en-CA', {
-                  month: 'short',
-                  day: 'numeric',
-                  timeZone: 'America/Edmonton',
-                })}
-              </time>
+              <time dateTime={n.created_at}>{formatDate(albertaDate(n.created_at))}</time>
             </li>
           ))}
         </ul>

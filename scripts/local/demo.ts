@@ -6,7 +6,7 @@
 //    random values on every run.
 // 3. Walks about 3 months, ending yesterday evening, with the time machine's
 //    engine: its price generator and clock, every action through the real kid
-//    and parent functions, then each day at 3:30 pm the closes, run_daily and
+//    and parent functions, then each day at 4:30 pm the closes, run_daily and
 //    reconcile. It stops if reconcile ever finds a problem.
 // 4. Hands the clock back to real time, sets up the parent's authenticator,
 //    points the app at the local Supabase (.env.local), and prints the logins.
@@ -18,6 +18,7 @@ import { randomBytes, randomInt } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import type { LocalDb, Who } from '../timemachine/db.ts';
 import {
+  NIGHTLY_RUN,
   addDays,
   addMonths,
   at,
@@ -411,7 +412,7 @@ async function main(): Promise<void> {
     };
     let reconciled = 0;
     for (const day of daysFrom(S, yesterday)) {
-      const runAt = at(day, '15:30');
+      const runAt = at(day, NIGHTLY_RUN);
       await runSteps(day, runAt, null);
       await db.setClock(runAt);
       await publishUpTo(runAt);

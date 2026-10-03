@@ -40,6 +40,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 - [ ] A buy in each fund settles at the next market close (a Friday-evening request settles Monday)
 - [ ] Only one trade per fund per day is allowed
+- [ ] Settlement times read 2:00 pm in Alberta in summer and 3:00 pm in winter (4:00 pm Toronto), and a 2:30 pm winter request settles the same day
 - [ ] A partial sell works, and proceeds land in savings
 - [ ] Each fund’s value tracks its ETF (DIA, QQQ, XIC) to the cent
 - [ ] The standard note appears on a day a fund moves more than 2%
@@ -54,6 +55,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 1, live: safeguards and backups**
 
+- [ ] `select * from public.check_time_rules();` on production shows no ok = false rows
 - [ ] 30 nights in a row with zero reconciliation mismatches
 - [ ] A deliberately skipped night is caught up the next run, with no duplicate postings
 - [ ] A simulated price-service outage makes trades wait rather than settle on an old price

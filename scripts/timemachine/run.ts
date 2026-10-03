@@ -4,7 +4,7 @@
 // 1. Resets the local database (made-up data only; production is never touched).
 // 2. Creates a parent and two made-up kids (A regular, B a test account).
 // 3. Walks the clock a day at a time from Jul 1, 2027 to Jul 1, 2028: the scripted
-//    actions, then at 3:30 pm the day's closes, run_daily and reconcile.
+//    actions, then at 4:30 pm (NIGHTLY_RUN) the day's closes, run_daily and reconcile.
 // 4. Compares what the screens would show (nearest cent) every day, then every
 //    posted amount (rounded up), every accrual and the graph history.
 // 5. Injects deliberate faults in transactions that are rolled back, and checks
@@ -16,7 +16,7 @@ import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { LocalDb, type Who } from './db.ts';
 import { Q } from './model/rational.ts';
-import { addDays, at, dayOf, daysFrom, type Day } from './model/calendar.ts';
+import { NIGHTLY_RUN, addDays, at, dayOf, daysFrom, type Day } from './model/calendar.ts';
 import {
   FUNDS,
   Model,
@@ -390,9 +390,9 @@ async function main(): Promise<void> {
     console.log('Walking the year…');
     for (const day of daysFrom(dayOf(START), END_DAY)) {
       const steps = STEPS.filter((s) => dayOf(s.at) === day).sort((a, b) => (a.at < b.at ? -1 : 1));
-      for (const s of steps.filter((x) => x.at < at(day, '15:30'))) await doStep(s);
+      for (const s of steps.filter((x) => x.at < at(day, NIGHTLY_RUN))) await doStep(s);
 
-      const runAt = at(day, '15:30');
+      const runAt = at(day, NIGHTLY_RUN);
       await db.setClock(runAt);
       await publishUpTo(runAt);
       model.advanceTo(runAt);
@@ -531,7 +531,7 @@ async function comparePostings(
     day: string;
   }>(
     `select account_id, vehicle::text, type::text, amount_cents::text, units::text, fund_id, gic_id::text, posting_key,
-            (effective_at at time zone 'America/Edmonton')::date::text as day
+            public.edmonton_local(effective_at)::date::text as day
        from public.transactions where account_id = any ($1) order by id`,
     [Object.values(accounts)],
   );

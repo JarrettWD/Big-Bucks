@@ -79,7 +79,7 @@ select is((select is_test from public.accounts where id = (select id from ids wh
 select is((select is_test from public.accounts where id = (select id from ids where name = 'kid_b')), true,
   'kid B is a test account');
 select is((select created_at from public.accounts where id = (select id from ids where name = 'kid_a')),
-  '2026-10-05 09:00 America/Edmonton'::timestamptz, 'the account opens at the app clock''s time');
+  '2026-10-05 09:00-06'::timestamptz, 'the account opens at the app clock''s time');
 select is(
   (select row(role::text, account_id, username, display_name)::text from public.profiles
     where user_id = (select id from ids where name = 'kid_a_user')),
@@ -132,10 +132,10 @@ select is(tests.fail('KID_A'), jsonb_build_object('locked_until', null, 'tries_l
   '4th wrong PIN (any capitals): 1 try left, not locked yet');
 select is(tests.lockout_alerts((select id from ids where name = 'kid_a')), 0::bigint, 'no alert before the lockout');
 select is(tests.fail('kid_a'),
-  jsonb_build_object('locked_until', '2026-10-05 09:16 America/Edmonton'::timestamptz, 'tries_left', 0),
+  jsonb_build_object('locked_until', '2026-10-05 09:16-06'::timestamptz, 'tries_left', 0),
   '5th wrong PIN in a row: locked for 15 minutes');
 select is((public.login_precheck('kid_a') ->> 'locked_until')::timestamptz,
-  '2026-10-05 09:16 America/Edmonton'::timestamptz, 'the lookup reports the lock');
+  '2026-10-05 09:16-06'::timestamptz, 'the lookup reports the lock');
 select is(tests.lockout_alerts((select id from ids where name = 'kid_a')), 1::bigint, 'Dad gets one lockout alert');
 select is(
   (select row(is_quiet, message)::text from public.alerts where kind = 'lockout'
@@ -148,7 +148,7 @@ select ok(exists (select 1 from jsonb_array_elements(public.health_check() -> 'p
 select tests.clock('2026-10-05 09:10');
 select is(tests.attempts('kid_a'), 5::bigint, 'five attempts recorded');
 select is(public.record_login_attempt('kid_a', true),
-  jsonb_build_object('locked_until', '2026-10-05 09:16 America/Edmonton'::timestamptz, 'tries_left', 0),
+  jsonb_build_object('locked_until', '2026-10-05 09:16-06'::timestamptz, 'tries_left', 0),
   'while locked, even a right PIN is refused');
 select is(tests.attempts('kid_a'), 5::bigint, 'and nothing is recorded while locked');
 
@@ -175,7 +175,7 @@ select is(
 
 select tests.clock('2026-10-05 10:00');
 select tests.fail('kid_b') from generate_series(1, 4);
-select is((tests.fail('kid_b') ->> 'locked_until')::timestamptz, '2026-10-05 10:15 America/Edmonton'::timestamptz,
+select is((tests.fail('kid_b') ->> 'locked_until')::timestamptz, '2026-10-05 10:15-06'::timestamptz,
   'a test kid locks the same way');
 select is((select is_quiet from public.alerts where kind = 'lockout' and account_id = (select id from ids where name = 'kid_b')),
   true, 'but her alert is quiet');

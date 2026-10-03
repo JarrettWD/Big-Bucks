@@ -24,21 +24,21 @@ select is(
 -- Local dev, no override: real time
 insert into public.settings (key, value, effective_date) values ('is_local_dev', 'true', '2026-10-02');
 select is(public.app_now(), now(), 'local dev with no override: app_now() is the real time');
-select is(public.app_today(), (now() at time zone 'America/Edmonton')::date,
+select is(public.app_today(), public.edmonton_local(now())::date,
   'local dev with no override: app_today() is the real Edmonton date');
 
 -- Local dev, override set: frozen at that Edmonton time
 insert into public.settings (key, value, effective_date) values ('clock_override', '2026-11-15 09:30', '2026-10-02');
-select is(public.app_now(), '2026-11-15 09:30:00 America/Edmonton'::timestamptz,
+select is(public.app_now(), '2026-11-15 09:30:00-06'::timestamptz,
   'override freezes app_now() at the Edmonton time set');
 select is(public.app_today(), date '2026-11-15', 'override sets app_today()');
 select is(public.app_now(), public.app_now(), 'the frozen clock does not move');
 
--- Daylight saving: Edmonton is UTC-6 in summer, UTC-7 in winter
+-- Alberta is UTC−6 all year from Nov 1, 2026 (Official Time Act; pinned in edmonton_at)
 insert into public.settings (key, value, effective_date) values ('clock_override', '2026-07-01 12:00', '2026-10-02');
 select is(public.app_now(), '2026-07-01 18:00:00+00'::timestamptz, 'summer: noon in Edmonton is 18:00 UTC');
 insert into public.settings (key, value, effective_date) values ('clock_override', '2026-12-01 12:00', '2026-10-02');
-select is(public.app_now(), '2026-12-01 19:00:00+00'::timestamptz, 'winter: noon in Edmonton is 19:00 UTC');
+select is(public.app_now(), '2026-12-01 18:00:00+00'::timestamptz, 'winter: noon in Alberta is still 18:00 UTC (UTC−6 all year from Nov 1, 2026)');
 
 -- The Edmonton date, not the UTC date
 insert into public.settings (key, value, effective_date) values ('clock_override', '2026-12-31 23:30', '2026-10-02');
@@ -47,7 +47,7 @@ select is((public.app_now() at time zone 'UTC')::date, date '2027-01-01', '...ev
 
 -- Date only means midnight
 insert into public.settings (key, value, effective_date) values ('clock_override', '2027-02-28', '2026-10-02');
-select is(public.app_now(), '2027-02-28 00:00:00 America/Edmonton'::timestamptz, 'a date with no time means midnight');
+select is(public.app_now(), '2027-02-28 00:00:00-06'::timestamptz, 'a date with no time means midnight');
 
 -- The newest row wins, whatever its effective_date
 insert into public.settings (key, value, effective_date) values ('clock_override', '2027-05-01 08:00', '2099-01-01');
@@ -68,7 +68,7 @@ insert into public.settings (key, value, effective_date) values ('clock_override
 select is(public.app_today(), date '2030-01-01', '(check) the override is active while is_local_dev is true');
 insert into public.settings (key, value, effective_date) values ('is_local_dev', 'false', '2099-12-31');
 select is(public.app_now(), now(), 'is_local_dev false: the override is ignored by app_now()');
-select is(public.app_today(), (now() at time zone 'America/Edmonton')::date,
+select is(public.app_today(), public.edmonton_local(now())::date,
   'is_local_dev false: app_today() is the real Edmonton date');
 
 -- Append-only, for every role

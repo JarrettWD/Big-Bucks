@@ -51,3 +51,19 @@ export function daysBetween(from: string, to: string): number {
     Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10));
   return Math.round(ms / 86_400_000);
 }
+
+// Alberta's time rule, the same one the database pins in edmonton_local(): from
+// 2026-03-08 09:00 UTC on, Alberta is UTC−6 all year (Official Time Act, 2026).
+// Plain arithmetic, so a phone with old time-zone data still gets the right day.
+// Prefer dates the database worked out; this is for the few lists that read a
+// timestamp straight from a table.
+const ALBERTA_FIXED_FROM_MS = Date.UTC(2026, 2, 8, 9, 0, 0);
+const SIX_HOURS_MS = 6 * 3_600_000;
+
+/** A moment from the database ("2026-11-02T05:30:00+00:00") → its Alberta date, "2026-11-01". */
+export function albertaDate(moment: string): string {
+  const ms = Date.parse(moment);
+  if (Number.isNaN(ms)) throw new Error(`Not a moment: "${moment}"`);
+  if (ms < ALBERTA_FIXED_FROM_MS) throw new Error(`Before Alberta's fixed time rule: "${moment}"`);
+  return new Date(ms - SIX_HOURS_MS).toISOString().slice(0, 10);
+}

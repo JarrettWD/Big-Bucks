@@ -120,7 +120,7 @@ select tests.nobody();
 
 -- 1. The first nightly run ----------------------------------------------------------
 
-select tests.clock('2026-11-02 15:30');
+select tests.clock('2026-11-02 16:30');
 select throws_like($$select public.run_daily('2026-11-03')$$, '%future%', 'run_daily refuses a date that hasn''t happened yet');
 select is(public.run_daily('2026-11-02') ->> 'status', 'ok', 'the first run on Nov 2 succeeds');
 select is(tests.ok_jobs('2026-11-02'), 9::bigint, 'nine jobs finished for Nov 2...');
@@ -132,7 +132,7 @@ select is((select status::text from public.requests where account_id = tests.acc
 
 -- 2. A missed week, caught up in one run -----------------------------------------------
 
-select tests.clock('2026-11-10 15:30');
+select tests.clock('2026-11-10 16:30');
 select is(public.run_daily('2026-11-10') ->> 'status', 'ok', 'after a missed week, one run catches up');
 select is(
   (select count(*) from public.interest_accruals where account_id = tests.acct('kid_j')),
@@ -181,13 +181,13 @@ select tests.clock('2026-12-03 10:00');
 select tests.as_kid('kid_j');
 select public.request_trade('dow', 'buy', 1000);
 insert into public.fund_prices (fund_id, price_date, close) values ('nasdaq100', '2026-12-03', 100), ('tsx', '2026-12-03', 100);
-select tests.clock('2026-12-03 15:30');
+select tests.clock('2026-12-03 16:30');
 select is(public.run_daily('2026-12-03') ->> 'status', 'waiting', 'with the Dow close missing, the run waits');
 select is(
   (select status::text from public.job_runs where job = 'settle' and run_for_date = '2026-12-03' order by id desc limit 1),
   'retrying', 'settlement is recorded as retrying');
 insert into public.fund_prices (fund_id, price_date, close) values ('dow', '2026-12-04', 103), ('nasdaq100', '2026-12-04', 100), ('tsx', '2026-12-04', 100);
-select tests.clock('2026-12-04 15:30');
+select tests.clock('2026-12-04 16:30');
 select is(public.run_daily('2026-12-04') ->> 'status', 'waiting', 'the next day it still waits for Dec 3...');
 select is(tests.ok_jobs('2026-12-04'), 0::bigint, '...and does not skip ahead to Dec 4');
 select is((select status::text from public.requests where fund_id = 'dow' and status = 'pending'), 'pending',
@@ -196,7 +196,7 @@ insert into public.fund_prices (fund_id, price_date, close) values ('dow', '2026
 select is(public.run_daily('2026-12-04') ->> 'status', 'ok', 'once the close arrives, the run carries on');
 select results_eq(
   $$select r.status::text, t.unit_price from public.requests r join public.transactions t on t.request_id = r.id and t.vehicle = 'stock'
-     where r.account_id = tests.acct('kid_j') and (r.created_at at time zone 'America/Edmonton')::date = '2026-12-03'$$,
+     where r.account_id = tests.acct('kid_j') and public.edmonton_local(r.created_at)::date = '2026-12-03'$$,
   $$values ('settled', 102::numeric(20,8))$$, 'the trade settled at Dec 3''s real close');
 select is(tests.ok_jobs('2026-12-03'), 10::bigint, 'every job finished for Dec 3');
 select is(tests.ok_jobs('2026-12-04'), 9::bigint, 'and for Dec 4 (all but tonight''s accrual)');
