@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+# For now this runs only when started by hand (Actions tab > Deploy to GitHub
+# Pages > Run workflow), and only deploys a main commit that has already passed
+# CI. To make it automatic after CI passes on main, see "Switching deploy to
+# automatic" in docs/PROGRESS.md: uncomment the workflow_run block below.
+on:
+  workflow_dispatch:
+  # workflow_run:
+  #   workflows: [CI]
+  #   types: [completed]
+  #   branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Main only. When triggered by CI, only if CI succeeded.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Refuse unless CI passed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?head_sha=${DEPLOY_SHA}&branch=main&event=push&status=success" --jq '.total_count')
+          if [ "$passed" -lt 1 ]; then
+            echo "::error::CI has not passed on main for ${DEPLOY_SHA}. Not deploying."
+            exit 1
+          fi
+          echo "CI passed for ${DEPLOY_SHA}."
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
