@@ -1,5 +1,5 @@
 // The kid screens still to come in stage 7: the notices list is read-only, and
-// Graphs, Buy / Sell and Wish List are placeholders. Home is in ./home.
+// Graphs and Wish List are placeholders (Buy / Sell is in ./trade). Home is in ./home.
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -15,7 +15,6 @@ function Placeholder({ title }: { title: string }) {
 }
 
 export const KidGraphs = () => <Placeholder title="Graphs" />;
-export const KidTrade = () => <Placeholder title="Buy / Sell" />;
 export const KidWishList = () => <Placeholder title="Wish List" />;
 
 interface Notice {

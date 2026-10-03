@@ -399,7 +399,7 @@ Build a small version 1 that the girls use for a month, then add features based 
 3. Buy / Sell screen with warnings, request and approval flow, pending holds and the cooling-off delay
 4. Scheduled jobs with catch-up and duplicate protection: prices, settlement, interest, GIC maturity and dividends
 5. Home tab: totals, GIC breakdown, fund mix, daily % change, 30-day sparklines, action banner, recent activity and notifications
-6. Graphs tab: total worth over time and growth by option, with the standard market-move note
+6. Graphs tab: all six graphs under Graphs & dashboards (total worth over time, growth by option, money in vs money earned, my mix today, GIC ladder, stock fund detail), with the standard market-move note (decided 2026-10-03: all six in version 1)
 7. **?** explanations, "How was this calculated?" and "Something looks wrong?"
 8. Parent dashboard: approvals, plus admin settings for rates, specials, the deposit cap and inflation
 9. Safeguards: nightly reconciliation with alerts, backups (daily export, synced local copy, Download backup button), append-only history, and the test suite with its time machine
@@ -415,13 +415,13 @@ Build a small version 1 that the girls use for a month, then add features based 
 
 **Version 2**
 
-- Remaining graphs (mix donut, GIC ladder, money in vs earned, stock fund detail)
 - Rule of 72 calculator
 - Weekly recap
 - Automatic market news cards (market headlines plus a short AI summary on big-move days; a small API cost, likely pennies a month)
 - **Mom's admin login**, once phase 1's bugs are worked out, including the parent-only "Got it" marker on the wish lists
 - **Give jar:** a fourth option for money set aside for a charity or cause she chooses, with a small match from Dad
 - **Borrowing from the Bank of Dad:** borrow toward a wish-list item and pay it back with interest, so she feels interest working against her
+- **Cancel a waiting request:** a kid can cancel her own deposit, withdrawal or trade while it's still waiting, which releases any hold. (In version 1, Buy / Sell lists her waiting requests read-only.)
 
 **Version 3 (ideas)**
 

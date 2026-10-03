@@ -283,3 +283,109 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 ### Glossary change
 
 - **Daily change** (new wording, in the migration `20261005000000_kid_home.sql`): How much a fund went up or down since the market's last day, as a percent. Markets go up and down all the time, and one day doesn't matter much. What counts is how it does over months and years.
+
+## 8. Buy / Sell (stage 7)
+
+From the app's screen (`src/kid/trade/`: wording in `tradeText.ts` and `moves.ts`), so edits are a code change. The **problems** she can hit (over the limit, too small, already traded today, and so on) are the database's own messages in §2, shown word for word. The screen checks them as she types, after she pauses, using `move_preview`. Times like "Monday's 3:00 pm close (Nov 2)" are worked out by the database.
+
+### The form
+
+- **Buy / Sell** toggle
+  - Buy: Put money into savings, a GIC or a fund.
+  - Sell: Take money out of a GIC, a fund or savings.
+- **From** and **To** lists. Every move goes through savings:
+  - Buy: 💵 Cash from Dad → 🐷 Savings; or 🐷 Savings → 🔒 A new GIC, 📈 Dow Jones, 📈 Nasdaq-100 or 📈 TSX
+  - Sell: 🔒 One of your GICs (🔒 Your GIC when she has just one; she picks which on cards below), 📈 {fund} (funds she has units of), or 🐷 Savings → 🐷 Savings; 🐷 Savings → 💵 Cash to you
+  - A fund already traded today: {fund} (traded today, again tomorrow)
+  - Nothing to sell: You don't have any GICs or funds to sell right now.
+- **How much?**
+  - Under the box:
+    - Deposit: You can put in up to {deposit room} more.
+    - Fund sale: You can sell up to {most she can sell}, or all of it. (Her units' value rounded down to the cent, the same limit the database uses. Home and the warnings show the value rounded to the nearest cent, so they can be a cent higher.)
+    - Anything else: {available} free to use.
+    - Each has a **?**: Deposit cap, Unit price or Available.
+  - Fund sale: **Sell all of it** (the box then reads "All of it").
+- **Breaking a GIC** (no amount box): **Which GIC?** with a card for each of her GICs, tapped to choose:
+  - {amount} · {term} GIC at {rate} · Ready {date} (a GIC that matures today: Ready today)
+  - Under the cards: A GIC comes out all at once. (**?** Breaking a GIC early)
+- **Buying a GIC: How long?** Each term with its rate, "earns {interest}" on her amount once it's checked, and "Special!" on a special.
+- **Notes instead of the amount box:**
+  - You've already traded the {fund} fund today. You can trade it again tomorrow. One trade per fund each day helps you think it through.
+  - This GIC is ready today, so you won't lose any interest. It will be ready to choose soon.
+- **Next.** For a GIC before a term is picked, the button reads "Pick how long first". While checking: Checking…
+- **If the check can't reach the bank:** Big Bucks couldn't check that just now. Please try again.
+
+### Typing an amount
+
+Shown under the box; nothing is checked with the bank until the amount makes sense.
+
+- **Negative:** Amounts can't be less than zero. Type how much, like 25.
+- **Letters or other characters:** Use numbers only, like 25 or 12.50.
+- **A comma for cents ("12,50"):** Use a dot for cents, like 12.50.
+- **More than 2 decimals:** Money only goes down to cents, so use at most 2 numbers after the dot, like 12.50.
+- **Zero:** Type an amount bigger than $0.
+- **8 digits or more:** That's a really big number! Check it and try again.
+
+"$25", "25", "12.5" and "1,000" are all fine.
+
+### Warnings (⚠️ cautions, 💡 good to know)
+
+- ⚠️ **Breaking a GIC early:**
+  - Moving money out of this GIC before it's ready means you lose all {interest earned so far} of interest earned so far. If you wait until {maturity date}, it earns {interest at maturity}.
+  - If it hasn't earned anything yet: This GIC hasn't earned any interest yet. If you wait until {maturity date}, it earns {interest at maturity}.
+- ⚠️ **Selling a fund worth less than she paid:** Your {fund} is worth {value} right now, but you paid {cost}. Selling now makes a loss of {loss} final. Markets go up and down, and nobody knows what comes next. (**?** Loss)
+- 💡 **Deposit:** Dad needs to say yes first. Give him the cash, and it lands in your savings when he approves.
+- 💡 **Withdrawal:** Withdrawals wait at least 24 hours, so you can sleep on it. Dad can say yes from {Oct 6 at 9:00 am}. Until then, this money is on hold.
+- 💡 **Fund buy:** Your buy happens at {Monday's 3:00 pm close (Nov 2)}, at that day's price. It could be higher or lower than today's, so you'll see how many units you got after the close. (**?** Market close)
+- 💡 **Fund sale, by amount:** Your sale happens at {close}. You'll get {amount}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them.
+- 💡 **Fund sale, all of it:** Your sale happens at {close}. You'll get whatever your units are worth at that day's price.
+
+The close reads "today's 2:00 pm close", "tomorrow's 2:00 pm close", "yesterday's …", or "{weekday}'s {time} close ({date})".
+
+### The summary before anything happens
+
+Each summary ends with **Yes, do it** and **Go back**.
+
+- **Deposit:** Ask Dad to put in {amount}?
+  - It goes into your savings once Dad says yes.
+- **Withdrawal:** Ask to take {amount} out of your savings?
+  - Dad can say yes from {time}.
+  - Until then, this money is on hold.
+- **GIC:** Put {amount} into a {term} GIC at {rate}?
+  - It earns {interest} of interest by {date}.
+  - It's locked for {term}. Taking it out early means losing the interest.
+- **Break a GIC:** Take your {term} GIC out early?
+  - Your {amount} goes back into savings.
+  - You give up the {interest} of interest it has earned so far. (If it hasn't earned any yet: You give up the {interest at maturity} it would earn by {date}.)
+- **Fund buy:** Buy {amount} of {fund}?
+  - It happens at {close}.
+  - Until then, the money is on hold in your savings.
+- **Fund sale:** Sell {amount} of your {fund}? (or: Sell all of your {fund}?)
+  - It happens at {close}.
+  - The money goes into your savings.
+  - If it's down: It's worth {loss} less than you paid.
+
+### Done
+
+Each ends with **Back to Home** and **Make another move**.
+
+- **Deposit:** Asked! Dad will see your request. Your {amount} lands in savings when he says yes.
+- **Withdrawal:** Asked! Dad can say yes from {time}. Until then, the money stays on hold.
+- **GIC:** 🎉 Done! Your {amount} is growing in a {term} GIC. It's ready on {date}.
+- **Break a GIC:** Done. Your {amount} is in savings.
+- **Fund buy:** Done! Your {fund} buy happens at {close}.
+- **Fund sale:** Done! Your {fund} sale happens at {close}. The money goes into your savings.
+
+### Waiting (her requests that haven't happened yet; read-only)
+
+Each line ends with "· asked {date}". With nothing waiting: Nothing waiting right now.
+
+- Asked to put in {amount} · Waiting for Dad
+- Asked to take out {amount} · Dad can say yes from {time} (after the 24 hours: Waiting for Dad)
+- Buying {fund}: {amount} · Happens at {close}
+- Selling {fund}: {amount} or all of it · Happens at {close}
+
+### "Updating…" and errors
+
+- **Updating…** Your numbers are being double-checked. They'll be back soon. You can make moves again once they're back.
+- **If Buy / Sell can't load:** Big Bucks couldn't load your money just now. Please try again in a minute. · Try again

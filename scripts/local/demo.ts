@@ -130,6 +130,19 @@ async function main(): Promise<void> {
       )
     ).map((h) => ({ market: h.market, date: h.d, kind: h.kind, closesAt: h.closes_at }));
     const closes = generateCloses(holidays, addDays(S, -45), yesterday);
+
+    // Sky buys the TSX 3 market days before the end, and the TSX then eases down
+    // (1.5% a day, under the 2% market-move note), so her TSX is worth less than she
+    // paid and Buy / Sell shows its "worth less than you paid" warning. Made-up
+    // prices; closes are exact decimals with 3 places ("40.123").
+    const tsxCloses = closes.filter((c) => c.fund === 'tsx');
+    const skyTsxBuy = tsxCloses[tsxCloses.length - 4];
+    const buyMills = BigInt(skyTsxBuy.close.replace('.', ''));
+    [985n, 970n, 955n].forEach((perMille, i) => {
+      const m = (buyMills * perMille) / 1000n;
+      tsxCloses[tsxCloses.length - 3 + i].close =
+        `${m / 1000n}.${(m % 1000n).toString().padStart(3, '0')}`;
+    });
     const published = new Set<string>();
     const publishUpTo = async (moment: string) => {
       for (const c of closes) {
@@ -360,6 +373,14 @@ async function main(): Promise<void> {
       [],
     );
 
+    act(
+      at(skyTsxBuy.day, '09:00'),
+      'Sky buys the TSX again, just before it eases down',
+      B,
+      `select public.request_trade('tsx', 'buy', $1, false)`,
+      [$(60)],
+    );
+
     // A 1-month GIC that matured a couple of days ago and is waiting for Robin's choice.
     const waitBuy = addMonths(addDays(T, -2), -1);
     const waitMature = addMonths(waitBuy, 1);
@@ -507,7 +528,8 @@ async function printSummary(db: LocalDb, logins: DemoLogins, reconciled: number)
     '          authenticator code: run "npm run demo:code" (or add this key to an authenticator app:',
   );
   console.log(`          ${logins.parent.totpSecret})`);
-  console.log(`\nSaved to ${DEMO_LOGINS_FILE} (not committed). Start the app with "npm run dev".`);
+  console.log(`\nSaved to ${DEMO_LOGINS_FILE} (not committed). Start the app with "npm run dev",`);
+  console.log('then open http://127.0.0.1:5173/Big-Bucks/ in Chrome.');
 }
 
 main().catch((e) => {

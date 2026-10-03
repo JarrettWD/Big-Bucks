@@ -153,7 +153,7 @@ Stage 7 of the Big Bucks build: the kid screens for phase 1. Read CLAUDE.md, doc
 
 Build:
 1. Home: total worth, savings, each GIC (amount, rate, maturity date), the fund mix with daily % change and 30-day sparklines, the action banner (maturity choices, approvals, declines, notices), recent activity with "See all" history, and the maturity choice flow.
-2. Graphs: total worth over time (stacked area, one colour per option) and growth by option (% since first deposit), with 1M / 3M / 1Y / All ranges, a $ / % switch, dots for deposits and withdrawals, and the standard market-move notes.
+2. Graphs: all six graphs in SPEC "Graphs & dashboards": total worth over time (stacked area, one colour per option), growth by option (% since first deposit), money in vs money earned, my mix today (donut), the GIC ladder and stock fund detail (her buy and sell points marked), each with its time ranges, a $ / % switch, dots for deposits and withdrawals, and the standard market-move notes.
 3. Buy / Sell: from and to choices (always through savings), buy or sell, amount with the available balance and cap room, every warning in the spec (interest lost on an early break, in dollars; a fund worth less than she paid; over the available balance; one trade per fund per day; when the trade will settle, such as "at Monday's 3:00 pm close", always worked out by the database), and a confirmation summary before submitting.
 4. Transparency: "How was this calculated?" on every interest, dividend and penalty line, and "Something looks wrong?" on any line, starting a question thread I can answer.
 5. The notifications list, marking notices as read.

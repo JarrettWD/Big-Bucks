@@ -66,6 +66,8 @@ async function layoutProblems(page: Page): Promise<Problem[]> {
       ['.gic__ready', 'span', '.btn'],
       ['.kid__top', '.kid__hi', '.kid__bell'],
       ['.kid__top', '.kid__bell', '.kid__out'],
+      ['.trade__pair', '.field', '.trade__arrow'],
+      ['.waiting li', 'span', '.waiting__text'],
     ];
     const overlap = (a: DOMRect, b: DOMRect) =>
       a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
@@ -115,7 +117,7 @@ for (const size of SIZES) {
   test(`kid screens fit at ${size.name} (${size.width}×${size.height}), normal and large text`, async ({
     page,
   }) => {
-    test.setTimeout(90_000); // 3 screens × 2 text sizes, with full-page screenshots
+    test.setTimeout(150_000); // 6 screens × 2 text sizes, with full-page screenshots
     await page.setViewportSize({ width: size.width, height: size.height });
     const robin = kid('Robin');
     await kidSignIn(page, robin.username, robin.pin);
@@ -139,6 +141,29 @@ for (const size of SIZES) {
       await page.goto(choose!.replace(/^\/Big-Bucks\//, './'));
       await expect(page.getByRole('heading', { name: 'Your GIC grew!' })).toBeVisible();
       await check(page, `gic-choice-${size.name}-${text.name}`, text.scale);
+
+      // Buy / Sell: as it opens, buying a GIC (every term with what it earns), and
+      // breaking a GIC early (the warning). Nothing is submitted.
+      await page.goto('./kid/trade');
+      await expect(page.locator('.waiting, .trade__waiting .muted').first()).toBeVisible();
+      await check(page, `trade-${size.name}-${text.name}`, text.scale);
+
+      await page.getByLabel('From').selectOption('savings');
+      await page.getByLabel('To').selectOption('gic');
+      await page.getByLabel('How much?').fill('1234.56');
+      await expect(page.locator('.term__earns').first()).toBeVisible();
+      await page.locator('.term').nth(4).click();
+      await check(page, `trade-gic-${size.name}-${text.name}`, text.scale);
+
+      await page.getByRole('button', { name: 'Sell', exact: true }).click();
+      const gic = await page
+        .getByLabel('From')
+        .locator('option[value^="gic:"]')
+        .first()
+        .getAttribute('value');
+      await page.getByLabel('From').selectOption(gic!);
+      await expect(page.locator('.trade__warnings li.is-caution')).toBeVisible();
+      await check(page, `trade-break-${size.name}-${text.name}`, text.scale);
     }
   });
 }

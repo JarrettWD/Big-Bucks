@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 7 part 1 (Home) done, and the Alberta time-zone fix done, both local only. **Next: stage 7 part 2.**
+- Current stage: stage 7 part 2a (Buy / Sell) done and reviewed by Dad, local only. **Now: part 2b** (notices, "How was this calculated?", "Something looks wrong?", accessibility), then 2c (all six graphs).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,104 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 7, part 2 — 2a done and reviewed; 2b in progress (2026-10-03)
+
+- **The plan Dad approved:**
+  - **2a:** Buy / Sell, then stop for review.
+  - **2b:** notices (with dates from the database), "How was this calculated?", "Something looks wrong?" and the accessibility pass, then stop.
+  - **2c:** all six graphs from the spec, then stop.
+- **Decisions Dad made:**
+  1. A **Buy / Sell toggle plus From/To lists**:
+     - **Buy:** Cash → Savings (a deposit), or Savings → a new GIC or a fund.
+     - **Sell:** a GIC (broken whole) or a fund → Savings, or Savings → Cash (a withdrawal).
+  2. **Her waiting requests** are shown on Buy / Sell, read-only. "Cancel a waiting request" was added to the SPEC version 2 list; it isn't built.
+  3. **Debounce:** `move_preview` runs only after she pauses typing.
+  4. **The amount box** refuses negatives, letters and more than 2 decimals, with a friendly message that goes in MESSAGES.md. It turns text into cents with BigInt, never floats.
+- **Part 2a, Buy / Sell: built, waiting for Dad's review.**
+- **Migration `supabase/migrations/20261007000000_buy_sell.sql`** (new). It only reads; no engine function or money rule changed.
+  - **`fmt_close(close)`:** a close in words, from today's point of view.
+    - Forms: "today's 2:00 pm close", "tomorrow's …", "yesterday's …", or "Monday's 3:00 pm close (Oct 5)".
+    - It uses the pinned Alberta rule (`edmonton_local`). It's internal: the app can't call it directly.
+  - **`trade_options(account)`:** everything the screen needs before she types:
+    - free to use, and the room left under the deposit cap;
+    - each fund: value, cost, gain, what she can sell (the same limit `request_trade` uses), whether she traded it today, and when a trade would settle;
+    - each active GIC, with the interest she'd give up by breaking it today;
+    - today's GIC rates;
+    - her waiting requests: "Dad can say yes from …" on a withdrawal still inside its 24 hours, and when each trade settles;
+    - the "Updating…" flag.
+
+    A kid sees only her own account; a parent needs the authenticator code.
+  - **`move_preview(kind, amount, fund, gic, term, sell_all)`:**
+    - **How it checks:** it runs the real action function (`request_deposit`, `request_withdrawal`, `buy_gic`, `break_gic` or `request_trade`) in a sub-transaction, then always rolls it back. The preview and the real action therefore can never disagree about the rules.
+    - **What it returns:**
+      - the exact problem message, if any;
+      - the warnings: early_break, fund_below_cost, deposit_wait, withdraw_wait and market_price;
+      - when a trade settles;
+      - for a GIC, what each term earns on her amount (the same `gic_interest_cents` maturity uses).
+    - **Who can call it:** kids only.
+    - **Trace it leaves:** skipped ID numbers on requests and GICs. No money, hold, notice or ledger line survives a preview, and a test proves it.
+- **Screen `src/kid/trade/`:**
+  - **`Trade.tsx`:**
+    - Buy / Sell toggle, then From ➜ To lists that only offer allowed pairs.
+    - The amount, with "free to use", deposit room, or "your fund is worth about …", plus **Sell all of it** for funds.
+    - For a GIC: the six terms, with what her amount earns at each.
+    - Warnings, then a summary with **Yes, do it**, then **Done** with **Back to Home** and **Make another move**.
+    - Her waiting requests (read-only) beside the form, or under it on phones.
+    - "Updating…" replaces the form while the nightly check is fixing something.
+  - **`moves.ts`:**
+    - The From/To rules (every move goes through savings).
+    - Typed text → whole cents, using string and BigInt arithmetic only.
+    - The friendly amount messages.
+  - **The check runs only after she pauses typing** (500 ms). Picking a choice is checked straight away. A fund already traded today is labelled "(traded today, again tomorrow)" and gets a note instead of an amount box.
+  - **`tradeText.ts`:** all the screen's words, listed in **`docs/MESSAGES.md` §8**.
+  - **Labels:** every control has a proper label. Problems are announced to screen readers (`aria-live`). Controls are 48 px or more.
+- **Found and fixed while trying it in the browser:**
+  - A problem message showed below the six GIC terms, off-screen on a phone. Problems and warnings now sit right under the amount box.
+  - Switching Buy / Sell now starts each side at its own first choices.
+  - "6 months GIC" now reads "6-month GIC".
+  - The Done message is worded before her holdings reload, so breaking a GIC can't lose the message.
+- **SPEC:** "Cancel a waiting request" was added to the version 2 list.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db` (pgTAP): **690 of 690 passed**, after `supabase db reset`. That's the 634 earlier tests plus 56 new ones in **`buy_sell_test.sql`**:
+    - **`fmt_close`:** Friday evening → Monday; after the close → tomorrow; TSX Thanksgiving → Tuesday while the Dow trades Monday; 3:00 pm from Nov 2; the 12:00 pm early close on Nov 27; today's and yesterday's.
+    - **`trade_options`:** balances, cap room, funds, the GIC's interest so far (a known answer: $0.06), rates and waiting requests.
+    - **Preview problems match the real actions word for word:** deposit minimum and cap, withdrawal over what's free, GIC minimum and term, fund buy and sell limits, a fund she doesn't own, another kid's GIC, and the second trade in a day.
+    - **Known answers:** the GIC quotes for $100 at every term (1 month $0.21, 9 months $3.38, 2 years $12.00), the early-break warning, and the fund-below-cost warning (worth $475.00, paid $500.00).
+    - **Nothing left behind:** a preview leaves no request, hold, GIC, ledger line, notice or broken GIC.
+    - **Who may call:** kid B, a parent without the code, signed-out visitors and grants.
+  - `npm test` (Vitest): **150 of 150 passed**. The 12 new tests cover the From/To rules, and amounts typed every way (good and bad).
+  - `npm run test:e2e` (Playwright): **31 of 31 passed**.
+    - **New `trade.spec.ts`**, as Sky (the test account):
+      - a deposit request;
+      - bad amounts, and one check after a pause;
+      - buying a GIC;
+      - the early-break warning in dollars, then breaking it;
+      - a fund trade with its settle time, then "traded today";
+      - a withdrawal with its 24-hour time.
+
+      Each is checked against the database.
+    - **`layout.spec.ts`:** Buy / Sell (opening, a GIC with its terms, and the break warning) at all six sizes, normal and 130% text.
+  - `npm run timemachine`: **PASS, 14 of 14**. `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none can be ticked yet (they need the live app). Buy / Sell's warnings, cap room and one-trade-a-day are now testable locally.
+- **Dad's review of 2a (2026-10-03): "tested and looks good", with four changes, all done:**
+  1. **GICs are tappable cards, not dropdown lines:**
+     - In the From list her GICs are one choice: "🔒 One of your GICs", or "🔒 Your GIC" when she has just one.
+     - **Which GIC?** then shows a card for each GIC: amount, term, rate and ready date (or "Ready today").
+     - The cards are a radio group, so screen readers announce them as choices, and two GICs of the same size are easy to tell apart.
+     - This fixes the cut-off From line on small phones with large text.
+     - `dropdownPlaces()` in `moves.ts` has its own test.
+  2. **SPEC:** all six graphs are version 1 (the phase 1 list, with "Remaining graphs" removed from version 2). BUILD-PLAN stage 7 item 2 lists all six.
+  3. **Demo:** Sky buys $60 of the TSX three market days before the end. The demo's last three TSX closes then ease down 1.5% a day, under the 2% market-move note, so her TSX is worth less than she paid ($57.30 against $60.00 on 2026-10-03) and Buy / Sell shows the warning. Robin's TSX dips the same way. They're made-up prices, in the demo only.
+  4. **Try-it address:** **http://127.0.0.1:5173/Big-Bucks/** everywhere. The demo now prints it.
+- **Also changed:** the line under the amount for a fund sale now reads "You can sell up to {amount}, or all of it."
+  - Before, it read "worth about $57.29" while the warning said $57.30.
+  - The limit is her units' value rounded down, the database's own limit. Values shown elsewhere round to the nearest cent.
+- **Tests after the review:**
+  - `npm run test:db`: **690 of 690**.
+  - `npm test`: **151 of 151** (1 new).
+  - `npm run test:e2e`: **32 of 32**. New: selling a fund worth less than she paid, with the warning and summary in dollars against the database; she then goes back without selling. The GIC-break test now taps a card.
+  - Lint is clean and the build succeeds.
 
 ### Alberta time-zone fix, local only (2026-10-03)
 
