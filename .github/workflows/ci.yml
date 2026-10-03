@@ -42,3 +42,37 @@ jobs:
 
       - name: Database tests (pgTAP)
         run: npm run test:db
+
+  # The simulated year, checked to the cent against the independent reference
+  # model (stage 3). Runs after the database tests pass, on every push, so a
+  # money bug can't get past GitHub even if nobody ran it locally. Like the
+  # database tests, it uses a throwaway local Supabase inside the runner; its
+  # own guard refuses anything but the local database.
+  timemachine:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start local database (migrations + local seed)
+        run: npx supabase db start
+
+      - name: Time machine (a simulated year vs the reference model)
+        run: npm run timemachine
+
+      - name: Upload the time machine report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timemachine-report
+          path: docs/TIMEMACHINE-REPORT.md
+          if-no-files-found: ignore

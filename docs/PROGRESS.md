@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 2 done (next: stage 3)
+- Current stage: stage 3 done (next: stage 4)
 - Phase 1 complete: no
 - Solo beta started: no
 - Launched: no
@@ -19,6 +19,123 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 3 — Time machine and nightly reconciliation (2026-10-02)
+
+- **Decisions Dad made:**
+  1. **At the plan:**
+     - Dividends are paid on the first trading day of each fund's own market. In Jan 2028 that's Jan 3 for the Dow and Nasdaq-100, and Jan 4 for the TSX.
+     - `pg` (the standard Postgres client) is added as a dev dependency.
+     - "Updating…" clears by itself once a later check finds the account clean. The alert stays open until Dad acknowledges it.
+     - The time machine resets the local database.
+  2. **After the first run:** a sale by dollar amount **rounds its units down** at 8 decimal places. She gets exactly what she asked for and keeps the sliver of a unit.
+     - The spec didn't say how to round them. The independent model guessed "up" and disagreed with the database by 1 cent on 4 sales. That's exactly the kind of thing it's there to find.
+     - The database already rounded down, so no migration was needed. The model now follows Dad's rule.
+  3. **New rule in CLAUDE.md:** any change that touches money logic must also pass `npm run timemachine` before the stage is called done.
+- **Built:**
+  - **`supabase/migrations/20261003000000_reconcile.sql`:**
+    - **`reconcile(date)`** (server only) re-checks every account from the raw ledger as of the end of that date. It records its run in `job_runs` (`reconcile`). Its checks:
+      - Nothing is negative: savings, each GIC, each fund's units.
+      - **Every ledger line is explained by its rule, with the right amount.** Each is worked out again here:
+        - Deposits and withdrawals match approved requests.
+        - Monthly interest = that month's accruals, rounded up.
+        - GIC interest = principal × rate × term ÷ 12, rounded up, on the maturity date. A broken GIC posts none.
+        - Dividends = units × close × yield ÷ 4, rounded up, on the right day.
+        - Trades settle at their own close: buys get units rounded up at 8 places, and sales get proceeds rounded up.
+        - Splits scale units by the split ratio.
+        - GIC buys, breaks, moves to savings and renewals are balanced pairs carrying the right amount.
+        - Penalties are flagged, because the engine never charges one.
+      - **Total worth = deposits − withdrawals + interest + dividends + corrections − penalties + realised gains + unrealised gains.** Realised gains are worked out from each sale.
+      - What the app shows matches a fresh count: `daily_balances` for that day, and for today also `account_balances`, `fund_positions` and `gic_positions`.
+      - Held money ≤ savings; held units ≤ units; each pending request holds the right amount.
+      - Every GIC has a purchase line for its principal, and today its balance matches its status. None is past maturity without maturing.
+      - Every day's accrual exists and equals (end-of-day savings + waiting GIC money) × rate ÷ 365/366. Every finished month's interest was paid.
+      - No posting key is used twice.
+      - **Corrections:** a line reversed by a correction counts as never having happened in the accrual check. Otherwise a fix dated today would leave every day since the mistake flagged forever.
+    - **Alerts:**
+      - One alert (kind `mismatch`) per account per kind of problem, never repeated while it's open.
+      - Test accounts' alerts are quiet (`is_quiet`).
+      - Each message says what's wrong in plain words, with up to 3 examples in `details`.
+    - **`figures_updating(account)`:** true while the latest check found a problem with that account, so the app shows "Updating…". A kid may ask only about herself, and an empty account id is refused.
+    - **`acknowledge_alert(id)`:** parent with MFA only.
+    - **`health_check()`** (server only) reports:
+      - open alerts that aren't quiet;
+      - any daily job not finished through yesterday (interest through the day before);
+      - no reconcile for yesterday.
+    - **Grants:** `reconcile` and `health_check` to the server; `figures_updating` to signed-in users; `acknowledge_alert` to signed-in users (the MFA check is inside). The helper functions get no grant.
+  - **`scripts/timemachine/`** (`npm run timemachine`):
+    - `db.ts`: the local connection. It **refuses** any address but `127.0.0.1:54322`, any hosted Supabase address, and any database whose `is_local_dev` isn't `true`. Each app call runs as the real role (kid, parent with MFA, or server) with the same sign-in claims Supabase Auth would give, so permissions are exercised too.
+    - `prices.ts`: repeatable synthetic closes, whole-number arithmetic, on each market's real trading days. It includes:
+      - the Nasdaq-100 falling about 25% from Feb 14 to Mar 6, 2028 (−4% on Feb 24), then recovering;
+      - smaller drops for the Dow and TSX;
+      - a 2-for-1 Nasdaq-100 split on Nov 15, 2027;
+      - the Sep 14, 2027 Nasdaq-100 close arriving a day late.
+    - `scenario.ts`: the scripted year, Jul 1, 2027 to Jul 1, 2028. Every step says why it's there; the full list is at the bottom of `docs/TIMEMACHINE-REPORT.md`.
+    - `model/`: **the independent reference model**, in exact whole-number fractions (no floating point, no library).
+      - It was written from SPEC.md and these decisions **before** I read the Stage 2 job code. It shares input data (closes, holidays, the script) but no logic.
+      - It works out settlement times (holidays, early closes, real elapsed time across the clock changes), maturity dates, accruals, dividends and rounding itself.
+      - It has its own Vitest known-answer tests from the spec.
+    - `run.ts` walks the year:
+      - Each day: the scripted actions, then at 3:30 pm the closes, `run_daily` and `reconcile`.
+      - It compares everything with the model, injects the faults, writes the report, and resets the local database at the end. Add `-- --keep` to keep the simulated year in the database for inspection.
+  - **`docs/TIMEMACHINE-REPORT.md`:** the plain-English summary of the latest run, regenerated each time.
+  - **CI (Dad's request at commit time):** `.github/workflows/ci.yml` has a second job, `timemachine`.
+    - It runs after the `test` job passes (lint, unit tests, build, pgTAP), on every push and pull request.
+    - It starts a throwaway local Supabase in the runner and runs `npm run timemachine`.
+    - It uploads `TIMEMACHINE-REPORT.md` as a run artifact, even when the run fails.
+    - A money bug therefore fails CI, and deploy (which needs a green CI) won't go.
+  - **Smaller changes:**
+    - `tsconfig.scripts.json` type-checks the scripts (part of `npm run build`).
+    - Vitest now also runs `scripts/**/*.test.ts`.
+- **Tests (all run locally on 2026-10-02):**
+  - `npm run test:db` (pgTAP): **502 of 502 passed**, in 13 files, after `supabase db reset`. That's the 450 earlier tests plus 52 new ones in `reconcile_test.sql`:
+    - a clean month passes;
+    - each kind of fault is caught;
+    - test accounts are logged quietly and don't fail the health check;
+    - "Updating…" turns on, then clears after a correction while the alert stays open;
+    - acknowledging needs a parent with MFA;
+    - no duplicate alerts;
+    - the health check spots jobs falling behind;
+    - who may call what.
+  - `npm run timemachine`: **PASS, 14 of 14 checks**, in 92 seconds:
+    - **Shown figures (nearest cent) every day:** 359 days × 2 kids. Savings, held, available, each GIC, each fund's units (to 8 places) and value, total worth, net deposits and cap room all match the model.
+    - **Posted amounts (rounded up):** all 91 ledger events match the model exactly. That includes 24 savings interest, 7 GIC interest, 16 dividend, 13 buy, 5 sell, 3 renewal, 4 GIC-to-savings, 1 break and 2 split postings.
+    - **Accruals and graphs:** 732 kid-days of accruals, each within one ten-billionth of a cent, with every 2028 day ÷366. 732 kid-days of graph history match.
+    - **Actions:** all 71 were accepted or refused the same way by both, and all 9 planned outcomes happened:
+      - refusals: a second same-day trade, a withdrawal under 24 hours old, a late approval, a GIC under $10, a deposit over the lowered cap;
+      - two expiries, one of them across the November clock change;
+      - the health check failing during the missed week and clear after the catch-up.
+    - **Nightly checks:** 367 reconcile runs with no problems and no alerts. Only the late-close day had to wait.
+    - **Deliberate faults**, each in a transaction that's undone (a throwaway copy):
+      - an extra interest posting;
+      - a trade with the wrong units;
+      - a GIC with no purchase line.
+
+      Each was caught, with "Updating…" on, and kid B's alert was quiet. The corrected fault cleared "Updating…" while its alert stayed open for Dad, and nothing was left behind afterwards.
+    - **Final balances:**
+      - Kid A: $1,296.41 from $1,270.00 put in. Savings interest $9.14, GIC interest $5.42, dividends $1.97, fund gains $9.88.
+      - Kid B: $1,201.90 from $1,180.00 put in. Savings interest $8.59, GIC interest $0.13, dividends $5.70, fund gains $7.48.
+  - **Safety guard:** `TIMEMACHINE_DB_URL` pointing at a hosted Supabase address, or at the wrong local port, is refused before connecting.
+  - `npm test` (Vitest): **18 of 18 passed**: the placeholder test plus 17 reference-model tests. `npm run test:e2e` (Playwright): 2 of 2 passed. `npm run lint` is clean, and `npm run build` succeeds (type-checking the scripts too).
+- **ACCEPTANCE.md boxes now testable:**
+  - **Passing now:**
+    - "The time machine runs a simulated year (rate changes, maturities, dividends, a crash, a missed week) with every balance correct".
+    - "A quarterly dividend posts correctly", in the time machine.
+  - **Ready for stage 4:** "30 nights in a row with zero reconciliation mismatches" (needs the nightly job in production).
+- **Known issues and notes for later stages:**
+  - **Stage 4:**
+    - **Nightly order:** fetch prices → `run_daily(today)` → `reconcile(d)` for every date since the last reconcile, as the time machine does after the missed week.
+    - The GitHub check calls `health_check()` with the service role key and fails when `ok` is false.
+    - `run_daily` returning `waiting` or `failed` still needs its own alert (as noted in stage 2). Today it shows up only through `health_check`'s "behind" report the next morning.
+  - **Stage 7:** the kid screens call `figures_updating(her account)` and show "Updating…" in place of her figures while it's true.
+  - **Stage 8:**
+    - The dashboard lists open `alerts`. Quiet ones go in a separate "test accounts" list. Each gets an Acknowledge button that calls `acknowledge_alert`.
+    - **Corrections:** reconcile treats a correction with `reverses_id` as fully cancelling the line it reverses. If the engine ever posted a wrong line that interest was later accrued on, those accrual rows stay flagged even after the line is corrected, because accruals are append-only. Dad acknowledges the alert, but "Updating…" would stay on. If that ever happens, it needs a small follow-up: a way to mark a past accrual as corrected.
+  - **Holds are checked only as they stand today:** requests change status, so a past day's holds can't be rebuilt.
+  - **Fund cost (average cost) isn't compared with the model.** It isn't money owed: it only feeds "gain since first purchase". The model checks every amount that is money owed or shown as a balance.
+  - **The time machine resets the local database at the start and the end**, so any local test data is wiped. Use `npm run timemachine -- --keep` to keep the simulated year for inspection, then `npm run db:reset` before running the database tests: the earlier tests expect an empty database.
+  - **No new kid-facing wording:** "Updating…" itself is screen text for stage 7, and the alert messages are parent-only. So `docs/MESSAGES.md` is unchanged.
+- **Dad to do by hand:** nothing for this stage. Optional: run `npm run timemachine` yourself (Docker Desktop must be running) and read `docs/TIMEMACHINE-REPORT.md`.
 
 ### Stage 2 — The money engine (2026-10-02)
 
