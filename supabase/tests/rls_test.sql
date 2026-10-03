@@ -224,8 +224,9 @@ select is(
   'anonymous callers cannot run any function');
 
 select set_eq(
-  $$select table_name::text from information_schema.columns
-     where table_schema = 'public' and column_name = 'account_id'$$,
+  $$select c.table_name::text from information_schema.columns c
+      join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
+     where c.table_schema = 'public' and c.column_name = 'account_id' and t.table_type = 'BASE TABLE'$$,
   array['alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
         'profiles', 'questions', 'requests', 'transactions', 'wishlist_items'],
   'the account-scoped tables are the ones this test seeds (update both when adding a table)');

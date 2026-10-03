@@ -1,13 +1,20 @@
 -- Known answers for the starting data: funds, rates, settings, glossary and holidays.
 begin;
-select plan(17);
+select plan(18);
 
 select results_eq(
-  $$select id, name, proxy_symbol, market::text, colour, dividend_yield from public.funds order by sort_order$$,
-  $$values ('dow', 'Dow Jones', 'DIA', 'nyse', '#2F80ED', 1.800::numeric(6,3)),
-           ('nasdaq100', 'Nasdaq-100', 'QQQ', 'nyse', '#F76B15', 0.600::numeric(6,3)),
-           ('tsx', 'TSX', 'XIC', 'tsx', '#0B6E69', 2.800::numeric(6,3))$$,
-  'the three funds, their ETFs, markets, colours (blue, orange, teal) and yields (Nasdaq-100 0.6%, Dow 1.8%, TSX 2.8%)');
+  $$select id, name, proxy_symbol, market::text, colour from public.funds order by sort_order$$,
+  $$values ('dow', 'Dow Jones', 'DIA', 'nyse', '#2F80ED'),
+           ('nasdaq100', 'Nasdaq-100', 'QQQ', 'nyse', '#F76B15'),
+           ('tsx', 'TSX', 'XIC', 'tsx', '#0B6E69')$$,
+  'the three funds, their ETFs, markets and colours (blue, orange, teal)');
+
+select results_eq(
+  $$select key, value, effective_date from public.settings where key like 'dividend_yield:%' order by key$$,
+  $$values ('dividend_yield:dow', '1.8', date '2026-01-01'),
+           ('dividend_yield:nasdaq100', '0.6', date '2026-01-01'),
+           ('dividend_yield:tsx', '2.8', date '2026-01-01')$$,
+  'starting yields, as dated settings since stage 2 (Nasdaq-100 0.6%, Dow 1.8%, TSX 2.8%)');
 
 select results_eq(
   $$select vehicle::text, gic_term, rate, effective_date, is_special from public.rates order by id$$,

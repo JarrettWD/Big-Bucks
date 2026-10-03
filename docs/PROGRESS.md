@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 1 done (next: stage 2)
+- Current stage: stage 2 done (next: stage 3)
 - Phase 1 complete: no
 - Solo beta started: no
 - Launched: no
@@ -19,6 +19,145 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 2 — The money engine (2026-10-02)
+
+- **Decisions Dad made at the plan:**
+  1. A matured GIC waiting for her choice **earns the savings rate** until she chooses or the day-7 auto-move.
+  2. A sell by dollar amount that needs more units than she has (the price fell) **sells all her units**, with a note.
+  3. A withdrawal under $5 is allowed **only when it empties savings**.
+  4. Requests expire **exactly 7 × 24 hours** after they're made.
+  5. Dividend yields are **dated settings** (`dividend_yield:dow` …), so yield changes keep their history. The `funds.dividend_yield` column is gone.
+  6. `.env.example` stays committable.
+- **Built:** seven migrations, all applying cleanly to an empty database.
+  - **`…070000_engine_schema.sql`:**
+    - `transactions.effective_at`: when the money counts. `posted_at` stays the real time the row was written. They differ only for automatic postings: a trade written at 3:30 pm counts from the 2:00 pm close, and a catch-up run on Nov 10 for Nov 5 counts from Nov 5. So a late run gives exactly the on-time answer.
+    - `interest_accruals.gic_waiting_cents`, for decision 1.
+    - The `fund_splits` table.
+    - `notes.auto_key` and `notifications.dedupe_key`, so automatic notes and notices are never written twice.
+    - New job names and the `question` notice type.
+    - Yields moved to settings.
+    - The two standard market-move notes (rise and drop) as editable settings.
+  - **`…080000_engine_core.sql`:**
+    - Rounding (units to 8 places), GIC interest, and "interest earned so far" for the break warning.
+    - Formatting ($1,234.56, 2.0%, "Nov 1").
+    - `rate_on` (a special wins inside its dates) and `setting_on`.
+    - Market days and closes from `market_holidays`, in Eastern time, so early closes are 11:00 am Edmonton.
+    - Balance helpers and the notice writer.
+  - **`…090000_kid_actions.sql`:** `request_deposit`, `request_withdrawal`, `buy_gic`, `break_gic`, `choose_maturity`, `request_trade` and `ask_question`. Each locks her account, checks the rules (minimums, available balance, the cap including pending deposits, one trade per fund per Edmonton day, every move through savings) and writes, in one transaction.
+  - **`…100000_parent_actions.sql`:** `approve_request`, `decline_request`, `answer_question`, `add_rate` and `set_setting`, all aal2 only.
+    - **`approve_request`:** withdrawals only after 24 hours, and nothing after the 7 days.
+    - **`decline_request`:** a reason is required.
+    - **`add_rate`:** the effective date defaults to 7 days out and can't be in the past. Specials have an end date. More than 3 decimal places is refused rather than silently rounded.
+    - **`set_setting`:** an allowed-keys list. It always refuses `is_local_dev` and `clock_override`, and `launched_at` can be set only once.
+  - **`…110000_daily_jobs.sql`:**
+    - **The jobs, each idempotent:** `expire_requests`, `apply_split`, `settle_trades`, `mature_gics`, `auto_move_unclaimed_maturities`, `pay_quarterly_dividends`, `post_monthly_interest`, `write_market_move_notes`, `send_rate_notices` and `accrue_savings_interest`.
+    - **`run_daily(date)`:** runs them in that order for every date not yet done, recording each in `job_runs`.
+    - **A job that's waiting or fails stops the run at that date,** so nothing is processed out of order. The next run starts there. The market-move notes are the exception: they never hold anything up.
+    - **A day's savings interest is accrued once that day is over,** in the next day's run. A 3:30 pm run can't know about an 8 pm GIC purchase.
+  - **`…120000_reads.sql`:**
+    - Views, run with the caller's permissions: `account_balances`, `fund_positions` and `gic_positions`.
+    - Functions: `daily_balances(account, from, to)`, `fund_return(account, fund, from)` (Modified Dietz), `liability_total()` (parent or server only, test accounts excluded) and `next_settlement(fund)` for the Buy / Sell screen.
+  - **`…130000_function_grants.sql`:** every function's permissions in one list. Postgres lets everyone run a new function by default, and Stage 1's per-schema default couldn't stop that, so this migration revokes everything and grants exactly:
+    - kid actions and reads to signed-in users;
+    - parent actions to signed-in users, with the aal2 check inside;
+    - jobs to the service role only.
+  - **`.gitignore`:** now also ignores `*.env`, `**/.env*`, and every `.txt` file outside `docs/`. `.env.example` stays allowed. Checked with sample files.
+- **Tests (all run locally on 2026-10-02, after `supabase db reset` from empty):**
+  - `npm run test:db` (pgTAP): **450 of 450 passed**, in 12 files. That's the 170 earlier tests plus 280 new ones:
+    - `engine_interest_gic_test.sql` (51):
+      - $250 at 2% for 30 days posts $0.42, with its working.
+      - Old rate before a change, new rate from its effective date.
+      - A day in 2028 accrues ÷366.
+      - $100 at 5% for 1 year = $105.00, and $100 at 2.5% for 1 month = $0.21.
+      - Locked rate after a cut.
+      - Renewal carries principal + interest.
+      - **Waiting GIC money earns the savings rate,** both when she renews and through the day-7 auto-move, with no gap and nothing counted twice.
+      - A broken GIC pays $0 and returns the principal, and the warning shows $0.20.
+      - Jan 31 + 1 month = Feb 28, 2027 and Feb 29, 2028.
+    - `engine_trades_test.sql` (76):
+      - Friday evening settles Monday. Good Friday. Exactly at the close waits.
+      - **Early closes:**
+        - NYSE, Nov 27, 2026: a 10:30 am request settles at the 11:00 am close; one at 11:30 am settles Mon Nov 30.
+        - TSX, Christmas Eve: a 10:00 am request settles at 11:00 am; one at noon skips Dec 25 and 28 to Dec 29.
+      - $100 at 420 = 0.23809524 units. Sale proceeds and dividends round up.
+      - **Values shown round to the nearest cent:** the $100 buy shows $100.00 on her holding, total worth and graphs right after settling, and at a close of 430 it shows $102.38 while selling would pay $102.39.
+      - One trade per fund per day. Held money isn't available.
+      - A missing close waits and never uses another day's price.
+      - A split keeps the value. Partial sells and average cost. The price-fall sell-all (decision 2).
+      - Market-move notes over 2%.
+    - `engine_requests_test.sql` (48):
+      - The cap counts pending deposits.
+      - Declines keep the reason.
+      - Withdrawals can't be approved before 24 hours.
+      - The $5 rule (decision 3).
+      - Expiry to the minute, releasing the hold, with one notice each.
+      - Dad can't approve after 7 days.
+      - Questions and answers.
+      - Lowering the cap takes nothing away.
+    - `engine_rates_settings_test.sql` (41): rate and special notices on save, on the day and at the end; specials apply only between their dates; settings validation, including refusing `is_local_dev` and `clock_override`; cap-change notices.
+    - `engine_jobs_test.sql` (26): the first run, a missed week caught up in one run, running again posts nothing, every job re-run for every date posts nothing, and a missing close holds the run without skipping ahead.
+    - `engine_security_reads_test.sql` (38): kids can't call parent functions or jobs; a parent without MFA is refused; kid A can't touch kid B's GIC, ledger lines or balances; the views and functions return the right figures; the liability total leaves out test accounts; and the safety net covers every new view and function.
+  - **Updated Stage 1 tests,** because the schema changed on purpose:
+    - `schema_test`: `fund_splits` and the `question` notice type.
+    - `reference_data_test`: yields are now settings, so there's 1 more test.
+    - `rls_test`: the "account-scoped tables" check now looks at tables only, not views.
+  - **Mutation check:** I broke three money rules in the live local database. The tests caught all three (16 failures), and then I rebuilt the database from empty:
+    - GIC interest rounded to nearest instead of up;
+    - early closes ignored;
+    - waiting GIC money dropped from interest.
+  - `npm test` (Vitest): 1 of 1 passed. `npm run test:e2e` (Playwright): 2 of 2 passed. `npm run lint` is clean, and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes now testable:**
+  - **Passing now:** "All known-answer tests pass (interest, GIC maturity, broken GIC, trade units, rounding up)".
+  - **Proven at the database level; the live check comes once the screens (stages 6–8) and the nightly jobs (stage 4) exist:**
+    - A deposit request holds the money and Dad approves it.
+    - A declined request shows the reason.
+    - Expiry after 7 days releases the hold.
+    - The cap blocks deposits with a clear message.
+    - The 24-hour withdrawal wait.
+    - Cashing out goes through savings.
+    - Savings interest posts on the 1st, with its working.
+    - A 1-month GIC matures right, and the money moves to savings after 7 days.
+    - Breaking a GIC early.
+    - Next-close settlement (Friday → Monday).
+    - One trade per fund per day.
+    - Partial sells.
+    - The note for a move over 2%.
+    - Quarterly dividends.
+    - A rate change notice with the 7-day default.
+    - Locked GIC rates.
+    - A special switching back.
+    - The cap-change notice.
+    - A skipped night caught up with no duplicates.
+    - A missing price makes trades wait.
+    - A question and Dad's reply.
+- **Known issues and notes for later stages:**
+  - **How the ledger keeps fund cost:** a fund row's `amount_cents` is cost, not value. A buy adds what she paid, and a sale removes the average cost of the units sold. So the fund rows add up to the cost of the units she holds, and a sale's savings row (the proceeds) minus its fund row (the cost) is the realised gain.
+    - **Stage 3 reconciliation invariant:** total worth = the sum of every ledger row + (fund value − fund cost).
+    - Renewals move money GIC → GIC with no savings rows. That's two balanced rows linked by `renewed_from_id`.
+  - **Two kinds of rounding (Dad's change after the first review):**
+    - Money actually posted rounds up to the cent: sale proceeds, interest and dividends.
+    - Values only shown round to the nearest cent: fund holding values, total worth, the graphs and the liability total (`fund_positions`, `account_balances`, `daily_balances`, `fund_value_at`). So a $100 buy shows $100.00 right after settling, not $100.01.
+    - **Stage 3:** reconcile must use the same nearest-cent fund value as the screens, so a selling price that's a fraction of a cent higher isn't reported as a mismatch.
+  - **Stage 3:** the time machine should call `run_daily`, which the clock override already drives.
+    - A missing TSX close leaves that day's market-move notes "retrying", so each run starts from that date again. That's harmless, but the reconcile report shouldn't flag it.
+  - **Stage 4:**
+    - `fund_splits` and `fund_prices` have no write function yet. The price job needs one, run by the service role and added to the grants list.
+    - Alert when `run_daily` returns `waiting` or `failed`. Its result lists the date, job and reason.
+    - The first `run_daily` starts from the earliest account's opening date.
+  - **Every later stage:** add each new function to a grants list like `…130000_function_grants.sql`. The safety-net tests fail otherwise.
+  - **Stage 7:** marking notices as read needs a small kid function, which isn't built yet. `next_settlement(fund)` gives the "settles at Monday's 2 pm close" time.
+  - **Stage 8:** "recent auto-approved moves" are the requests of type `move`.
+  - **All kid-facing wording is a draft for you to review:** **`docs/MESSAGES.md`** lists every message the girls can see from the money engine, grouped by where it appears:
+    - notices;
+    - errors on Buy / Sell and requests;
+    - "How was this calculated?" lines;
+    - notes on history lines;
+    - market-move notes.
+
+    Changing parts are shown as `{placeholders}`. Like `docs/GLOSSARY.md`, it's a review copy, regenerated from the migrations after each change. Later stages add their messages to it.
+- **Dad to do by hand:**
+  1. Review the wording in **`docs/MESSAGES.md`**. **Your wording edits will come back as a new migration** that replaces the affected functions. The Stage 2 migrations stay as they are once committed, because other copies of the database will have run them. After that migration, `docs/MESSAGES.md` is regenerated so the two always match.
 
 ### Stage 1 — Database and security (2026-10-02)
 

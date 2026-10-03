@@ -2,9 +2,16 @@ node_modules
 dist
 dev-dist
 *.local
+# Secrets: any .env file, anywhere (the example template is the one exception)
 .env
 .env.*
+*.env
+**/.env*
 !.env.example
+!**/.env.example
+# Stray notes can hold secrets: .txt files are allowed only under docs/
+*.txt
+!docs/**/*.txt
 coverage
 playwright-report
 test-results
