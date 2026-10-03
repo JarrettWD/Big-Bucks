@@ -53,3 +53,7 @@ Big Bucks is a pretend bank and brokerage for two kids. Dad holds the real cash;
 - Short, warm, accurate sentences a 9-year-old can follow. No jargon without a **?** explanation.
 - Never shame or nag. Celebrate good decisions (patience, holding through a drop, finishing a GIC), never activity: no streaks, no rewards for opening the app or trading often.
 - Canadian spelling and dollars (colour, cheque; $1,234.56).
+
+## Screens and layout
+
+- Every screen, kid or parent, must work on any phone, tablet or computer: from 360px wide phones up to desktop browsers, portrait and landscape, including foldables, and with Android's large text setting on. Design for screen widths, not specific devices. No numbers or buttons may be cut off or overlap. Each stage tests at small phone, tablet and desktop sizes.

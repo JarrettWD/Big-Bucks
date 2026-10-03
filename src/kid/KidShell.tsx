@@ -11,7 +11,7 @@ import './KidShell.css';
 
 export interface KidContext {
   profile: Profile;
-  summary: KidSummary;
+  summary: KidSummary & { reload: () => void };
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

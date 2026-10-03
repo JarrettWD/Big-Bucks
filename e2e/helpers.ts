@@ -20,9 +20,20 @@ export function logins(): Logins {
 export const kid = (name: 'Robin' | 'Sky') =>
   logins().demo.kids.find((k) => k.displayName === name)!;
 
-/** Types a PIN on the keypad. */
+/**
+ * Types a PIN on the keypad, then waits for the login to answer: either the app
+ * moves on, or the keypad is ready again with a message. With several tests
+ * signing in at once, the local login function can take a few seconds.
+ */
 export async function typePin(page: Page, pin: string): Promise<void> {
   for (const d of pin) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.waitForFunction(
+    () =>
+      !location.pathname.endsWith('/login') ||
+      document.querySelector('.kid-login__pad button:disabled') === null,
+    null,
+    { timeout: 20_000 },
+  );
 }
 
 /** The kid login from scratch: username, then PIN. */

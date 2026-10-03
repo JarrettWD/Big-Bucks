@@ -7,18 +7,20 @@ test('a kid signs in with her username and PIN and sees her Home', async ({ page
   await kidSignIn(page, robin.username, robin.pin);
   await expect(page).toHaveURL(/\/kid$/);
   await expect(page.getByText('Hi, Robin!')).toBeVisible();
-  await expect(page.getByText(/^\$[\d,]+\.\d\d$/)).toBeVisible(); // her total worth
+  await expect(page.locator('.hero__amount')).toHaveText(/^\$[\d,]+\.\d\d$/); // her total worth
   const tabs = page.getByRole('navigation', { name: 'Main' });
   for (const name of ['Home', 'Graphs', 'Buy / Sell'])
     await expect(tabs.getByRole('link', { name })).toBeVisible();
   // The Wish List is switched on for test accounts only, and Robin's is a regular account.
   await expect(tabs.getByRole('link', { name: 'Wish List' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: /^Notices, \d+ new$/ })).toBeVisible();
+  // (Other tests may read her notices at the same time, so the count can be anything.)
+  await expect(page.getByRole('link', { name: /^Notices(, \d+ new)?$/ })).toBeVisible();
 
   // The "?" explains a money word from the glossary.
   await page.getByRole('button', { name: 'What does "Total worth" mean?' }).click();
-  await expect(page.getByRole('dialog', { name: 'Total worth' })).toBeVisible();
-  await page.getByRole('button', { name: 'Got it' }).click();
+  const card = page.getByRole('dialog', { name: 'Total worth' });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'Got it' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 

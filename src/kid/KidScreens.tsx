@@ -1,34 +1,8 @@
-// The kid screens for now: Home shows her total worth (with the "?" and the
-// "Updating…" state), the notices list is read-only, and the other tabs are
-// placeholders. Stage 7 builds them out.
+// The kid screens still to come in stage 7: the notices list is read-only, and
+// Graphs, Buy / Sell and Wish List are placeholders. Home is in ./home.
 
 import { useEffect, useState } from 'react';
-import { Explain } from '../components/Glossary';
-import { Updating } from '../components/Updating';
-import { formatCents } from '../lib/money';
 import { supabase } from '../lib/supabase';
-import { useKid } from './KidShell';
-
-export function KidHome() {
-  const { summary } = useKid();
-  return (
-    <>
-      <section className="kid-card" aria-labelledby="worth">
-        <p id="worth" className="kid-card__label">
-          Total worth <Explain term="Total worth" />
-        </p>
-        <Updating updating={summary.updating}>
-          <p className="kid-big">
-            {summary.totalWorthCents === null ? '…' : formatCents(summary.totalWorthCents)}
-          </p>
-        </Updating>
-      </section>
-      <section className="kid-card">
-        <p className="kid-soon">Your savings, GICs and funds will show up here soon.</p>
-      </section>
-    </>
-  );
-}
 
 function Placeholder({ title }: { title: string }) {
   return (

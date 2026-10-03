@@ -1,0 +1,493 @@
+/* Home. Sizes are in rem so Android's large-text setting scales everything;
+   nothing has a fixed height, and long numbers wrap rather than overflow.
+   One column on phones; two from 840 px (tablets, unfolded foldables, desktop). */
+
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'hero' 'banner' 'savings' 'gics' 'funds' 'activity';
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (min-width: 840px) {
+  .home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'hero hero'
+      'banner banner'
+      'savings funds'
+      'gics funds'
+      'activity activity';
+    align-items: start;
+  }
+  .home__funds {
+    align-self: stretch;
+  }
+}
+
+.home--single,
+.home--single.home {
+  grid-template-areas: none;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 760px;
+}
+
+.banner {
+  grid-area: banner;
+}
+.hero {
+  grid-area: hero;
+}
+.home__savings {
+  grid-area: savings;
+}
+.home__gics {
+  grid-area: gics;
+}
+.home__funds {
+  grid-area: funds;
+}
+.home__activity {
+  grid-area: activity;
+}
+
+.muted {
+  margin: 0;
+  color: var(--bb-ink-soft);
+  line-height: 1.45;
+}
+
+/* Buttons and links that look like buttons: at least 48 px tall. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0.5rem 1.25rem;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bb-purple);
+  color: var(--bb-white);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+  text-decoration: none;
+}
+.btn:disabled {
+  opacity: 0.55;
+}
+.btn--soft {
+  background: var(--bb-purple-tint);
+  color: var(--bb-purple);
+}
+.btn--gold {
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+}
+.btn--small {
+  min-height: 44px;
+  padding: 0.35rem 1rem;
+  font-size: 1rem;
+}
+
+/* ---- banner ---- */
+.banner {
+  display: grid;
+  gap: 0.75rem;
+}
+.banner__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: var(--bb-white);
+  border: 2px solid var(--bb-purple-soft);
+  line-height: 1.45;
+}
+.banner__card p {
+  margin: 0;
+}
+.banner__card--celebrate {
+  background: var(--bb-gold);
+  border-color: var(--bb-gold);
+  color: var(--bb-ink);
+}
+.banner__card--celebrate .btn--gold {
+  background: var(--bb-purple);
+  color: var(--bb-white);
+}
+.banner__title {
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+.banner__more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bb-purple);
+  font-weight: 600;
+}
+
+/* ---- hero ---- */
+.hero {
+  padding: 1.25rem 1.25rem 1rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--bb-purple) 0%, var(--bb-purple-deep) 100%);
+  color: var(--bb-white);
+  box-shadow: 0 6px 20px rgb(91 63 209 / 25%);
+}
+.hero__label {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+.hero__amount {
+  margin: 0.25rem 0 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: clamp(2.4rem, 11vw, 3.6rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.hero__tag {
+  margin: 0.4rem 0 0;
+  color: var(--bb-gold);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+.money--updating {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 1.6rem;
+}
+.money__why {
+  font-family: var(--bb-font-body);
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+/* ---- cards ---- */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 20px;
+  background: var(--bb-white);
+  box-shadow: 0 2px 10px rgb(31 22 64 / 6%);
+}
+.card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.card__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.35rem;
+  color: var(--bb-ink);
+}
+.card__amount {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: clamp(1.9rem, 8vw, 2.4rem);
+  line-height: 1.1;
+  color: var(--bb-ink);
+  overflow-wrap: anywhere;
+}
+.card__amount.money--updating {
+  font-size: 1.4rem;
+  color: var(--bb-purple);
+}
+.card__note {
+  margin: 0;
+  color: var(--bb-ink-soft);
+  line-height: 1.6;
+}
+.card__note strong {
+  color: var(--bb-ink);
+}
+
+/* Option icons: the option's colour, with the outline so light fills still stand out. */
+.opt-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 2px solid var(--bb-outline);
+  font-size: 1.35rem;
+}
+
+.pairs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+.pairs div {
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-purple-tint);
+}
+.pairs dt {
+  color: var(--bb-ink-soft);
+  font-weight: 600;
+}
+.pairs dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---- GICs ---- */
+.gics {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gic {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  border-left: 6px solid var(--opt-gic);
+  background: var(--bb-page);
+}
+.gic__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+.gic__amount {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+.gic__terms {
+  color: var(--bb-ink-soft);
+  font-weight: 600;
+}
+.gic__when {
+  margin: 0;
+  color: var(--bb-ink-soft);
+  line-height: 1.5;
+}
+.gic__ready {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--opt-gic-text);
+}
+.progress {
+  height: 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--bb-outline);
+  background: var(--bb-white);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--opt-gic);
+}
+
+/* ---- funds ---- */
+.mix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.mix__label,
+.funds__day {
+  margin: 0;
+  color: var(--bb-ink-soft);
+  font-weight: 600;
+}
+.mix__bar {
+  display: flex;
+  gap: 3px;
+  height: 18px;
+}
+.mix__bar span {
+  min-width: 6px;
+  border-radius: 6px;
+  border: 1.5px solid var(--bb-outline);
+}
+.mix__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 600;
+}
+.dot {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--bb-outline);
+  vertical-align: -0.05rem;
+}
+.dot--big {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+}
+.funds {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fund {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dot text move'
+    'dot spark spark';
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: var(--bb-page);
+}
+.fund .dot--big {
+  grid-area: dot;
+  align-self: start;
+  margin-top: 0.3rem;
+}
+.fund__text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fund .move {
+  grid-area: move;
+}
+.fund .spark {
+  grid-area: spark;
+}
+.fund__name {
+  font-weight: 700;
+}
+.fund__mine {
+  color: var(--bb-ink-soft);
+  overflow-wrap: anywhere;
+}
+.move {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.move--up {
+  color: var(--bb-up);
+}
+.move--down {
+  color: var(--bb-down);
+}
+.move--flat {
+  color: var(--bb-ink-soft);
+}
+.spark {
+  width: 100%;
+  height: 2rem;
+}
+/* Very narrow screens or very large text: the change goes under the name. */
+@media (max-width: 380px) {
+  .fund {
+    grid-template-areas:
+      'dot text'
+      'dot move'
+      'dot spark';
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .fund .move {
+    text-align: left;
+  }
+}
+
+/* ---- activity ---- */
+.activity {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.activity__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.6rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--bb-purple-tint);
+}
+.activity__row:first-child {
+  border-top: 0;
+}
+.activity__icon {
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+.activity__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.activity__title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.activity__detail,
+.activity__date {
+  color: var(--bb-ink-soft);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.activity__amount {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.activity__row--in .activity__amount {
+  color: var(--bb-up);
+}
+.activity__row--out .activity__amount {
+  color: var(--bb-ink);
+}
+.activity__row--waiting .activity__amount,
+.activity__row--declined .activity__amount {
+  color: var(--bb-ink-soft);
+}
+.home__activity .btn {
+  align-self: flex-start;
+}

@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 6 done, local only (next: stage 7, local only)
+- Current stage: stage 7 part 1 (Home) done, local only. **Next: fix the Alberta time-zone issue** (see stage 7 part 1 below), then stage 7 part 2.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,126 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 7, part 1 — Kid Home and the GIC choice, local only (2026-10-03)
+
+- **The plan Dad approved:** Stage 7 runs in two parts. Part 1 is Home, including the GIC choice flow and the full history page because Home links to both, and then a stop for Dad's review. Part 2 covers everything else.
+- **New standing rule in CLAUDE.md** ("Screens and layout"):
+  - Every screen, kid or parent, must work from 360 px phones to desktop, portrait and landscape, foldables included, with Android's large text on.
+  - Nothing may be cut off or overlap.
+  - Each stage tests at small phone, tablet and desktop sizes.
+- **Decisions Dad made:**
+  1. **Option colours:**
+     - Savings is gold `#E0A400` and GICs are pink `#D6336C`. Gold is for fills and bars only, never text on white.
+     - Every colour pair must meet contrast rules.
+  2. **Funds on Home:** all three funds show, with "You don't own any yet" on the ones she doesn't hold.
+  3. **Up and down days:**
+     - ▲ or ▼ with words, in calm colours, never red.
+     - A down day must be as clear as an up day.
+     - The daily change gets a **?** saying markets go up and down and one day doesn't matter much.
+  4. **The GIC choice screen** says plainly what happens if she doesn't choose by the date, in the maturity notice's own words.
+  5. **After the review:** Home approved with no changes.
+- **Built:**
+  - **Migration `supabase/migrations/20261005000000_kid_home.sql`.** Read functions; a kid can only ask about her own account, and a parent needs the authenticator code.
+    - **`fund_overview(account)`:** each fund's name and colour, her units, value, cost and gain, and the latest and previous closes.
+      - **Daily change:** the fund's % change between its two latest closes up to today.
+      - **Her mix:** whole percents, using the largest-remainder method, so they always add up to exactly 100.
+      - **Sparkline:** the last 30 closes.
+    - **`my_activity(account, limit, before)`:** her history, newest first, for Home and "See all".
+      - **One line per event:** the two ledger rows of a move are grouped by their shared posting key.
+      - **Requests included:** pending, declined (with Dad's reason) and expired requests are listed too.
+      - **Dates and paging:** each line carries its Edmonton date (`on_day`), worked out by the database. Paging continues after a given line.
+    - **`current_rates()`:** today's savings and GIC rates. A special wins inside its dates, and any announced change shows with its date.
+    - **`mark_notices_read(ids)`:**
+      - A kid marks only her own notices as read.
+      - The first time she read one is kept.
+      - Dad can't mark them, because his dashboard shows whether she has read them.
+    - **The "Daily change" glossary text** is reworded as Dad asked. `docs/GLOSSARY.md` is updated to match.
+  - **Home** (`src/kid/home/`):
+    - **Order on the page:** total worth first, then the banner, then the savings, GICs and funds cards, then recent activity.
+    - **Banner:** a "Your GIC grew!" card for a waiting GIC, plus the newest unread notice with **Got it**. GIC "ready" notices aren't repeated, because the waiting GIC has its own card.
+    - **Savings card:** on hold and free to use (while a request is holding money), today's rate, and any announced change.
+    - **GICs card:** each GIC with its locked rate, a progress bar, its ready date and what it earns by then. A matured one shows **Choose**.
+    - **Funds card:** the mix bar and legend, and all three funds' last market day with ▲, ▼ or ● and a 30-day sparkline.
+    - **Recent activity:** the last 5 lines and **See all**.
+    - **"Updating…"** replaces every amount while the nightly check is fixing something.
+    - **Layout:** one column on phones and two from 840 px, capped at 1100 px wide. Sizes are in rem so large text scales.
+  - **GIC choice** (`/kid/gic/:id`):
+    - She chooses **Keep it growing**, **Try a different length** or **Move it to savings**.
+    - She sees the deadline and what happens without a choice.
+    - A summary comes before **Yes, do it**, including what the new GIC will earn, worked out by the database's `gic_interest_cents`.
+    - Then `choose_maturity` runs, and that GIC's maturity notice is marked read.
+  - **History** (`/kid/history`): her whole history, 30 lines at a time, with **Show more**.
+  - **Colours** (`src/lib/colours.ts`, with the tokens in `theme.css`):
+    - Every text and shape pair is checked against WCAG 2.2 AA.
+    - Gold and the existing Nasdaq-100 orange are too light to stand out on white (2.2 and 2.97 : 1), so every coloured shape gets a dark outline (`--bb-outline`).
+    - GIC pink text uses `#B8255A`, because `#D6336C` falls just short on the page background.
+    - Up `#15693D` and down `#6A4C9C` are equally strong, both about 6.7 : 1.
+    - The total-worth panel's gradient fades to a deeper purple, so the gold tagline keeps its contrast.
+  - **Display formats** (`src/lib/format.ts`):
+    - Rates, dates and GIC terms match the database's own formats exactly: "2.5%", "Oct 7", "1-year".
+    - The browser never converts times into dates; every date comes from the database.
+  - **The ? on purple:** a light version (`<Explain light>`).
+  - **Demo:**
+    - The demo kids have read their notices from more than 3 days ago, so the banner looks realistic.
+    - The second rate-cut note no longer repeats the engine's own tip.
+  - **Tests:**
+    - Test files are type-checked with Node's types (`tsconfig.test.json`); the app itself is not.
+    - The end-to-end tests now run in two Playwright projects. The `layout` project runs first, while Robin's GIC is still waiting for her choice, and the rest run after it.
+  - **Wording:** all new kid-facing wording is in **`docs/MESSAGES.md` §7**.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db` (pgTAP): **589 of 589 passed**, in 15 files, after `supabase db reset`. That's the 547 earlier tests plus 42 new ones in `kid_home_test.sql`:
+    - each fund's units, value, daily change, mix (57 / 32 / 11 from 56.47 / 32.40 / 11.13) and sparkline;
+    - a kid with no funds still sees all three funds;
+    - only closes up to today count;
+    - history lines with their amounts, terms, rates, units and prices, and paging with nothing repeated or missed;
+    - isolation: kid B and a parent without the code are refused;
+    - rates with a special and an announced change;
+    - marking notices read, own notices only;
+    - grants;
+    - the glossary text.
+  - `npm test` (Vitest): **126 of 126 passed**. New: contrast for every colour pair, plus the stylesheet scan for gold text; display formats; history wording.
+  - `npm run test:e2e` (Playwright): **25 of 25 passed**.
+    - **New in `home.spec.ts`:**
+      - Home matches the database to the cent;
+      - **Got it** marks a notice read;
+      - **See all**;
+      - renewing Robin's GIC from start to finish, with the deadline wording, the summary and the database result.
+    - **New in `layout.spec.ts`:** Home, history and the GIC choice are checked at 360×780, 412×915 (Galaxy A17), 673×841 (unfolded foldable), 800×1280 and 1280×800 (tablet), and 1440×900 (desktop), each with normal and 130% text.
+      - It fails if the page scrolls sideways, anything sticks out or is cut off, side-by-side items overlap, or a button is under 44 px.
+      - It saves 36 full-page screenshots to `test-results/layout/`.
+  - `npm run timemachine`: **PASS, 14 of 14**. `npm run lint` is clean, and `npm run build` succeeds.
+- **Next task, before part 2: the Alberta time-zone change.**
+  - **What changed:** Alberta's Official Time Act (passed June 18, 2026) keeps the province on UTC−6 all year from **November 1, 2026**; clocks no longer go back. IANA time-zone data 2026c (July 8, 2026) changed `America/Edmonton` to match.
+  - **Found by:** the new date tests. Node (tzdata 2026c) already shows Edmonton as UTC−6 in winter, but the local Postgres (17.11) still switches to UTC−7 on Nov 1, 2026. Production's Postgres may lag the same way.
+  - **What would go wrong from Nov 1:**
+    - `app_today()` and `app_now()` would start Edmonton's day an hour off.
+    - The 4:00 pm Eastern market close is 3:00 pm Alberta time in winter, not 2:00 pm, which affects the "settles at the 2 pm close" wording and the nightly schedule (3:30 pm) for stage 4.
+    - The time machine's independent model assumes the old clock changes.
+    - The browser and the database could disagree about which day a time falls on.
+  - **Already safe:** settlement times are worked out in Eastern time, so which close a trade settles at is still right. Home takes every date from the database.
+  - **Recommended fix** (a short task of its own):
+    1. Pin the app's own time rule in the database rather than trusting each server's time-zone data.
+    2. Update the reference model and the clock tests, and add known-answer tests across Nov 1, 2026.
+    3. Review every message that says "2 pm", and stage 4's cron window.
+    4. Re-run the time machine.
+- **Left for part 2:**
+  1. **Graphs:** total worth over time (stacked area) and growth by option, with 1M / 3M / 1Y / All, a $ / % switch, dots for deposits and withdrawals, and the market-move notes. Recharts is added here.
+  2. **Buy / Sell:**
+     - from and to choices, always through savings;
+     - the amount, with the available balance and cap room;
+     - every spec warning: the early-break loss in dollars, a fund worth less than she paid, over the available balance, one trade per fund per day, and when it settles;
+     - a confirmation summary.
+  3. **Transparency:** "How was this calculated?" on interest, dividend and penalty lines (the working is already in each line's note), and "Something looks wrong?" on any line, starting a question thread.
+  4. **The notices list:** reading marks them read.
+  5. **Accessibility pass** across all kid screens.
+  6. **Playwright tests:** a deposit request, buying a GIC, the early-break warning, a trade request and sending a question. The layout test gets extended to the new screens.
+  7. **PROGRESS.md** with the full stage 7 entry and the ACCEPTANCE.md boxes.
+- **Known issues and notes:**
+  - **Full-page screenshots** show the fixed bottom tabs part-way down the page. That's how such captures work; on a device the tabs stay at the bottom.
+  - **Fund names** for history lines are also listed in `activityText.ts` (`FUND_NAMES`). They match the `funds` table; if a fund is ever renamed, change both.
+  - **The end-to-end tests reload the demo** (new PINs). Run `npm run demo` for a clean set afterwards.
+- **Dad to do by hand:** nothing. Optional: review the new wording in **`docs/MESSAGES.md` §7**.
 
 ### Stage 6 — Logins, the installable app and the app shell, local only (2026-10-03)
 

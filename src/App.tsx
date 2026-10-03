@@ -14,7 +14,10 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
 import KidShell from './kid/KidShell';
-import { KidGraphs, KidHome, KidNotices, KidTrade, KidWishList } from './kid/KidScreens';
+import { KidGraphs, KidNotices, KidTrade, KidWishList } from './kid/KidScreens';
+import GicChoice from './kid/GicChoice';
+import History from './kid/History';
+import Home from './kid/home/Home';
 import { supabaseConfigured } from './lib/supabase';
 import KidLogin from './pages/KidLogin';
 import ParentLogin from './parent/ParentLogin';
@@ -112,7 +115,9 @@ export default function App() {
               </RequireKid>
             }
           >
-            <Route index element={<KidHome />} />
+            <Route index element={<Home />} />
+            <Route path="history" element={<History />} />
+            <Route path="gic/:id" element={<GicChoice />} />
             <Route path="graphs" element={<KidGraphs />} />
             <Route path="trade" element={<KidTrade />} />
             <Route path="wishlist" element={<KidWishList />} />

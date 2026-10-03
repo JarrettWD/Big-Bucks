@@ -16,6 +16,11 @@
   vertical-align: middle;
   cursor: pointer;
 }
+.explain--light {
+  /* On purple: a white circle with a purple ?. */
+  background: radial-gradient(circle, var(--bb-white) 0 11px, transparent 12px);
+  color: var(--bb-purple);
+}
 .explain:focus-visible {
   outline: 3px solid var(--bb-gold);
   border-radius: 50%;

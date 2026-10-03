@@ -378,7 +378,7 @@ async function main(): Promise<void> {
       'Dad announces another cut, next week',
       P,
       `select public.add_rate('savings', null, 1.5, $1, $2)`,
-      [addDays(T, 5), "Rates are coming down again. GICs bought before then keep today's rates."],
+      [addDays(T, 5), 'The Bank of Canada lowered its rate again.'],
     );
     act(
       at(yesterday, '19:00'),
@@ -426,6 +426,16 @@ async function main(): Promise<void> {
     const missed = steps.filter((s) => !done.has(s));
     if (missed.length)
       throw new Error(`demo: steps never ran: ${missed.map((s) => `${s.at} ${s.why}`).join('; ')}`);
+
+    // Like real kids, they've read the notices from more than 3 days ago.
+    for (const kid of [A, B]) {
+      const r = await db.call(
+        kid,
+        'select public.mark_notices_read(array(select id from public.notifications where created_at < $1))',
+        [at(addDays(T, -3), '00:00')],
+      );
+      if (!r.ok) throw new Error(`demo: marking notices read: ${r.error}`);
+    }
 
     // Back to real time.
     await db.setClock('');

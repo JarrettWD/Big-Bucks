@@ -8,7 +8,18 @@
   --bb-ink-soft: #5a5277;
   --bb-purple-soft: #b9adf0;
   --bb-purple-tint: #efebff;
+  --bb-purple-deep: #4a2fb5;
   --bb-page: #f7f5ff;
+  /* The outline around coloured shapes, so light fills still stand out (3 : 1). */
+  --bb-outline: #5a5277;
+  /* Up and down days: calm and equally clear, never red. */
+  --bb-up: #15693d;
+  --bb-down: #6a4c9c;
+  /* Option colours, the same everywhere (funds come from the database).
+     The savings gold is for fills only, never text. See src/lib/colours.ts. */
+  --opt-savings: #e0a400;
+  --opt-gic: #d6336c;
+  --opt-gic-text: #b8255a;
   --bb-font-heading: 'Fredoka', system-ui, sans-serif;
   --bb-font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }

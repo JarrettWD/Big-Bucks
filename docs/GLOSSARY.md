@@ -10,7 +10,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Breaking a GIC early:** Taking your money out of a GIC before it matures. You get back what you put in, but you lose all the interest. Breaking a promise has a price.
 - **Compounding:** When your interest starts earning interest too. Your money grows a little faster every time, so time matters as much as the amount.
 - **Compounding frequency:** How often interest is added to your money so it can start earning interest too. Big Bucks adds savings interest once a month.
-- **Daily change:** How much a fund went up or down since the day before, as a percent. Small ups and downs every day are normal.
+- **Daily change:** How much a fund went up or down since the market's last day, as a percent. Markets go up and down all the time, and one day doesn't matter much. What counts is how it does over months and years.
 - **Deposit:** Putting money into your account. New money always lands in savings first.
 - **Deposit cap:** The most you can put in, counting deposits minus withdrawals. Interest and gains can take your total above it, and that's great!
 - **Diversification:** Spreading your money across different choices, so one bad day doesn't hurt as much. Don't put all your eggs in one basket!

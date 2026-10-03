@@ -221,3 +221,65 @@ The text comes from the glossary (`docs/GLOSSARY.md`); the button reads "What do
 - Home: Your savings, GICs and funds will show up here soon.
 - Graphs, Buy / Sell and Wish List: Coming soon.
 - Notices with none: Nothing new. You're all caught up!
+
+## 7. Home and the GIC choice (stage 7)
+
+From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/History.tsx`), so edits are a code change. Notices themselves (titles and bodies) come from §1.
+
+### Home
+
+- **Total worth** · Watch your bucks grow.
+- **"Your GIC grew!" card:** Your {term} GIC earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}. · **Choose what's next**
+- **Notices:** the newest unread notice, with **Got it**; under it, "1 more new notice" or "{n} more new notices". GIC "ready" notices aren't repeated here, because a waiting GIC has its own card.
+- **Savings:** On hold · Free to use (only while a request is holding money) · Earning {rate} a year · Changing to {new rate} on {date} (when a change is announced)
+- **GICs:** No GICs right now. A GIC locks your money away for a while and pays more interest than savings.
+  - Each GIC: {amount} · {term} at {rate} · Ready {date} · {n} days to go · Earns {interest} by then
+  - Matured and waiting: Ready now! · **Choose**
+- **Stock funds:** Your mix · {fund} {n}% · Last market day, {date} (with the **?** for "Daily change")
+  - Each fund: Yours: {value}, or You don't own any yet
+  - The daily change: ▲ Up {n}% · ▼ Down {n}% · ● No change. Both directions are shown equally clearly, in calm colours, never red.
+- **Recent activity** · See all · Nothing here yet. Your story starts with your first deposit!
+- **"Updating…"** in place of any amount: Updating… Your numbers are being double-checked. They'll be back soon.
+- **If Home can't load:** Big Bucks couldn't load your money just now. Please try again in a minute. · Try again
+
+### History lines (Home's recent activity and "See all")
+
+| Line | Words | Amount shown |
+|---|---|---|
+| Deposit | Money in | +{amount} |
+| Withdrawal | Money out | −{amount} |
+| Savings interest | Savings interest | +{amount} |
+| GIC interest | Interest from your {term} GIC | +{amount} |
+| Dividend | Dividend from {fund} | +{amount} |
+| GIC bought | Bought a {term} GIC at {rate} | {amount} |
+| GIC renewed | Renewed: a new {term} GIC at {rate} | {amount} |
+| GIC to savings | GIC moved to savings (or "…automatically" after 7 days) | {amount} |
+| GIC broken early | Broke a GIC early | {amount} |
+| Fund bought / sold | Bought {fund} · Sold {fund} | {amount} |
+| Split | {fund} split its units · Same value, more units. | |
+| Correction | A correction (with its note) | +/−{amount} |
+| Penalty | A penalty (with its note) | −{amount} |
+| Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund} (Waiting for the market close) | {amount}, or All of it |
+| Declined | Dad said not this time (money in / money out) · Dad says: "{reason}" | {amount} |
+| Expired | A request ran out of time · Nobody answered within 7 days, so it was cancelled. You can ask again any time. | {amount} |
+
+- **"See all" page:** Your history · Show more · Back to Home
+
+### The GIC choice
+
+- 🎉 **Your GIC grew!** Your {term} GIC finished and earned {interest}. You now have {total}.
+- **Choose by {date}.** If you don't choose by then, your {total} moves to savings, where it's safe and still earning interest. Until you choose, it earns the savings rate ({rate} a year).
+- **What would you like to do?**
+  - **Keep it growing:** Another {term} GIC at {rate}. (adds "(special rate!)" during a special)
+  - **Try a different length:** Pick a shorter or longer GIC. Then **How long?** with each term and its rate, and "Special!" on a special.
+  - **Move it to savings:** Use it any time. Savings pays {rate} a year.
+- **Before anything happens:**
+  - Put {total} into a {term} GIC at {rate}? · It will earn {interest} of interest. · It's ready in {term}. Then you choose again. · Taking it out early means losing that interest.
+  - Move {total} to savings? · You can use it any time. · It earns {rate} a year in savings.
+  - **Yes, do it** · **Go back**
+- **Done:** 🎉 Done! Your {total} is growing in a new {term} GIC. Great patience! · or: Your {total} is in savings. · **Back to Home**
+- **Nothing to choose** · There's nothing to choose for this GIC right now.
+
+### Glossary change
+
+- **Daily change** (new wording, in the migration `20261005000000_kid_home.sql`): How much a fund went up or down since the market's last day, as a percent. Markets go up and down all the time, and one day doesn't matter much. What counts is how it does over months and years.

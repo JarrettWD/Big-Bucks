@@ -41,7 +41,7 @@ export function GlossaryProvider({ children }: { children: ReactNode }) {
 }
 
 /** A small "?" that explains a glossary term. Renders nothing if the term isn't in the glossary. */
-export function Explain({ term }: { term: string }) {
+export function Explain({ term, light = false }: { term: string; light?: boolean }) {
   const glossary = useContext(GlossaryContext);
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -61,7 +61,7 @@ export function Explain({ term }: { term: string }) {
     <>
       <button
         type="button"
-        className="explain"
+        className={light ? 'explain explain--light' : 'explain'}
         aria-label={`What does "${entry.term}" mean?`}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}

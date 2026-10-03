@@ -14,7 +14,17 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173/Big-Bucks/',
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'android-chrome', use: { ...devices['Pixel 7'] } }],
+  projects: [
+    // The screen-size checks run first, while the demo is untouched (Robin's GIC
+    // is still waiting for her choice); the other tests change demo data.
+    { name: 'layout', testMatch: /layout.spec.ts/, use: { ...devices['Pixel 7'] } },
+    {
+      name: 'android-chrome',
+      testIgnore: /layout.spec.ts/,
+      dependencies: ['layout'],
+      use: { ...devices['Pixel 7'] },
+    },
+  ],
   webServer: {
     command: 'npm run env:local && npm run build && npm run preview',
     url: 'http://127.0.0.1:4173/Big-Bucks/',
