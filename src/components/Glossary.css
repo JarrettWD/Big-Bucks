@@ -1,0 +1,64 @@
+.explain {
+  /* A 22 px purple circle inside a 44 px touch target. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -6px;
+  padding: 0;
+  border: 0;
+  background: radial-gradient(circle, var(--bb-purple) 0 11px, transparent 12px);
+  color: var(--bb-white);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 0.95rem;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.explain:focus-visible {
+  outline: 3px solid var(--bb-gold);
+  border-radius: 50%;
+}
+
+.explain__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(20 10 60 / 45%);
+}
+.explain__card {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.25rem;
+  border-radius: 20px;
+  background: var(--bb-white);
+  color: var(--bb-ink);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 25%);
+}
+.explain__card h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  color: var(--bb-purple);
+}
+.explain__card p {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  line-height: 1.45;
+}
+.explain__close {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bb-purple);
+  color: var(--bb-white);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.15rem;
+}

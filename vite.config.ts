@@ -26,6 +26,10 @@ function spaFallback(): Plugin {
 
 export default defineConfig({
   base,
+  // Listen on 127.0.0.1, not "localhost": on Dad's computer Chrome forces
+  // https for localhost (HSTS), so the app is opened at http://127.0.0.1:5173/Big-Bucks/.
+  server: { host: '127.0.0.1', port: 5173, strictPort: true },
+  preview: { host: '127.0.0.1', port: 4173, strictPort: true },
   plugins: [
     react(),
     VitePWA({

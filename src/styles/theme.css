@@ -3,6 +3,12 @@
   --bb-gold: #ffd166;
   --bb-pink: #ff4f87;
   --bb-white: #ffffff;
+  /* Supporting shades of the brand, for text and quiet backgrounds. */
+  --bb-ink: #1f1640;
+  --bb-ink-soft: #5a5277;
+  --bb-purple-soft: #b9adf0;
+  --bb-purple-tint: #efebff;
+  --bb-page: #f7f5ff;
   --bb-font-heading: 'Fredoka', system-ui, sans-serif;
   --bb-font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -19,4 +25,40 @@ body {
   background: var(--bb-purple);
   font-family: var(--bb-font-body);
   -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--bb-gold);
+  outline-offset: 2px;
+}
+
+/* Loading and simple message screens */
+.splash {
+  min-height: 100dvh;
+  background: var(--bb-purple);
+}
+.splash--msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  color: var(--bb-white);
+  text-align: center;
+  font-size: 1.1rem;
+}
+.splash--msg button {
+  min-height: 48px;
+  padding: 0 1.5rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+  font-weight: 700;
 }

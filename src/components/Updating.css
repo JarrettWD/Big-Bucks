@@ -1,0 +1,15 @@
+.updating {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+}
+.updating strong {
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: var(--bb-purple);
+}

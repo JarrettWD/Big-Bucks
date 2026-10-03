@@ -186,3 +186,38 @@ Shown on a day a fund's close moves more than 2%. Dad can change these with the 
 
 - **Big drop:** Big drop today. This happens a few times a year. Long-term, markets have recovered.
 - **Big jump:** Big jump today. Markets go up and down, and one great day doesn't mean the next will be.
+
+## 6. Screens: signing in, offline and "Updating…" (stage 6)
+
+These come from the app's screens (`src/`), not the database, so wording edits here are a code change rather than a migration.
+
+### Kid login
+
+- **First time on a device:** Your username · Next
+- **After that (her username is remembered on the device):** Hi, {her name}! · Enter your PIN · Not you?
+- **Wrong PIN:** That PIN didn't match. Try again.
+- **Wrong PIN, 2 or 1 tries left:** That PIN didn't match. {2 more tries / 1 more try} before a 15-minute break.
+- **Locked (5 wrong PINs in a row):** Too many tries in a row, so this login is taking a short break. Try again in {minutes} minutes, or ask Dad for help.
+- **No connection to the server:** Big Bucks couldn't reach the bank. Check your internet and try again.
+- **Anything else going wrong:** Something went wrong on our side. Please try again in a minute.
+- **A login with no Big Bucks profile:** This login isn't set up for Big Bucks yet. Ask Dad.
+
+(An unknown username gets the same "That PIN didn't match" answer as a wrong PIN, on purpose, so the login screen never reveals which usernames exist.)
+
+### Offline
+
+- **You're offline** · Big Bucks needs the internet to show your money. It'll come back as soon as you're connected.
+
+### "Updating…" (instead of her figures, while the nightly check has found something to fix)
+
+- **Updating…** · Your numbers are being double-checked. They'll be back soon.
+
+### The **?** explanations
+
+The text comes from the glossary (`docs/GLOSSARY.md`); the button reads "What does "{term}" mean?" for screen readers, and the card closes with **Got it**.
+
+### Placeholders until stage 7
+
+- Home: Your savings, GICs and funds will show up here soon.
+- Graphs, Buy / Sell and Wish List: Coming soon.
+- Notices with none: Nothing new. You're all caught up!

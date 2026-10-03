@@ -174,7 +174,8 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+# Big Bucks: off. Accounts are created only by the setup script (stage 6).
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -205,7 +206,9 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# Big Bucks: raised for local testing only (every kid login goes through the kid-login
+# function, so they all share one address). Production is set separately in stage 4.
+sign_in_sign_ups = 300
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
 token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
@@ -219,6 +222,8 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
+# Big Bucks: must stay true. Here it turns the email provider on, which email
+# logins need. Sign-ups are still off, through the [auth] switch above.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -301,8 +306,9 @@ max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+# Big Bucks: on. The parent signs in with an authenticator-app code (free on every plan).
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]
@@ -413,3 +419,8 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Big Bucks: the kid-login Edge Function is the way in, so callers aren't signed
+# in yet. It checks the username, PIN and lockout itself (stage 6).
+[functions.kid-login]
+verify_jwt = false

@@ -4,21 +4,33 @@ Thirteen stages: phase 1 (the core, stages 0–8) and phase 2 (the fun layer, st
 
 The money engine comes before any screens on purpose: the screens only display what the database calculates, so the maths is proven first.
 
-| Stage | What it builds | You'll need |
-|---|---|---|
-| 0 | Project skeleton, local Supabase, CI, price-data research | GitHub repo, Node, Docker, Supabase CLI |
-| 1 | Database tables, security rules, append-only history | — |
-| 2 | Money engine with known-answer tests | — |
-| 3 | Time machine and nightly reconciliation | — |
-| 4 | Scheduled jobs, real prices, alerts; first production setup | Supabase project, price-data API key |
-| 5 | Backups, Download backup, restore test, pre-launch reset | Private backup repo |
-| 6 | Logins, PWA install, app shell | Your Android phone, an authenticator app |
-| 7 | Kid screens: Home, Graphs, Buy / Sell | — |
-| 8 | Parent dashboard, admin settings, onboarding; **phase 1 done, solo beta starts** | — |
-| 9 | Wish List and goals | — |
-| 10 | Theme colours, animal avatars, badges | — |
-| 11 | Inflation view, learning features, statements, view modes | — |
-| 12 | Launch prep: clean reset, real accounts, go-live | — |
+### Build order (changed 2026-10-03: screens first)
+
+Stages 0–3 are done. The rest of phase 1 now runs in this order: **6 → 7 → 8 → 4 → 5**, then the solo beta.
+
+- **Stages 6, 7 and 8 run against the local database only.** The kid-login Edge Function runs on the local functions server, and parent MFA uses the local auth. No production project, no deploy, no phone install.
+- **What moves out of stages 6–8:** deploying to GitHub Pages, installing the app on your Android phone, and creating real accounts in production. They happen after stage 4, once the production project exists.
+- **What they use instead:** `npm run demo` (added in stage 6) resets the local database and loads two made-up test kids and a parent with about 3 months of activity. You try the screens in Chrome on your computer at phone size.
+- **Stages 4 and 5** (live setup, then backups) come next, plus the items moved out of stages 6–8: deploy, phone install, and real accounts with the setup script.
+- **The solo beta starts after stage 5**, not after stage 8. Phase 1 is complete when stage 5 is done.
+
+Where a prompt below for stages 6–8 says "deploy", "install on my phone" or "production", read it as "locally" and leave that part for after stage 4.
+
+| Stage | What it builds | You'll need | Order |
+|---|---|---|---|
+| 0 | Project skeleton, local Supabase, CI, price-data research | GitHub repo, Node, Docker, Supabase CLI | 1st (done) |
+| 1 | Database tables, security rules, append-only history | — | 2nd (done) |
+| 2 | Money engine with known-answer tests | — | 3rd (done) |
+| 3 | Time machine and nightly reconciliation | — | 4th (done) |
+| 4 | Scheduled jobs, real prices, alerts; first production setup; then deploy, phone install, real accounts | Supabase project, price-data API key, your Android phone | 8th |
+| 5 | Backups, Download backup, restore test, pre-launch reset; **phase 1 done, solo beta starts** | Private backup repo | 9th |
+| 6 | Logins, PWA install, app shell (local only) | An authenticator app | 5th |
+| 7 | Kid screens: Home, Graphs, Buy / Sell (local only) | — | 6th |
+| 8 | Parent dashboard, admin settings, onboarding (local only) | — | 7th |
+| 9 | Wish List and goals | — | 10th |
+| 10 | Theme colours, animal avatars, badges | — | 11th |
+| 11 | Inflation view, learning features, statements, view modes | — | 12th |
+| 12 | Launch prep: clean reset, real accounts, go-live | — | 13th |
 
 ---
 

@@ -4,7 +4,9 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 3 done (next: stage 4)
+- Current stage: stage 6 done, local only (next: stage 7, local only)
+- Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
+- **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
 - Solo beta started: no
 - Launched: no
@@ -19,6 +21,166 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 6 — Logins, the installable app and the app shell, local only (2026-10-03)
+
+- **Decisions Dad made:**
+  1. **Build order is now screens first:** stages 6 → 7 → 8 run against the local database only, then 4 → 5, then the solo beta. Recorded in `docs/BUILD-PLAN.md` ("Build order") and the status above. Deploying, installing on the phone and creating real accounts all move to after stage 4.
+  2. **Demo kids:** Robin is a regular account and Sky is a test account (`is_test`), like the time machine. So the parent dashboard shows both the liability total and the test-accounts list.
+  3. **The end-to-end tests may reload the demo,** but Claude says so each time, because it signs you out and changes the demo PINs.
+  4. **`npm run jobs:local`** was added: synthetic closes, then the nightly job and reconcile, for today.
+  5. **The kid login remembers the last username on the device,** with a "Not you?" link to switch.
+- **Built:**
+  - **Migration `supabase/migrations/20261004000000_logins.sql`.** Four functions, all server only (service role). They're not callable from the app.
+    - **`create_kid_account(user, username, display name, is_test)`:** creates her account and profile.
+    - **`create_parent_profile(user, username, display name)`:** creates the parent's profile.
+    - **`login_precheck(username)`:** says whether it's a kid, gives her hidden email, and reports any lock.
+    - **`record_login_attempt(username, succeeded)`:** records the try and applies the lockout.
+    - **The lockout:**
+      - 5 wrong PINs in a row lock the username for 15 minutes.
+      - A right PIN resets the count, and so does the end of a lock.
+      - While locked, nothing is checked or recorded, even a right PIN.
+      - Each lock raises one `lockout` alert. It fails the health check, so GitHub will email you once stage 4's check runs. A test account's alert is quiet.
+      - Unknown usernames and the parent's username lock the same way. Usernames ignore capitals and spaces and are cut to 40 characters.
+  - **`supabase/config.toml` (local settings):**
+    - public sign-up is off;
+    - authenticator-app MFA (TOTP) is on;
+    - `kid-login` runs without a signed-in user;
+    - the local sign-in rate limit is raised to 300 per 5 minutes, because every kid login shares the function's address.
+    - The email provider must stay on: in Supabase, its "sign-up" switch also turns off email logins. Production gets the same settings in stage 4's runbook.
+  - **Edge Function `supabase/functions/kid-login`:**
+    1. Checks the username and lock (`login_precheck`).
+    2. Tries the PIN as her Supabase password.
+    3. Records the try (`record_login_attempt`).
+    4. Returns a normal Supabase session.
+    - A wrong PIN, an unknown username and the parent's username all get the same answer. An Auth outage isn't counted against her.
+  - **The app** (one new dependency, `@supabase/supabase-js`):
+    - **Kid login** (`src/pages/KidLogin.tsx`):
+      - Asks for her username once, then shows a big PIN pad with 76 px keys. It submits by itself at the 6th digit.
+      - Remembers her username and name on the device (never the PIN), so she sees "Hi, Robin!" and only enters her PIN. "Not you?" forgets it.
+      - Kind messages; the wording is in `docs/MESSAGES.md` §6.
+    - **Parent login:**
+      - Email and password, then the authenticator code.
+      - The first sign-in sets the authenticator up: a QR code, a typeable key, then a code to confirm.
+    - **Route guards** (`src/App.tsx`):
+      - Parent screens need a parent with the code done (aal2).
+      - A kid session is always sent back to her Home, even from the parent login page.
+      - A parent without the code is sent to the code step.
+    - **Kid shell:**
+      - Bottom tabs Home, Graphs and Buy / Sell, plus Wish List only when `feature:wishlist` is on for her. The demo turns it on for test accounts, so Sky sees it and Robin doesn't.
+      - A notifications bell with the unread count, and a read-only notices list.
+      - **Home** shows her total worth, with the **?** and "Updating…". The other screens are placeholders for stage 7.
+    - **Shared pieces:**
+      - **`<Explain term>`:** the **?** button and card, reading the glossary from the database.
+      - **`<Updating>`:** the "Updating…" state.
+      - **The "You're offline" screen:** shown whenever the phone is offline, and data is never cached.
+      - **`formatCents()`:** in `src/lib/money.ts`, using whole-number maths only. It refuses fractions and unsafe numbers.
+    - **Parent shell:** its own header and tabs. The Dashboard lists each kid's total worth, with test accounts marked. Settings is a placeholder for stage 8.
+    - **PWA:** the manifest already had the name, theme colour #5B3FD1 and icons (maskable included). A test now checks it.
+  - **Local-only scripts** (`scripts/local/`). All refuse anything but the local Supabase: the API must be `127.0.0.1:54321`, plus the time machine's database guard.
+    - **`npm run demo`:**
+      - Resets the local database.
+      - Creates "Dad", Robin and Sky with real logins. The PINs and the password are random on every run.
+      - Walks 92 days ending yesterday evening, with the time machine's price generator and clock. Every action goes through the real kid and parent functions, with `run_daily` and `reconcile` each day at 3:30 pm. It stops on any reconcile problem or alert.
+      - Clears the clock override, sets up the parent's authenticator, writes `.env.local`, and prints the logins. They're also saved to `.demo-logins.local`, which is gitignored.
+      - **The demo history includes:**
+        - deposits approved, one declined with a reason, and a withdrawal approved after 24 hours;
+        - a GIC renewed, then moved to savings;
+        - a 1-month GIC that matured 2 days ago and is waiting for Robin's choice;
+        - 6-month GICs;
+        - buys in all three funds, a partial sale and a sell-all;
+        - monthly interest, and dividends on Oct 1;
+        - a savings-rate cut, plus another announced for next week;
+        - a question Dad answered;
+        - a pending deposit, and a pending withdrawal from last night with its 24-hour wait running.
+    - **`npm run demo:code`:** prints the demo parent's current authenticator code.
+    - **`npm run jobs:local`:** tonight's run by hand. It adds synthetic closes, then runs `run_daily` and reconcile, through today after 3:30 pm Edmonton time or through yesterday before then.
+    - **`npm run setup-account`:** asks for the role, display name and username, then a hidden PIN typed twice (or email and password for a parent), and whether it's a test account. Nothing is written to the repo.
+    - **`npm run env:local`:** points the app at the local Supabase.
+    - The demo and `jobs:local` share the nightly step (`scripts/local/nightly.ts`). The time machine itself is unchanged.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db` (pgTAP): **547 of 547 passed**, in 14 files, after `supabase db reset`. That's the 502 earlier tests plus 45 new ones in `logins_test.sql`:
+    - who may call the four functions;
+    - creating accounts, with duplicates and bad usernames refused;
+    - the lookup;
+    - the lockout to the minute: 4 failures don't lock; the 5th does; the right PIN is refused while locked and nothing is recorded; 15 minutes later it unlocks and the count starts again; a success resets the count;
+    - the alert wording, and a quiet alert for a test kid;
+    - unknown and parent usernames;
+    - odd input.
+  - **Mutation check:** I changed the lockout to 6 tries in the live local database. 12 tests failed. Then I rebuilt the database from empty.
+  - `npm test` (Vitest): **58 of 58 passed**:
+    - `formatCents` (22);
+    - authenticator codes against the RFC 6238 test vectors (9);
+    - the local-only guard and synthetic closes (10);
+    - the 17 reference-model tests. The old placeholder-screen test went with the placeholder screen.
+  - `npm run test:e2e` (Playwright, Pixel 7, production build against the local Supabase): **15 of 15 passed**, twice in a row:
+    - **App:**
+      - a signed-out visit starts at the kid login;
+      - deep links work;
+      - the offline screen appears and goes away;
+      - the manifest is installable.
+    - **Kids:**
+      - Robin signs in and sees Home, the tabs, the bell and the **?**;
+      - Sky sees the Wish List tab;
+      - the remembered username, and "Not you?";
+      - a wrong PIN gets a kind message;
+      - **5 wrong PINs lock**, even for the right PIN;
+      - **a kid can't reach `/parent`, `/parent/settings`, `/parent/mfa` or `/parent/login`**;
+      - the PIN door refuses the parent's username;
+      - signing out on one device leaves her other devices signed in.
+    - **Parents:**
+      - **a new parent's first-time authenticator setup** (a wrong code refused, then the dashboard);
+      - the demo parent signs in with the code;
+      - **a parent without the code is blocked on screen and in the database:** `liability_total` and `approve_request` are refused (403), and accounts and alerts come back empty.
+  - `npm run timemachine`: **PASS, 14 of 14**.
+  - `npm run lint` is clean, and `npm run build` succeeds.
+  - **Safety:** `npm run demo` and `npm run jobs:local` pointed at a hosted Supabase address both refused before touching anything.
+- **ACCEPTANCE.md boxes now testable:**
+  - **Proven locally, and live once stage 4 sets up production:**
+    - "Each girl logs in with her username and PIN".
+    - "Five wrong PINs lock the login for 15 minutes and alert Dad". The alert is in `alerts` and fails `health_check()`. The email itself comes with stage 4's GitHub check.
+    - "Dad's login requires the second factor".
+  - **"Security tests pass…":** now also proven through real logins (the kid and no-code parent tests above).
+- **Known issues and notes for later stages:**
+  - **Stage 4 (production):**
+    - **Auth settings, in the runbook:**
+      - turn off "Allow new users to sign up";
+      - keep the Email provider on;
+      - turn on TOTP MFA;
+      - deploy `kid-login` with `--no-verify-jwt`;
+      - review the sign-in rate limit (300 is a local-only value).
+    - **Then:** deploy to GitHub Pages with the production URL and anon key; widen `npm run setup-account`'s guard to production on purpose; install on your phone; create the real accounts.
+  - **Stage 7:**
+    - The notices list is read-only, so marking notices as read still needs its small kid function.
+    - Home, Graphs and Buy / Sell are placeholders.
+    - `useKidSummary` already loads total worth, "Updating…", the Wish List switch and the unread count.
+  - **Stage 8:**
+    - The dashboard placeholder lists each kid's total worth.
+    - Lockout alerts (kind `lockout`) need to appear in the alert list with an Acknowledge button.
+  - **The end-to-end tests add two throwaway logins:**
+    - "Lockout Test", a test kid;
+    - "New Parent", a parent with no data of its own.
+    - Run `npm run demo` for a clean set.
+  - **The database tests expect an empty database** (as in stage 3). After the demo, run `npm run db:reset` before `npm run test:db`.
+  - **The parent and a kid share one sign-in per browser.** On one computer, use a normal Chrome window for a kid and an Incognito window for the parent. On the phones this won't matter: the kid uses Chrome and you use another browser, as planned.
+  - **The guard's refusal message** says "the time machine only runs against the local database" even when it comes from the demo, because they share the guard.
+- **After the first review (Dad's changes):**
+  - **`npm run dev` listens on `127.0.0.1`**, port 5173, and `vite preview` on `127.0.0.1:4173` (`vite.config.ts`). On Dad's computer Chrome forces https for "localhost" (HSTS), so the app is opened at **http://127.0.0.1:5173/Big-Bucks/**. Playwright uses `127.0.0.1` too.
+  - **The girls' devices** (now in the status at the top): a Samsung Galaxy A17 phone and Samsung Galaxy tablets.
+    - **Stage 7 onwards:** each screen must be checked at phone size and at tablet size in both orientations.
+    - **The Stage 6 shell:** it already stretches to any width. On a tablet, the bottom tabs span the full width and the cards fill the screen.
+    - **Stage 7:** it should cap the content width (or use two columns) on tablets, and add tablet sizes to the Playwright projects.
+  - **Sign-out now affects this device only.** The full test run found it: Supabase's sign-out ends every session by default, so a girl signing out on her tablet would also have been signed out on her phone. A new test covers it.
+- **Dad to do by hand:** nothing required. Optional: review the new wording in **`docs/MESSAGES.md` §6**.
+- **Try it in Chrome at phone size:**
+  1. Make sure Docker Desktop is running. If the local Supabase isn't up, run `npm run db:start`.
+  2. Run `npm run demo` if you need fresh logins. It prints them, and they're also saved in `.demo-logins.local`, which isn't committed.
+  3. Run `npm run dev`, then open **http://127.0.0.1:5173/Big-Bucks/** in Chrome.
+  4. Press **F12**, then **Ctrl+Shift+M** (device toolbar). In the **Dimensions** menu, choose **Pixel 7**, or add the Galaxy sizes with **Edit…**.
+  5. **As a kid:** type `demo_robin`, tap **Next**, then tap her PIN. Try the **?** and the bell, then **Sign out**: next time it's "Hi, Robin!" with the PIN pad only.
+  6. **As the test kid:** tap **Not you?** and sign in as `demo_sky`. She also has the **Wish List** tab.
+  7. **As the parent:** open an Incognito window (**Ctrl+Shift+N**), turn on the device toolbar again, and go to **http://127.0.0.1:5173/Big-Bucks/parent/login**. Sign in with `parent@demo.example` and the demo password. For the code, run `npm run demo:code`.
+  8. **Optional:** to try the first-time authenticator setup, run `npm run setup-account`, choose **parent**, then sign in with that email and scan the QR code with your phone.
 
 ### Stage 3 — Time machine and nightly reconciliation (2026-10-02)
 
