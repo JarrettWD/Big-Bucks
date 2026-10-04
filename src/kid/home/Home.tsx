@@ -14,16 +14,16 @@ import { Link } from 'react-router-dom';
 import { Explain } from '../../components/Glossary';
 import { daysBetween, formatDate, formatPct, formatRate, termLabel } from '../../lib/format';
 import { formatCents } from '../../lib/money';
-import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
+import { kidMarkRead, useKidView } from '../kidView';
 import { ActivityList } from './ActivityList';
 import { Sparkline } from './Sparkline';
 import { isWaiting, useHome, type Cents, type Fund, type Gic, type HomeData } from './useHome';
 import './Home.css';
 
 export default function Home() {
-  const { profile, summary } = useKid();
-  const { data, error, reload } = useHome(profile.accountId);
+  const { view, summary } = useKid();
+  const { data, error, reload } = useHome(view);
 
   if (error && !data)
     return (
@@ -69,7 +69,7 @@ export default function Home() {
         </div>
         <ActivityList rows={data.activity} thisYear={year} />
         {data.activity.length > 0 && (
-          <Link className="btn btn--soft" to="/kid/history">
+          <Link className="btn btn--soft" to={`${view.base}/history`}>
             See all
           </Link>
         )}
@@ -111,6 +111,7 @@ function OptionIcon({ colour, icon }: { colour: string; icon: string }) {
 // ---------------------------------------------------------------- banner
 
 function Banner({ data, year, onChange }: { data: HomeData; year: number; onChange: () => void }) {
+  const view = useKidView();
   const waiting = data.gics.filter(isWaiting);
   // A GIC's "ready" notice isn't repeated here: a waiting GIC has its own card,
   // and one already chosen for needs nothing. Newest notice first, one at a time.
@@ -122,7 +123,7 @@ function Banner({ data, year, onChange }: { data: HomeData; year: number; onChan
 
   const gotIt = async (id: number) => {
     setBusy(id);
-    await supabase.rpc('mark_notices_read', { p_ids: [id] });
+    await kidMarkRead(view, [id]);
     setBusy(null);
     onChange();
   };
@@ -139,9 +140,20 @@ function Banner({ data, year, onChange }: { data: HomeData; year: number; onChan
             so you now have <strong>{formatCents(g.balance_cents)}</strong>. Choose what happens
             next by <strong>{formatDate(g.choose_by!, year)}</strong>.
           </p>
-          <Link className="btn btn--gold" to={`/kid/gic/${g.gic_id}`}>
-            Choose what's next
-          </Link>
+          {view.viewing ? (
+            <button
+              type="button"
+              className="btn btn--gold"
+              disabled
+              aria-describedby="viewing-banner"
+            >
+              Choose what's next
+            </button>
+          ) : (
+            <Link className="btn btn--gold" to={`/kid/gic/${g.gic_id}`}>
+              Choose what's next
+            </Link>
+          )}
         </div>
       ))}
       {shown.map((n) => (
@@ -152,14 +164,15 @@ function Banner({ data, year, onChange }: { data: HomeData; year: number; onChan
             type="button"
             className="btn btn--soft"
             onClick={() => gotIt(n.id)}
-            disabled={busy === n.id}
+            disabled={view.viewing || busy === n.id}
+            aria-describedby={view.viewing ? 'viewing-banner' : undefined}
           >
             Got it
           </button>
         </div>
       ))}
       {notices.length > shown.length && (
-        <Link className="banner__more" to="/kid/notices">
+        <Link className="banner__more" to={`${view.base}/notices`}>
           {notices.length - shown.length === 1
             ? '1 more new notice'
             : `${notices.length - shown.length} more new notices`}
@@ -254,6 +267,7 @@ function GicRow({
   year: number;
   updating: boolean;
 }) {
+  const view = useKidView();
   const waiting = isWaiting(g);
   const total = daysBetween(g.start_date, g.maturity_date);
   const done = Math.min(Math.max(daysBetween(g.start_date, today), 0), total);
@@ -272,9 +286,20 @@ function GicRow({
           <span>
             <span aria-hidden="true">🎉 </span>Ready now!
           </span>
-          <Link className="btn btn--small" to={`/kid/gic/${g.gic_id}`}>
-            Choose
-          </Link>
+          {view.viewing ? (
+            <button
+              type="button"
+              className="btn btn--small"
+              disabled
+              aria-describedby="viewing-banner"
+            >
+              Choose
+            </button>
+          ) : (
+            <Link className="btn btn--small" to={`/kid/gic/${g.gic_id}`}>
+              Choose
+            </Link>
+          )}
         </div>
       ) : (
         <>

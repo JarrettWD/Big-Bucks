@@ -3,8 +3,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { useKid } from './KidShell';
+import { kidRpc } from './kidView';
 import { ActivityList, QuestionList } from './home/ActivityList';
 import { useQuestions } from './useQuestions';
 import type { ActivityRow } from './home/activityText';
@@ -13,12 +13,12 @@ import './home/Home.css';
 const PAGE = 30;
 
 export default function History() {
-  const { profile } = useKid();
+  const { view } = useKid();
   const [rows, setRows] = useState<ActivityRow[]>([]);
   const [more, setMore] = useState(true);
   const [busy, setBusy] = useState(false);
   const [year, setYear] = useState(0);
-  const shared = useQuestions(profile.accountId);
+  const shared = useQuestions(view);
   const { questions } = shared;
   const { hash } = useLocation();
 
@@ -31,8 +31,8 @@ export default function History() {
   const loadMore = useCallback(
     async (after: ActivityRow) => {
       setBusy(true);
-      const { data } = await supabase.rpc('my_activity', {
-        p_account_id: profile.accountId,
+      const { data } = await kidRpc(view, 'my_activity', {
+        p_account_id: view.accountId,
         p_limit: PAGE,
         p_before_at: after.at,
         p_before_key: after.item_key,
@@ -42,14 +42,14 @@ export default function History() {
       setMore(page.length === PAGE);
       setBusy(false);
     },
-    [profile.accountId],
+    [view],
   );
 
   useEffect(() => {
     let alive = true;
     Promise.all([
-      supabase.rpc('app_today'),
-      supabase.rpc('my_activity', { p_account_id: profile.accountId, p_limit: PAGE }),
+      kidRpc(view, 'app_today'),
+      kidRpc(view, 'my_activity', { p_account_id: view.accountId, p_limit: PAGE }),
     ]).then(([t, a]) => {
       if (!alive) return;
       const page = (a.data ?? []) as ActivityRow[];
@@ -60,7 +60,7 @@ export default function History() {
     return () => {
       alive = false;
     };
-  }, [profile.accountId]);
+  }, [view]);
 
   return (
     <div className="home home--single">
@@ -79,7 +79,7 @@ export default function History() {
             {busy ? 'Loading…' : 'Show more'}
           </button>
         )}
-        <Link className="btn" to="/kid">
+        <Link className="btn" to={view.base}>
           Back to Home
         </Link>
       </section>

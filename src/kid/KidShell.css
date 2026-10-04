@@ -6,10 +6,13 @@
   color: var(--bb-ink);
 }
 
-.kid__top {
+/* Her name and bell (and, when Dad is viewing, the read-only banner) stay on top. */
+.kid__head {
   position: sticky;
   top: 0;
   z-index: 10;
+}
+.kid__top {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -127,4 +130,31 @@
 }
 .kid-soon {
   color: var(--bb-ink-soft);
+}
+
+/* Dad's "View as <kid>": a read-only banner above her screens. */
+.kid__viewing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: max(0.4rem, env(safe-area-inset-top)) 0.5rem 0.4rem 1rem;
+  background: var(--bb-ink);
+  color: var(--bb-white);
+  font-weight: 700;
+}
+.kid__exit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.kid--viewing .kid__top {
+  padding-top: 0.5rem;
 }

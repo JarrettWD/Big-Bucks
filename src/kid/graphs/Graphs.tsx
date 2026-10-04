@@ -40,6 +40,7 @@ import { daysBetween, formatDate, formatRate, termLabel } from '../../lib/format
 import { formatCents, toCents, type Cents } from '../../lib/money';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
+import { kidRpc, useKidView } from '../kidView';
 import {
   GRAPH_TABS,
   WORTH_RANGES,
@@ -79,8 +80,9 @@ const SAVINGS_OUTLINE = INK.outline;
 
 // ---------------------------------------------------------------- data loading
 
-/** Calls a read function; reloads when its arguments change. */
+/** Calls a read function (through parent_view when Dad is viewing); reloads when its arguments change. */
 function useRpc<R>(fn: string, args: Record<string, unknown> | null) {
+  const view = useKidView();
   const [state, setState] = useState<{ key: string; data: R | null; error: boolean }>({
     key: '',
     data: null,
@@ -91,7 +93,7 @@ function useRpc<R>(fn: string, args: Record<string, unknown> | null) {
   useEffect(() => {
     if (!args) return;
     let alive = true;
-    supabase.rpc(fn, args).then(({ data, error }) => {
+    kidRpc<R>(view, fn, args).then(({ data, error }) => {
       if (alive) setState({ key, data: error ? null : (data as R), error: !!error });
     });
     return () => {
@@ -119,11 +121,11 @@ interface Base {
 }
 
 export default function Graphs() {
-  const { profile, summary } = useKid();
+  const { view, summary } = useKid();
   const [params, setParams] = useSearchParams();
   const asked = params.get('g') as GraphTab | null;
   const tab: GraphTab = asked && GRAPH_TABS.includes(asked) ? asked : 'worth';
-  const accountId = profile.accountId;
+  const accountId = view.accountId;
   const ranges = useRpc<Ranges>('graph_ranges', accountId ? { p_account_id: accountId } : null);
   const [funds, setFunds] = useState<FundInfo[] | null>(null);
   const [fundsError, setFundsError] = useState(false);

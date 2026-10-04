@@ -3,7 +3,7 @@
 // All read through the database's own rules; she can only ever see her own.
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { kidBalances, kidRpc, kidUnreadCount, type KidView } from './kidView';
 
 export interface KidSummary {
   loading: boolean;
@@ -14,7 +14,7 @@ export interface KidSummary {
   error: boolean;
 }
 
-export function useKidSummary(accountId: string | null): KidSummary & { reload: () => void } {
+export function useKidSummary(view: KidView | null): KidSummary & { reload: () => void } {
   const [s, setS] = useState<KidSummary>({
     loading: true,
     totalWorthCents: null,
@@ -27,20 +27,14 @@ export function useKidSummary(accountId: string | null): KidSummary & { reload: 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    if (!accountId) return;
+    if (!view) return;
     let alive = true;
+    const accountId = view.accountId;
     Promise.all([
-      supabase
-        .from('account_balances')
-        .select('total_worth_cents')
-        .eq('account_id', accountId)
-        .maybeSingle(),
-      supabase.rpc('figures_updating', { p_account_id: accountId }),
-      supabase.rpc('feature_enabled', { p_feature: 'wishlist', p_account_id: accountId }),
-      supabase
-        .from('notifications')
-        .select('id', { count: 'exact', head: true })
-        .is('read_at', null),
+      kidBalances<{ total_worth_cents: number | string }>(view),
+      kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
+      kidRpc<boolean>(view, 'feature_enabled', { p_feature: 'wishlist', p_account_id: accountId }),
+      kidUnreadCount(view),
     ]).then(([bal, upd, wish, unread]) => {
       if (!alive) return;
       setS({
@@ -48,14 +42,14 @@ export function useKidSummary(accountId: string | null): KidSummary & { reload: 
         totalWorthCents: bal.data ? String(bal.data.total_worth_cents) : null,
         updating: upd.data === true,
         wishlist: wish.data === true,
-        unread: unread.count ?? 0,
+        unread: unread.data ?? 0,
         error: Boolean(bal.error || upd.error || wish.error || unread.error),
       });
     });
     return () => {
       alive = false;
     };
-  }, [accountId, tick]);
+  }, [view, tick]);
 
   return { ...s, reload };
 }

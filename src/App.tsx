@@ -9,7 +9,7 @@
 //   /parent/...       parent shell, only for a parent with the code done (aal2)
 
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
@@ -27,6 +27,7 @@ import ParentMfa from './parent/ParentMfa';
 import ParentShell from './parent/ParentShell';
 import Dashboard from './parent/dashboard/Dashboard';
 import Settings from './parent/settings/Settings';
+import ParentViewAs from './parent/viewas/ParentViewAs';
 import Approvals from './parent/approvals/Approvals';
 
 // Graphs carries Recharts, so it loads only when the Graphs tab opens.
@@ -82,6 +83,12 @@ function SignedOutOnly({ children }: { children: ReactNode }) {
   if (loading) return <Splash />;
   if (session && profile) return <Navigate to={home(profile.role, aal)} replace />;
   return <>{children}</>;
+}
+
+/** Any other address inside "View as <kid>" goes to her Home (Buy / Sell isn't offered). */
+function ToHerHome() {
+  const { accountId } = useParams();
+  return <Navigate to={`/parent/view/${accountId}`} replace />;
 }
 
 function Root() {
@@ -147,6 +154,28 @@ export default function App() {
             }
           />
           <Route path="/parent/mfa" element={<ParentMfa />} />
+          {/* Dad's read-only "View as <kid>": her screens, in her own app's frame. */}
+          <Route
+            path="/parent/view/:accountId"
+            element={
+              <RequireParent>
+                <ParentViewAs />
+              </RequireParent>
+            }
+          >
+            <Route index element={<Home />} />
+            <Route path="history" element={<History />} />
+            <Route
+              path="graphs"
+              element={
+                <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
+                  <Graphs />
+                </Suspense>
+              }
+            />
+            <Route path="notices" element={<Notices />} />
+            <Route path="*" element={<ToHerHome />} />
+          </Route>
           <Route
             path="/parent"
             element={

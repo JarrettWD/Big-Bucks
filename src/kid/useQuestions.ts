@@ -2,7 +2,7 @@
 // answers. Dates come from the database (my_questions); she sees only her own.
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { kidRpc, type KidView } from './kidView';
 
 export interface Question {
   id: number;
@@ -14,21 +14,21 @@ export interface Question {
   answered_on: string | null;
 }
 
-export function useQuestions(accountId: string | null) {
+export function useQuestions(view: KidView | null) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    if (!accountId) return;
+    if (!view) return;
     let alive = true;
-    supabase.rpc('my_questions', { p_account_id: accountId }).then(({ data }) => {
+    kidRpc(view, 'my_questions', { p_account_id: view.accountId }).then(({ data }) => {
       if (alive) setQuestions((data ?? []) as Question[]);
     });
     return () => {
       alive = false;
     };
-  }, [accountId, tick]);
+  }, [view, tick]);
 
   return { questions, reload };
 }

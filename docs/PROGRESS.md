@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. **B1 (request expiry and the dashboard) is built and waiting for review.**
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 is committed. "View as <kid>" is committed after Dad's review. **Next: B2 (Settings).**
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -258,6 +258,62 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   1. Run `npm run demo`, then `npm run dev`.
   2. In an Incognito window go to **http://127.0.0.1:5173/Big-Bucks/parent/login** and sign in (password from the demo, code from `npm run demo:code`).
   3. Look at **Dashboard**, then try **Settings → Change**.
+- **B1 committed** (`a90475e`, 2026-10-04) after Dad's review. CI passed (test and timemachine).
+- **"View as <kid>", its own step before B2: plan approved by Dad (2026-10-04).**
+  - **Dad's decisions:**
+    - Views aren't logged.
+    - No local time machine run for this step, because no money logic changes; CI runs it.
+    - **New rule in CLAUDE.md ("How to work"):** run the time machine locally only when a step changes money logic. Otherwise rely on CI. When it is needed, run it in the background while Dad reviews, and report the result before committing.
+    - **For B4:** the account agreement gets a line that Mom and Dad can see her account, for example "Mom and Dad can look at your Big Bucks screens any time, just like they can see your wish list." It will be drafted into MESSAGES.md with the rest of the agreement.
+  - **Built, waiting for Dad's review.** Not committed yet.
+- **Migration `20261013000000_parent_view.sql`** (new; reads only): **`parent_view(account, read, args)`**.
+  - **Who:** a parent with the authenticator code; kids (even for themselves), a parent without the code, signed-out visitors and the server role are refused.
+  - **What:** it allows only a fixed list of 20 reads and refuses anything else ("There's no "trade_options" to view."). Each read is answered by the same read function or view her own app uses, for that one account:
+    - her name;
+    - today;
+    - her balances, Home GICs, unread notices and unread count;
+    - "Updating…" and the Wish List switch;
+    - current rates;
+    - funds, history, notices and questions;
+    - all the graph reads.
+  - Her own read functions didn't change.
+  - It's `stable`, and has no insert, update or delete (a test checks).
+- **Screens:**
+  - **`src/kid/kidView.ts`:** whose screens these are, and how they read. In her own app, the screens read exactly as before. In "View as", **every read goes through `parent_view`**, including the reads her app makes straight from tables and views (balances, GICs, notices), which a parent could otherwise see for every kid.
+  - **Marking notices read** goes through one helper that does nothing when Dad is viewing.
+  - **Her shell** (`KidShell`) now serves both:
+    - her name and the links come from the view;
+    - in "View as", a banner sits on top: "Viewing Robin's screens — read-only" with **Exit**;
+    - only Home and Graphs are tabs (Buy / Sell and the Wish List are hers), and there's no Sign out;
+    - any other address (like Buy / Sell's) goes to her Home.
+  - **Switched off in "View as", and pointing at the banner for screen readers:** "Choose what's next" and "Choose" (a waiting GIC), "Got it", and "Something looks wrong?". "Show more" and opening a line's "How was this calculated?" still work, because they only read.
+  - **Dashboard:** a **View as Robin** button on each girl's card (and on each test account).
+  - **Routes:** `/parent/view/<her account>`, plus `/history`, `/graphs` and `/notices`, behind the parent guard (authenticator code).
+- **Not through `parent_view`:** the funds list (names and colours) and the glossary. They're the same reference data for everyone, not hers, and a parent may read them anyway.
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **930 of 930**, after `supabase db reset`. New **`parent_view_test.sql`** (19):
+    - **Each of the 20 reads compared** with what kid A herself gets through her own app's reads, run as her with her own permissions. Kid B (a test account) has her own data, so a wrong account would show.
+      - All 20 match, and none is empty.
+      - Her unread notices and balances are hers, not her sister's, which matters because a parent could see both.
+    - **Viewing changes nothing:** after every read, no request, ledger line, notice, question, GIC or log row has changed, and nothing is marked read.
+    - **Who may call:** refused for a kid (herself or her sister), a parent without the code, signed-out visitors and the server role. Unknown reads and unknown accounts are refused.
+    - **Every kid action refuses a parent with the code:** deposit, withdrawal, GIC buy, GIC break, the maturity choice, a trade and a question ("Only a kid's account can do this."); marking notices read ("Only a kid can mark her notices as read."); even Buy / Sell's preview. None changed anything.
+    - **Her own app is unchanged:** a kid still can't read her sister.
+  - `npm test` (Vitest): **174 of 174**.
+  - `npm run test:e2e` (Playwright): **61 of 61**.
+    - **New `viewas.spec.ts`** (reads only, so it runs early, in the layout group). Each check is against what Robin herself gets, run as her in the database:
+      - **from the dashboard:** the banner, "Hi, Robin!", her total worth, only Home and Graphs as tabs, "Choose what's next", "Got it" and "Something looks wrong?" switched off, no Sign out, Buy / Sell's address goes to her Home, and **Exit** goes back to the dashboard; nothing changed;
+      - **her history** (as many lines as she has, up to the first 30), **her questions** and **her notices**, with the same "New" tags; after leaving, the bell still counts them, and **nothing was marked read**;
+      - **her Graphs:** the mix's percents match hers; the Nasdaq-100 note shows;
+      - **through the app's API with Dad's own signed-in session (with the code):** all 9 of her actions are refused with the database's messages; **with Robin's own session, `parent_view` is refused**; nothing changed.
+    - **`layout.spec.ts`:** View-as Home, history with a line open, notices, and three graphs, at all six sizes with normal and 130% text: no problems.
+  - `npm run timemachine`: **not run locally** (Dad's rule: no money logic changed). CI runs it on push.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none (this is a new parent tool, not in the checklist).
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run demo`, then `npm run dev`.
+  2. Sign in as the parent in an Incognito window.
+  3. On the **Dashboard**, tap **View as Robin**.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

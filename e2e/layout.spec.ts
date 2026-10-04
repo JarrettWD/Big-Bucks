@@ -3,7 +3,21 @@
 // Nothing may spill sideways, be cut off or overlap, and every button is at
 // least 44 px. Full-page screenshots go to test-results/layout/ for a look.
 import { expect, test, type Page } from '@playwright/test';
+import { LocalDb } from '../scripts/timemachine/db.ts';
 import { kid, kidSignIn, parentSignIn } from './helpers';
+
+/** Robin's account id, for "View as Robin". */
+async function robinAccount(): Promise<string> {
+  const db = await LocalDb.connect();
+  try {
+    const [r] = await db.q<{ id: string }>(
+      `select account_id::text as id from public.profiles where username = 'demo_robin'`,
+    );
+    return r.id;
+  } finally {
+    await db.close();
+  }
+}
 
 const SIZES = [
   { name: 'small-phone', width: 360, height: 780 },
@@ -288,7 +302,7 @@ for (const size of SIZES) {
   test(`parent screens fit at ${size.name} (${size.width}×${size.height}), normal and large text`, async ({
     page,
   }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(480_000);
     await page.setViewportSize({ width: size.width, height: size.height });
     await parentSignIn(page);
     for (const text of TEXT) {
@@ -323,6 +337,24 @@ for (const size of SIZES) {
       await expect(page.locator('.set__notice')).toBeVisible();
       await page.locator('.set__history summary').click();
       await check(page, `parent-settings-${size.name}-${text.name}`, text.scale);
+
+      // View as Robin: her Home, her history with a line open, her notices, her graphs.
+      const robin = await robinAccount();
+      await page.goto(`./parent/view/${robin}`);
+      await expect(page.locator('.home__activity .activity__row').first()).toBeVisible();
+      await check(page, `viewas-home-${size.name}-${text.name}`, text.scale);
+      await page.goto(`./parent/view/${robin}/history`);
+      await page.locator('.activity__row', { hasText: 'Savings interest' }).first().click();
+      await expect(page.getByText('How was this calculated?').first()).toBeVisible();
+      await check(page, `viewas-history-${size.name}-${text.name}`, text.scale);
+      await page.goto(`./parent/view/${robin}/notices`);
+      await expect(page.locator('.notice').first()).toBeVisible();
+      await check(page, `viewas-notices-${size.name}-${text.name}`, text.scale);
+      for (const g of ['worth', 'mix', 'funds']) {
+        await page.goto(`./parent/view/${robin}/graphs?g=${g}`);
+        await expect(page.locator('.graph__figure, .ladder, .mix').first()).toBeVisible();
+        await check(page, `viewas-graphs-${g}-${size.name}-${text.name}`, text.scale);
+      }
     }
   });
 }

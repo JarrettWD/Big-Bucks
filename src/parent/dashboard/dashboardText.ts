@@ -115,6 +115,7 @@ export function noticeReadText(k: { read: string | null }): string {
 
 export const TEXT = {
   title: 'Dashboard',
+  viewAs: (kid: string) => `View as ${kid}`,
   needsYou: 'Needs you',
   waiting: (n: number) =>
     n === 0

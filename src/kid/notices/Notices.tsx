@@ -6,8 +6,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../../lib/format';
-import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
+import { kidMarkRead, kidRpc } from '../kidView';
 import '../home/Home.css';
 import './Notices.css';
 
@@ -23,7 +23,7 @@ interface Notice {
 }
 
 export default function Notices() {
-  const { profile, summary } = useKid();
+  const { view, summary } = useKid();
   const [notices, setNotices] = useState<Notice[] | null>(null);
   const [year, setYear] = useState(0);
   const [more, setMore] = useState(false);
@@ -36,19 +36,20 @@ export default function Notices() {
     async (page: Notice[]) => {
       setMore(page.length === PAGE);
       const fresh = page.filter((n) => n.is_new).map((n) => n.id);
-      if (fresh.length) {
-        await supabase.rpc('mark_notices_read', { p_ids: fresh });
+      // Dad viewing her screens never marks anything read.
+      if (fresh.length && !view.viewing) {
+        await kidMarkRead(view, fresh);
         reload();
       }
     },
-    [reload],
+    [reload, view],
   );
 
   useEffect(() => {
     let alive = true;
     Promise.all([
-      supabase.rpc('app_today'),
-      supabase.rpc('my_notices', { p_account_id: profile.accountId, p_limit: PAGE }),
+      kidRpc(view, 'app_today'),
+      kidRpc(view, 'my_notices', { p_account_id: view.accountId, p_limit: PAGE }),
     ]).then(([t, n]) => {
       if (!alive) return;
       if (n.error) {
@@ -63,13 +64,13 @@ export default function Notices() {
     return () => {
       alive = false;
     };
-  }, [profile.accountId, show]);
+  }, [view, show]);
 
   const loadMore = async () => {
     if (!notices?.length) return;
     setBusy(true);
-    const { data } = await supabase.rpc('my_notices', {
-      p_account_id: profile.accountId,
+    const { data } = await kidRpc(view, 'my_notices', {
+      p_account_id: view.accountId,
       p_limit: PAGE,
       p_before_id: notices[notices.length - 1].id,
     });
@@ -106,7 +107,7 @@ export default function Notices() {
                 {n.body && <span className="notice__body">{n.body}</span>}
                 <span className="notice__date">{formatDate(n.on_day, year)}</span>
                 {n.type === 'question' && (
-                  <Link className="notice__link" to="/kid/history#questions">
+                  <Link className="notice__link" to={`${view.base}/history#questions`}>
                     See your questions
                   </Link>
                 )}
@@ -119,7 +120,7 @@ export default function Notices() {
             {busy ? 'Loading…' : 'Show more'}
           </button>
         )}
-        <Link className="btn" to="/kid">
+        <Link className="btn" to={view.base}>
           Back to Home
         </Link>
       </section>

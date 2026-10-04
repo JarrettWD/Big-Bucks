@@ -168,6 +168,9 @@ export default function Dashboard() {
                     <dd>{formatCents(k.net_deposits_cents)}</dd>
                   </div>
                 </dl>
+                <Link className="dash__btn dash__btn--quiet" to={`/parent/view/${k.account_id}`}>
+                  {TEXT.viewAs(k.kid)}
+                </Link>
               </li>
             ))}
           </ul>
@@ -186,6 +189,12 @@ export default function Dashboard() {
                       {k.kid} <span className="dash__test">Test</span>
                     </span>
                     <span>{formatCents(k.total_worth_cents)}</span>
+                    <Link
+                      className="dash__btn dash__btn--quiet"
+                      to={`/parent/view/${k.account_id}`}
+                    >
+                      {TEXT.viewAs(k.kid)}
+                    </Link>
                   </li>
                 ))}
               </ul>

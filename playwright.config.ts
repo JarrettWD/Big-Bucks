@@ -20,12 +20,12 @@ export default defineConfig({
     // other tests change demo data.
     {
       name: 'layout',
-      testMatch: /(layout|graphs|dashboard).spec.ts/,
+      testMatch: /(layout|graphs|dashboard|viewas).spec.ts/,
       use: { ...devices['Pixel 7'] },
     },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|dashboard|approvals).spec.ts/,
+      testIgnore: /(layout|graphs|dashboard|viewas|approvals).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },

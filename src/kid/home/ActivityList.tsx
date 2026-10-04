@@ -11,6 +11,7 @@ import { useId, useState } from 'react';
 import { formatDate } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
+import { useKidView } from '../kidView';
 import { useQuestions, type Question } from '../useQuestions';
 import { describeActivity, type ActivityLine, type ActivityRow } from './activityText';
 
@@ -38,8 +39,8 @@ export function ActivityList({
   thisYear: number;
   shared?: { questions: Question[]; reload: () => void };
 }) {
-  const { profile } = useKid();
-  const own = useQuestions(shared ? null : profile.accountId);
+  const { view } = useKid();
+  const own = useQuestions(shared ? null : view);
   const { questions, reload } = shared ?? own;
   const [open, setOpen] = useState<string | null>(null);
   const id = useId();
@@ -142,6 +143,7 @@ function AskDad(p: {
   thisYear: number;
   onAsked: () => void;
 }) {
+  const view = useKidView();
   const [state, setState] = useState<'closed' | 'open' | 'sent'>('closed');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -186,7 +188,13 @@ function AskDad(p: {
     );
   if (state === 'closed')
     return (
-      <button type="button" className="btn btn--soft btn--small" onClick={() => setState('open')}>
+      <button
+        type="button"
+        className="btn btn--soft btn--small"
+        onClick={() => setState('open')}
+        disabled={view.viewing}
+        aria-describedby={view.viewing ? 'viewing-banner' : undefined}
+      >
         Something looks wrong?
       </button>
     );

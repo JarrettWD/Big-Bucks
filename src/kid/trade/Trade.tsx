@@ -52,8 +52,8 @@ export const PREVIEW_DELAY_MS = 500;
 type Step = 'form' | 'confirm' | 'done';
 
 export default function Trade() {
-  const { profile, summary } = useKid();
-  const accountId = profile.accountId;
+  const { view, summary } = useKid();
+  const accountId = view.accountId;
   const [opts, setOpts] = useState<TradeOptions | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);

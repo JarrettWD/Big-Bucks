@@ -2,7 +2,7 @@
 // (views and read functions); the screen only arranges it.
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { kidBalances, kidHomeGics, kidRpc, kidUnreadNotices, type KidView } from '../kidView';
 import type { ActivityRow } from './activityText';
 
 export type Cents = number | string;
@@ -73,25 +73,17 @@ export interface HomeData {
 
 export const isWaiting = (g: Gic) => g.status === 'matured' && g.maturity_choice === null;
 
-export async function loadHome(accountId: string): Promise<HomeData> {
+export async function loadHome(view: KidView): Promise<HomeData> {
+  const accountId = view.accountId;
   const [today, bal, gics, funds, activity, rates, notices, updating] = await Promise.all([
-    supabase.rpc('app_today'),
-    supabase.from('account_balances').select('*').eq('account_id', accountId).single(),
-    supabase
-      .from('gic_positions')
-      .select('*')
-      .eq('account_id', accountId)
-      .or('status.eq.active,and(status.eq.matured,maturity_choice.is.null)')
-      .order('maturity_date'),
-    supabase.rpc('fund_overview', { p_account_id: accountId }),
-    supabase.rpc('my_activity', { p_account_id: accountId, p_limit: 5 }),
-    supabase.rpc('current_rates'),
-    supabase
-      .from('notifications')
-      .select('id, type, title, body, related_gic_id')
-      .is('read_at', null)
-      .order('created_at', { ascending: false }),
-    supabase.rpc('figures_updating', { p_account_id: accountId }),
+    kidRpc<string>(view, 'app_today'),
+    kidBalances<Balances>(view),
+    kidHomeGics<Gic>(view),
+    kidRpc<Fund[]>(view, 'fund_overview', { p_account_id: accountId }),
+    kidRpc<ActivityRow[]>(view, 'my_activity', { p_account_id: accountId, p_limit: 5 }),
+    kidRpc<Rate[]>(view, 'current_rates'),
+    kidUnreadNotices<Notice>(view),
+    kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
   ]);
   const failed = [today, bal, gics, funds, activity, rates, notices, updating].find((r) => r.error);
   if (failed?.error) throw new Error(failed.error.message);
@@ -107,16 +99,16 @@ export async function loadHome(accountId: string): Promise<HomeData> {
   };
 }
 
-export function useHome(accountId: string | null) {
+export function useHome(view: KidView | null) {
   const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState(false);
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    if (!accountId) return;
+    if (!view) return;
     let alive = true;
-    loadHome(accountId)
+    loadHome(view)
       .then((d) => {
         if (!alive) return;
         setData(d);
@@ -126,7 +118,7 @@ export function useHome(accountId: string | null) {
     return () => {
       alive = false;
     };
-  }, [accountId, tick]);
+  }, [view, tick]);
 
   return { data, error, reload };
 }
