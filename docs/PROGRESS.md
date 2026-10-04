@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 7 parts 2a and 2b done and reviewed, local only. **Next: part 2c (all six graphs)**, plan waiting for Dad's OK.
+- Current stage: stage 7 parts 2a and 2b done and reviewed, local only. **Next: build part 2c (all six graphs)**, using the approved plan and Dad's answers under stage 7 part 2 below.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -22,7 +22,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Dad to do by hand:
 -->
 
-### Stage 7, part 2 — 2a and 2b done and reviewed; 2c planned (2026-10-03)
+### Stage 7, part 2 — 2a and 2b done and reviewed; 2c planned and approved (2026-10-03)
 
 - **The plan Dad approved:**
   - **2a:** Buy / Sell, then stop for review.
@@ -209,6 +209,48 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - `npm run test:e2e`: **36 of 36**. The fund-sale test now also types the shown value and gets "sells all of it" and "Sell all of your TSX?".
   - `npm run timemachine`: **PASS, 14 of 14**.
   - Lint is clean and the build succeeds.
+- **Part 2c, the six graphs: plan approved by Dad on 2026-10-03, not built yet. Build it next session.**
+  - **Dad's answers:**
+    1. **Growth %:** time-weighted. Each day's change ignores money moved in or out, so a deposit is never growth. "Money in vs money earned" already gives the simple view.
+    2. **Layout:** one graph at a time, picked with tabs at the top (Total worth · Growth · Money in · Mix · GICs · Funds), on every screen size.
+    3. **The $ / % switch:** only on growth by option and fund detail.
+  - **Database:** one new migration, reads only, with known-answer tests first.
+    - **`growth_by_option(account, from, to)`:**
+      - Each day's time-weighted % gain for savings, GICs and each fund, plus the dollars earned (for $ / %).
+      - GICs step up when they mature.
+    - **`money_in_vs_earned(account)`:** each day's net deposits (deposits − withdrawals) and total worth.
+    - **`my_mix(account)`:** savings, GICs and each fund, in whole percents that add up to exactly 100 (largest remainder, like Home).
+    - **`gic_ladder(account)`:** each GIC from start to ready date, for the next 24 months.
+    - **`fund_chart(account, fund, from)`:** the fund's daily closes, plus her buys and sells (date, price, amount).
+    - **`market_notes(from, to)`:** the market-move notes in a range.
+    - **Total worth over time:** uses the existing `daily_balances`, including the dots for money in and out.
+  - **Screen (Graphs tab):**
+    - **Recharts** (in the approved stack, about 150 KB), loaded only when Graphs opens, so the other screens stay fast.
+    - **The graphs:**
+
+      | Graph | Ranges | $ / % | Extras |
+      |---|---|---|---|
+      | Total worth over time (stacked area) | 1M / 3M / 1Y / All | $ | dots for deposits and withdrawals |
+      | Growth by option (a line each) | 1M / 3M / 1Y / All | ✓ | dots |
+      | Money in vs money earned | All | $ | the gap is what she earned |
+      | My mix today (donut) | Now | % | |
+      | GIC ladder (bars to each ready date) | Next 24 months | $ | |
+      | Stock fund detail (price, her buys and sells marked) | 1M / 3M / 6M / since first purchase | ✓ | market-move notes |
+
+    - **Every graph has:**
+      - lines named on the graph itself (never colour alone);
+      - one sentence on what it shows;
+      - a **?** for key words;
+      - **Show as a table** (every number readable without seeing the graph);
+      - keyboard and screen-reader support;
+      - a layout that fits from 360 px to desktop with large text.
+    - **Wording:** in MESSAGES.md §10.
+  - **Tests:**
+    - **pgTAP** known answers for each function: a deposit isn't growth, the mix adds to 100, GIC growth steps up at maturity, and buy and sell points match the trades.
+    - **Vitest:** ranges and data shaping.
+    - **Playwright:** each graph against the database (the last total-worth point equals Home's), the ranges, the $ / % switch, the table view and the notes; plus the layout and accessibility checks on Graphs.
+    - **Time machine:** a run before stopping.
+  - **Then stop for Dad's review.** That ends stage 7: the full stage 7 entry, with the ACCEPTANCE.md boxes.
 ### Alberta time-zone fix, local only (2026-10-03)
 
 - **Why:** Alberta stays on UTC−6 all year from November 1, 2026 (Official Time Act). The local Postgres still has the old rule and would turn Alberta to UTC−7 on Nov 1. Production's may do the same. Details are under stage 7 part 1 below.
