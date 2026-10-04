@@ -35,6 +35,100 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   1. **Previews never cause anything outside the database,** now or later (for example push notifications in a future stage). A test enforces it, and CLAUDE.md tells future notification code to skip previews.
   2. **Recreating the parent functions changes nothing except adding the log row,** with a test or diff check proving behaviour is otherwise unchanged.
   3. **Fix a mistake (Part B):** from any history line and from a question. Corrections can go either way, but each is a new linked entry (never an edit), has a note she can read, rounds in her favour, needs an extra confirmation when it reduces her balance, and can never take savings below zero. Known-answer tests first, plus a time machine run.
+- **Part A, the Approvals screen: built, waiting for Dad's review (2026-10-03).** Not committed yet.
+- **Migration `20261011000000_parent_audit_approvals.sql`** (new):
+  - **`parent_actions`, the log of every parent action:** who (`done_by`), when (`done_at`, from `app_now()`), what, which kid, the request, question, rate, setting or alert it was about, a plain-English summary and the details (note, reason, answer, new rate…).
+    - Append-only for every role, the database owner included (the same triggers as the ledger).
+    - Only the parent with the code can read it; kids can't, even about themselves.
+    - It stores the user id, so Mom's login (version 2) shows as her.
+  - **The six parent actions are logged without being changed** (Dad's addition 2):
+    - `approve_request`, `decline_request`, `answer_question`, `acknowledge_alert`, `add_rate` and `set_setting` were **renamed** to `…_unlogged`, not edited. Their bodies are byte for byte what stages 2 and 3 committed.
+    - A new function with the same name, arguments, defaults, result and security settings calls the committed one, then writes one log row, in the same transaction. If the action is refused, nothing is logged.
+    - Nobody can call the `…_unlogged` functions directly, so nothing can skip the log.
+  - **Previews stay inside the database** (Dad's addition 1):
+    - `in_preview()` is true while a preview's dry run is running.
+    - `move_preview` (Buy / Sell) is wrapped the same way (renamed to `move_preview_unflagged`, body unchanged) and turns the flag on for its dry run.
+    - **CLAUDE.md** (Security rules) now says: anything that reaches outside the database (push notifications, email, HTTP via pg_net or an Edge Function) must check `in_preview()` and do nothing in a preview; never use a Supabase database webhook for it; any new preview turns the flag on. It also says every parent function writes one log row.
+  - **`parent_inbox()`:** everything the Approvals screen shows. Every amount, date and time comes from the database:
+    - deposits and withdrawals waiting, real kids first, then test accounts, oldest first;
+    - when each was asked, the 24-hour unlock time and the seconds left, when it expires and the seconds left;
+    - for a deposit: the cap, money put in so far, deposits waiting and room left;
+    - for a withdrawal: savings, on hold and free to use;
+    - savings after approving;
+    - open questions, with the history line they're about (the kid's own `my_activity` line, including its "How was this calculated?" working);
+    - the latest 20 decisions from the log, with who and when.
+  - **`parent_decision_preview(kind, id, text)`:** what approving, declining or answering would do.
+    - It runs the real (logged) action with `in_preview()` on, captures the notices she'd get and the log line, then always rolls it all back.
+    - A rule the action would break comes back as the action's own message.
+    - Kids and a parent without the code are refused outright.
+- **The screen (`src/parent/approvals/`):**
+  - **Tabs:** Dashboard · **Approvals** (with the number waiting) · Settings, at the bottom on phones and along the top from 720 px.
+  - **Approvals:** "Deposits and withdrawals", then "Questions" (side by side from 960 px), then "Recent decisions".
+    - **Each request card:** the amount, the kid (test accounts tagged **Test**), when she asked, and the money behind it. A withdrawal inside its 24 hours shows "🔒 24-hour wait: you can approve from Oct 4 at 10:38 pm (in 23 h 59 min)", and its **Approve** stays off. The countdown counts the database's seconds; when it runs out, the screen asks the database again. The expiry date turns bold in the last 24 hours.
+    - **Approve:** the summary ("Approve Robin's $50.00 deposit?"), the cash reminder with her savings before and after ("Only approve once you have Robin's $50.00 in cash… $402.70 → $452.70"), an optional note, **Robin will see:** with the real notice, then **Yes, approve $50.00** or **Back**.
+    - **Decline:** a reason is required; the button stays off until there is one, and she sees it in the preview.
+    - **Answer:** her question, the line it's about with its working, your answer, the preview, then **Send answer**.
+    - **The button only works once the preview matches exactly what's typed,** so you confirm what you saw.
+    - **After each decision:** "Done. Approved Robin's $50.00 deposit. Recorded: Dad, Oct 3 at 10:39 pm."
+  - **Wording:** parent wording is in `approvalsText.ts`. The girls' notices didn't change; MESSAGES §1 now explains that Dad's note, reason or answer appears exactly as typed, and that he sees the preview first.
+  - **Also fixed, found by the tests:** when Dad finishes the code step on one device, Supabase ends his other half-finished sign-ins. The code screen used to say "That code didn't work" forever on the other device. It now says the sign-in has ended and to tap **Cancel and sign out**, then sign in again.
+- **Demo additions:** a $10 withdrawal from Robin past its 24 hours (ready to approve), a $5 withdrawal asked for at the moment the demo finishes (a live countdown), and an open question from Robin about her September interest line. Sky's $15 withdrawal is the test-account request. Every earlier demo decision now shows in "Recent decisions" as Dad's.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db` (pgTAP): **824 of 824**, after `supabase db reset`. That's 769 before, plus 54 new in **`parent_approvals_test.sql`**, plus 1 in `rls_test.sql` (a kid can't see the log). `schema_test.sql` and `rls_test.sql` know the new table.
+    - **Unchanged behaviour:**
+      - the md5 fingerprints of the six committed bodies and `move_preview`'s, taken before the migration ran;
+      - each wrapper's arguments, defaults, result and security settings match the original;
+      - each wrapper calls the original exactly once and writes nothing itself;
+      - the grants are as before;
+      - refusals give the committed messages word for word;
+      - all 769 earlier tests (which call these functions by name) still pass.
+    - **The log:**
+      - one row per action, with who, when (the app clock), the kid, the target and the summary;
+      - refusals log nothing;
+      - update, delete and truncate are refused for everyone;
+      - a kid and a parent without the code see nothing, and a kid can't write to it.
+    - **`parent_inbox`:** known answers at 3:30 pm for a 10:00 am withdrawal: unlocks in 66,600 seconds (18 h 30 min), expires after 7 days, the cap and balances, savings after ($60.00 or $105.00), the open question with its line, recent decisions newest first. Who may call it.
+    - **`parent_decision_preview`:** leaves nothing behind (no decision, notice, ledger line, log row or released hold); its notice and log line are word for word what the real action then writes; problems come back as the real messages; a kid is refused.
+    - **Previews never reach outside the database:**
+      - A stand-in for future outside-world code (a trigger that refuses to run unless `in_preview()` is true) proves both previews run their dry runs with the flag on and the real actions with it off.
+      - The flag is off again afterwards.
+      - A guard fails if any function that makes an HTTP call skips `in_preview()`, or if any table has a database webhook.
+  - `npm test` (Vitest): **167 of 167** (5 new in `approvalsText.test.ts`: the countdown and its rounding, card facts, the unlock and expiry lines, and the confirmation wording).
+  - `npm run test:e2e` (Playwright): **52 of 52**.
+    - **New `approvals.spec.ts`**, in its own Playwright project that runs after the kid tests, because it changes Robin's requests. Each test is checked against the database:
+      - **the screen matches the database:** what's waiting, the counts, the tab's "N waiting", and the 24-hour lock with the database's own time;
+      - **approving a withdrawal:** going **Back** changes nothing; the summary shows her savings before and after; the note shows in the preview; then the ledger line, the request, her notice (word for word the preview) and the log row (Dad, the request);
+      - **declining:** **Yes, decline** stays off until there's a reason; then the request, no ledger line, her notice and the logged reason;
+      - **answering:** her line and its working are shown; then the question, her notice and the log row.
+    - **`layout.spec.ts`:** the Approvals screen, an approval with its preview open, and an answer being written, at all six sizes with normal and 130% text: no problems.
+    - **`parent.spec.ts`:** a new test for a sign-in ended on another device. Its tests now run one at a time.
+  - `npm run timemachine`: **PASS, 14 of 14** (the parent functions it calls now go through the logged wrappers).
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes now testable locally** (they're ticked live in the solo beta): "A deposit request holds the money, Dad approves it, and it lands in savings"; "A declined request shows her Dad's reason"; "A withdrawal waits 24 hours before Dad can approve it"; and Dad's side of "'Something looks wrong?' sends Dad a question, and his reply shows in her history".
+- **Known issues and notes:**
+  - **Previews skip ID numbers** on requests, notices and log rows, as Buy / Sell's previews already did. Nothing else is left behind.
+  - **On one computer,** the kid and parent sign-ins share a browser, so use a normal window for a kid and an Incognito window for the parent (as in stage 6).
+  - **The end-to-end tests reload the demo** (new PINs and a new parent password). Run `npm run demo` for a fresh set.
+  - The Dashboard is still the stage 6 placeholder, plus a link to Approvals. It's built in Part B.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run demo`, then `npm run dev`.
+  2. Open an **Incognito** window in Chrome (**Ctrl+Shift+N**) and go to **http://127.0.0.1:5173/Big-Bucks/parent/login**.
+  3. Press **F12**, then **Ctrl+Shift+M**, and pick a phone size.
+  4. Sign in with `parent@demo.example`, the password the demo printed, and the code from `npm run demo:code`.
+  5. Tap **Approvals**.
+- **Follow-up the same night (Dad's request, not committed): nothing can skip the log.** The six renamed originals (`approve_request_unlogged`, `decline_request_unlogged`, `answer_question_unlogged`, `acknowledge_alert_unlogged`, `add_rate_unlogged`, `set_setting_unlogged`), plus `move_preview_unflagged` and the log writer `log_parent_action`, can only run inside their logging wrappers. No code changed: the migration already revoked every grant. These tests now prove it:
+  - **Every role:** no role but the owner (`postgres`) may execute any of them. That covers `anon`, `authenticated` (kids and parents), `service_role`, `authenticator` and every Supabase role. Before, the test checked only three roles' privileges.
+  - **Real calls, in the database** (`parent_approvals_test.sql`, section 7): each of the eight is actually called as a parent **with** the authenticator code, as a kid, as a signed-out visitor and as the server role. All 32 calls are refused with "permission denied for function …". The waiting deposit, the open question, the open alert, the ledger, notices, log, rates and settings are all unchanged.
+  - **No other path:** a guard fails if any function anywhere in the database (outside the test schema) calls an original, except its own wrapper (and `log_parent_action` only from the six wrappers).
+  - **Real calls, through the app** (`approvals.spec.ts`, first test): Dad signed in with the code, Robin signed in with her PIN, and a signed-out visitor each call the six originals through the Supabase API (`/rest/v1/rpc/…`). All 18 calls get 401 or 403 "permission denied for function …". Robin's withdrawal still waits, her question is still open, and nothing else changed.
+  - **Mutation check:** I granted kids and parents EXECUTE on `approve_request_unlogged`, and added a function that called `decline_request_unlogged` directly, in the live local database. Five tests failed, as they should: the privilege checks, the "no other path" guard, and the real calls (the parent's direct approval went through). Then I rebuilt the database from empty.
+  - **Results (2026-10-03):**
+    - `npm run test:db`: **832 of 832**, after `supabase db reset` (8 new).
+    - `npm test`: **167 of 167**.
+    - `npm run test:e2e`: **53 of 53** (1 new).
+    - `npm run timemachine`: **PASS, 14 of 14**.
+    - `npm run lint` is clean and `npm run build` succeeds.
+  - **`dev-5180`** stays in `.claude/launch.json` (Dad's choice): a second dev server on port 5180 for when 5173 is taken.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

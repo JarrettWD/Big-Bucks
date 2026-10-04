@@ -25,6 +25,7 @@ import KidLogin from './pages/KidLogin';
 import ParentLogin from './parent/ParentLogin';
 import ParentMfa from './parent/ParentMfa';
 import ParentShell, { ParentDashboard, ParentSettings } from './parent/ParentShell';
+import Approvals from './parent/approvals/Approvals';
 
 // Graphs carries Recharts, so it loads only when the Graphs tab opens.
 const Graphs = lazy(() => import('./kid/graphs/Graphs'));
@@ -153,6 +154,7 @@ export default function App() {
             }
           >
             <Route index element={<ParentDashboard />} />
+            <Route path="approvals" element={<Approvals />} />
             <Route path="settings" element={<ParentSettings />} />
             <Route path="*" element={<Navigate to="/parent" replace />} />
           </Route>

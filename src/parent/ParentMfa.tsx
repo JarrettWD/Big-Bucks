@@ -4,6 +4,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { isAuthSessionMissingError } from '@supabase/supabase-js';
 import { useAuth } from '../auth/AuthProvider';
 import { supabase } from '../lib/supabase';
 import './Parent.css';
@@ -78,7 +79,19 @@ export default function ParentMfa() {
     });
     setBusy(false);
     if (error) {
-      setError("That code didn't work. Codes change every 30 seconds, so use the newest one.");
+      // Finishing the code step on one device ends the parent's other half-finished
+      // sign-ins (Supabase's rule), so a new code here can never work.
+      // supabase-js reports it as AuthSessionMissingError (no code); a verify racing
+      // the deletion comes back as a server error.
+      const ended =
+        isAuthSessionMissingError(error) ||
+        error.code === 'session_not_found' ||
+        (error.status ?? 0) >= 500;
+      setError(
+        ended
+          ? 'This sign-in has ended, maybe because you finished signing in on another device. Tap "Cancel and sign out", then sign in again.'
+          : "That code didn't work. Codes change every 30 seconds, so use the newest one.",
+      );
       setCode('');
       return;
     }

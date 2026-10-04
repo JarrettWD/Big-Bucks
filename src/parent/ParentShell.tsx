@@ -1,17 +1,21 @@
 // The parent side's frame: its own header and routes. Reached only by a parent
 // who has passed the authenticator step (the route guard in App.tsx); the
 // database requires the same (aal2) for every parent read and action.
-// Stage 8 builds the dashboard and settings.
+// Tabs: bottom of the screen on phones (Dad's main device), top from 720px.
+// The Approvals count comes from parent_inbox(), shared with the Approvals screen.
 
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { formatCents } from '../lib/money';
 import { supabase } from '../lib/supabase';
+import { useInbox } from './useInbox';
 import './Parent.css';
 
 export default function ParentShell() {
   const { profile, signOut } = useAuth();
+  const inbox = useInbox();
+  const waiting = inbox.inbox ? inbox.inbox.requests.length + inbox.inbox.questions.length : 0;
   return (
     <div className="parent">
       <header className="parent__top">
@@ -22,12 +26,36 @@ export default function ParentShell() {
       </header>
       <nav className="parent__tabs" aria-label="Parent">
         <NavLink to="/parent" end>
+          <span className="parent__tab-icon" aria-hidden="true">
+            🏠
+          </span>
           Dashboard
         </NavLink>
-        <NavLink to="/parent/settings">Settings</NavLink>
+        <NavLink
+          to="/parent/approvals"
+          aria-label={waiting > 0 ? `Approvals, ${waiting} waiting` : 'Approvals'}
+        >
+          <span className="parent__tab-icon" aria-hidden="true">
+            ✅
+          </span>
+          <span>
+            Approvals
+            {waiting > 0 && (
+              <span className="parent__badge" aria-hidden="true">
+                {waiting}
+              </span>
+            )}
+          </span>
+        </NavLink>
+        <NavLink to="/parent/settings">
+          <span className="parent__tab-icon" aria-hidden="true">
+            ⚙️
+          </span>
+          Settings
+        </NavLink>
       </nav>
       <main className="parent__main">
-        <Outlet />
+        <Outlet context={inbox} />
       </main>
     </div>
   );
@@ -77,9 +105,10 @@ export function ParentDashboard() {
           ))}
         </ul>
       )}
-      <p className="parent-soon">
-        Approvals, alerts and the rest of the dashboard arrive in stage 8.
+      <p>
+        <Link to="/parent/approvals">See what's waiting in Approvals</Link>
       </p>
+      <p className="parent-soon">The rest of the dashboard arrives in stage 8, part B.</p>
     </section>
   );
 }

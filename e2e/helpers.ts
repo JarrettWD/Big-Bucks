@@ -53,6 +53,26 @@ export async function parentPassword(page: Page, email: string, password: string
   await expect(page).toHaveURL(/\/parent\/mfa$/);
 }
 
+/** The demo parent, all the way in: password, then the authenticator code. */
+export async function parentSignIn(page: Page): Promise<void> {
+  const { parent } = logins().demo;
+  const dashboard = page.getByRole('heading', { name: 'Dashboard' });
+  const refused = page.getByRole('alert');
+  // Several tests sign in as the demo parent at once. When one finishes the code
+  // step, Supabase ends the parent's other half-finished sign-ins, so a test caught
+  // in between starts again from the password, as a person would.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await parentPassword(page, parent.email, parent.password);
+    await page.getByLabel('6-digit code').fill(await freshCode(parent.totpSecret));
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(dashboard.or(refused)).toBeVisible({ timeout: 15_000 });
+    if (await dashboard.isVisible()) return;
+    await page.getByRole('button', { name: 'Cancel and sign out' }).click();
+    await page.waitForTimeout(500 + Math.floor(Math.random() * 1500));
+  }
+  await expect(dashboard).toBeVisible();
+}
+
 /** An authenticator code that won't change in the next few seconds. */
 export async function freshCode(secret: string): Promise<string> {
   const left = 30 - Math.floor((Date.now() / 1000) % 30);

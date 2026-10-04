@@ -1,8 +1,11 @@
 // Parent sign-in with the authenticator step, against the LOCAL Supabase.
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { freshCode, logins, parentPassword } from './helpers';
+import { freshCode, logins, parentPassword, parentSignIn } from './helpers';
 import { totp } from '../scripts/local/totp.ts';
+
+// One at a time: finishing the code step ends the parent's other half-finished sign-ins.
+test.describe.configure({ mode: 'serial' });
 
 test('a new parent sets up the authenticator on first sign-in, then reaches the dashboard', async ({
   page,
@@ -81,4 +84,24 @@ test('without the authenticator code a parent is blocked, on screen and in the d
   // Row-level security shows a password-only parent nobody's accounts or alerts.
   expect(await (await fetch(`${rest}/accounts?select=id`, { headers })).json()).toEqual([]);
   expect(await (await fetch(`${rest}/alerts?select=id`, { headers })).json()).toEqual([]);
+});
+
+test('a sign-in ended on another device says so, instead of blaming the code', async ({
+  page,
+  browser,
+}) => {
+  const { parent } = logins().demo;
+  // The PC stops at the code step; then the phone signs in all the way.
+  await parentPassword(page, parent.email, parent.password);
+  const phone = await browser.newContext();
+  await parentSignIn(await phone.newPage());
+  await phone.close();
+
+  await page.getByLabel('6-digit code').fill(await freshCode(parent.totpSecret));
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('alert')).toHaveText(
+    'This sign-in has ended, maybe because you finished signing in on another device. Tap "Cancel and sign out", then sign in again.',
+  );
+  await page.getByRole('button', { name: 'Cancel and sign out' }).click();
+  await parentSignIn(page);
 });

@@ -10,6 +10,8 @@ Every message the girls can see from the money engine, exported from the databas
 
 Each notice has a title and a body.
 
+**Dad's own words (stage 8, the Approvals screen):** when Dad approves, declines or answers, his note, reason or answer goes into the notice exactly as he typed it. The only change is that an approval note gets a full stop added if it has none. Before he confirms, the Approvals screen shows him the whole notice under "{Name} will see:", word for word as it will appear. Stage 8 doesn't change any of the wording below.
+
 ### Deposits and withdrawals
 
 - **Deposit approved**

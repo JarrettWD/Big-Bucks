@@ -3,7 +3,7 @@
 // Nothing may spill sideways, be cut off or overlap, and every button is at
 // least 44 px. Full-page screenshots go to test-results/layout/ for a look.
 import { expect, test, type Page } from '@playwright/test';
-import { kid, kidSignIn } from './helpers';
+import { kid, kidSignIn, parentSignIn } from './helpers';
 
 const SIZES = [
   { name: 'small-phone', width: 360, height: 780 },
@@ -278,6 +278,37 @@ for (const size of SIZES) {
       await page.getByRole('button', { name: 'Nasdaq-100' }).click();
       await expect(page.locator('.notes-list')).toBeVisible();
       await check(page, `graphs-fund-note-${size.name}-${text.name}`, text.scale);
+    }
+  });
+}
+
+// Dad's screens: phone first (his main device), and his PC. Opening a confirmation
+// only runs previews (always rolled back), so nothing changes.
+for (const size of SIZES) {
+  test(`parent screens fit at ${size.name} (${size.width}×${size.height}), normal and large text`, async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await parentSignIn(page);
+    for (const text of TEXT) {
+      await page.goto('./parent/approvals');
+      await expect(page.locator('.appr__card').first()).toBeVisible();
+      await check(page, `parent-approvals-${size.name}-${text.name}`, text.scale);
+
+      // An approval confirmation with a note and its preview, and an answer being written.
+      const withdrawal = page.locator('.appr__card', { hasText: 'Withdrawal $10.00' });
+      await withdrawal.getByRole('button', { name: 'Approve' }).click();
+      await withdrawal.getByLabel('Note to Robin (optional)').fill('Have fun at the fair');
+      await expect(withdrawal.locator('.appr__notice')).toContainText('Have fun at the fair');
+      await check(page, `parent-approve-${size.name}-${text.name}`, text.scale);
+      const question = page.locator('.appr__card', { hasText: 'Why was my interest' });
+      await question.getByRole('button', { name: 'Answer' }).click();
+      await question
+        .getByLabel('Your answer (Robin sees this)')
+        .fill('The rate went down a little.');
+      await expect(question.locator('.appr__notice')).toBeVisible();
+      await check(page, `parent-answer-${size.name}-${text.name}`, text.scale);
     }
   });
 }

@@ -21,8 +21,16 @@ export default defineConfig({
     { name: 'layout', testMatch: /(layout|graphs).spec.ts/, use: { ...devices['Pixel 7'] } },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs).spec.ts/,
+      testIgnore: /(layout|graphs|approvals).spec.ts/,
       dependencies: ['layout'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Dad's decisions change Robin's requests and balances, so they run after the
+    // kid tests that read them.
+    {
+      name: 'parent-actions',
+      testMatch: /approvals.spec.ts/,
+      dependencies: ['android-chrome'],
       use: { ...devices['Pixel 7'] },
     },
   ],

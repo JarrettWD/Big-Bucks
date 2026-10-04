@@ -411,6 +411,21 @@ async function main(): Promise<void> {
       [addDays(T, 5), 'The Bank of Canada lowered its rate again.'],
     );
     act(
+      at(addDays(T, -2), '16:00'),
+      'Robin asks to withdraw $10 (past its 24 hours, ready for Dad)',
+      A,
+      'select public.request_withdrawal($1)',
+      [$(10)],
+    );
+    act(
+      at(yesterday, '18:30'),
+      'Robin asks about her latest savings interest (waiting for Dad)',
+      A,
+      `select public.ask_question($1, (select max(t.id) from public.transactions t
+                                        where t.type = 'interest' and t.vehicle = 'savings'))`,
+      ['Why was my interest smaller this month?'],
+    );
+    act(
       at(yesterday, '19:00'),
       'Robin asks to deposit $50 (waiting for Dad)',
       A,
@@ -469,6 +484,9 @@ async function main(): Promise<void> {
 
     // Back to real time.
     await db.setClock('');
+    // One withdrawal asked for right now, so the Approvals screen shows a live 24-hour countdown.
+    const w = await db.call(A, 'select public.request_withdrawal($1)', [$(5)]);
+    if (!w.ok) throw new Error(`demo: the countdown withdrawal: ${w.error}`);
     const [alerts] = await db.q<{ n: string }>(`select count(*)::text as n from public.alerts`);
     if (alerts.n !== '0') throw new Error(`demo: ${alerts.n} alerts were raised`);
 

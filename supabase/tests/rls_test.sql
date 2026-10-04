@@ -4,7 +4,7 @@
 -- parent. All names and ids are made up. Everything runs in one transaction that
 -- is rolled back, so nothing persists.
 begin;
-select plan(45);
+select plan(46);
 
 -- Test helpers --------------------------------------------------------------
 
@@ -147,6 +147,8 @@ begin
     insert into public.notifications (account_id, type, title, body, related_gic_id)
       values (acct, 'gic_maturity', 'Your GIC is ready', 'Choose what happens next.', v_gic);
     insert into public.alerts (kind, account_id, message) values ('test', acct, 'Test alert');
+    insert into public.parent_actions (done_by, action, account_id, summary)
+      values ('00000000-0000-0000-0000-00000000000f', 'approve_request', acct, 'Approved a test deposit.');
   end loop;
 end;
 $$;
@@ -228,7 +230,7 @@ select set_eq(
       join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = 'account_id' and t.table_type = 'BASE TABLE'$$,
   array['alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
-        'profiles', 'questions', 'requests', 'transactions', 'wishlist_items'],
+        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'wishlist_items'],
   'the account-scoped tables are the ones this test seeds (update both when adding a table)');
 
 -- 2. Kid A ------------------------------------------------------------------
@@ -249,6 +251,7 @@ select is((select id from public.accounts), 'aaaaaaaa-0000-0000-0000-00000000000
 select is((select count(*) from public.profiles), 1::bigint, 'kid A sees only her own profile');
 select is((select count(*) from public.wishlist_parent_marks), 0::bigint, 'kid A cannot see "Got it" markers, even on her own items');
 select is((select count(*) from public.alerts), 0::bigint, 'kid A cannot see alerts, even about her own account');
+select is((select count(*) from public.parent_actions), 0::bigint, 'kid A cannot see the parent action log, even about her own account');
 select is((select count(*) from public.login_attempts), 0::bigint, 'kid A cannot see login attempts');
 select is((select count(*) from public.job_runs), 0::bigint, 'kid A cannot see job runs');
 select is((select count(*) from public.notes), 1::bigint, 'kid A sees only notes meant for kids');
