@@ -14,7 +14,8 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
 import KidShell from './kid/KidShell';
-import { KidGraphs, KidNotices, KidWishList } from './kid/KidScreens';
+import { KidGraphs, KidWishList } from './kid/KidScreens';
+import Notices from './kid/notices/Notices';
 import Trade from './kid/trade/Trade';
 import GicChoice from './kid/GicChoice';
 import History from './kid/History';
@@ -122,7 +123,7 @@ export default function App() {
             <Route path="graphs" element={<KidGraphs />} />
             <Route path="trade" element={<Trade />} />
             <Route path="wishlist" element={<KidWishList />} />
-            <Route path="notices" element={<KidNotices />} />
+            <Route path="notices" element={<Notices />} />
           </Route>
           <Route
             path="/parent/login"

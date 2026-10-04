@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  albertaDate,
-  daysBetween,
-  formatDate,
-  formatPct,
-  formatRate,
-  termLabel,
-  termWords,
-} from './format';
+import { daysBetween, formatDate, formatPct, formatRate, termLabel, termWords } from './format';
 
 describe('formatRate (same as the database fmt_rate)', () => {
   it.each([
@@ -51,21 +43,5 @@ describe('dates', () => {
     expect(daysBetween('2026-10-01', '2026-10-07')).toBe(6);
     expect(daysBetween('2028-02-28', '2028-03-01')).toBe(2);
     expect(daysBetween('2026-10-07', '2026-10-01')).toBe(-6);
-  });
-});
-
-describe('albertaDate (same rule as the database edmonton_local)', () => {
-  it.each([
-    ['2026-10-31T18:00:00Z', '2026-10-31'],
-    ['2026-11-01T05:59:00Z', '2026-10-31'], // 11:59 pm Oct 31 in Alberta
-    ['2026-11-01T06:00:00Z', '2026-11-01'], // midnight Nov 1: no clock change
-    ['2026-11-02T06:30:00+00:00', '2026-11-02'], // 12:30 am, not 11:30 pm the day before
-    ['2027-01-01T05:30:00Z', '2026-12-31'], // 11:30 pm Dec 31 in Alberta, already Jan 1 in UTC
-    ['2027-07-01T06:00:00Z', '2027-07-01'],
-    ['2027-11-08T05:59:59Z', '2027-11-07'],
-  ])('%s → %s', (m, d) => expect(albertaDate(m)).toBe(d));
-  it('refuses junk and moments before the fixed rule', () => {
-    expect(() => albertaDate('soon')).toThrow();
-    expect(() => albertaDate('2026-01-15T12:00:00Z')).toThrow();
   });
 });

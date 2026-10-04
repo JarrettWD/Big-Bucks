@@ -152,6 +152,41 @@ describe('stock funds', () => {
     m.advanceTo('2027-03-03 16:00');
     expect(m.postings.find((p) => p.kind === 'sell')!.cents).toBe(10239n); // paid rounded up
   });
+  it('a day’s close is known from the nightly run (or later, if it arrives late)', () => {
+    const m = new Model('2027-03-01 09:00', holidays);
+    m.addClose('dow', '2027-03-01', '420', '2027-03-01 15:30');
+    m.addClose('dow', '2027-03-02', '430', '2027-03-02 15:30');
+    m.addClose('dow', '2027-03-03', '440', '2027-03-04 10:00'); // a late close
+    expect(m.knownClose('dow', '2027-03-02 16:00')?.toFixed(0)).toBe('420');
+    expect(m.knownClose('dow', `2027-03-02 ${NIGHTLY_RUN}`)?.toFixed(0)).toBe('430');
+    expect(m.knownClose('dow', '2027-03-04 09:00')?.toFixed(0)).toBe('430');
+    expect(m.knownClose('dow', '2027-03-04 10:00')?.toFixed(0)).toBe('440');
+  });
+  it('typing the shown value sells all; more is refused (Dad, stage 7 2b review)', () => {
+    const m = funded('2027-03-01 09:00', 20000n);
+    m.addClose('tsx', '2027-03-01', '41.13', '2027-03-01 15:30');
+    m.addClose('tsx', '2027-03-02', '39.27', '2027-03-02 15:30');
+    m.addClose('tsx', '2027-03-03', '39.27', '2027-03-03 15:30');
+    m.act('2027-03-01 10:00', { kind: 'buy', kid: 'k', fund: 'tsx', cents: 6000n, label: 't1' });
+    m.advanceTo('2027-03-02 16:00');
+    expect(m.snapshot('k').units.get('tsx')!.toFixed(8)).toBe('1.45878921');
+    expect(m.snapshot('k').fundValue.get('tsx')).toBe(5729n); // 57.2866… shown as $57.29
+    const over = m.act('2027-03-03 09:00', {
+      kind: 'sell',
+      kid: 'k',
+      fund: 'tsx',
+      cents: 5730n,
+      label: 't2',
+    });
+    expect(over).toEqual({ ok: false, reason: 'more than her units are worth' });
+    expect(
+      m.act('2027-03-03 09:00', { kind: 'sell', kid: 'k', fund: 'tsx', cents: 5729n, label: 't3' })
+        .ok,
+    ).toBe(true);
+    m.advanceTo('2027-03-03 16:00');
+    expect(m.postings.find((p) => p.kind === 'sell')!.cents).toBe(5729n); // all of it, rounded up
+    expect(m.snapshot('k').units.get('tsx')!.isZero()).toBe(true);
+  });
   it('Friday evening settles at Monday close; early close at 12:00 Edmonton in winter; TSX holiday skipped', () => {
     const m = new Model('2027-10-01 09:00', holidays);
     expect(m.nextClose('dow', '2027-10-08 16:00')).toEqual({

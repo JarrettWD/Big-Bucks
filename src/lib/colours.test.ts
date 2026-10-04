@@ -46,9 +46,18 @@ describe('coloured shapes (3 : 1 against white, by fill or by outline)', () => {
     const best = Math.max(contrast(fill, W), contrast(INK.outline, W));
     expect(best).toBeGreaterThanOrEqual(3);
   });
-  it('the two light fills are flagged as needing the outline', () => {
+  it('only the savings gold is too light on its own, so it needs the outline', () => {
     expect(contrast(OPTION.savings, W)).toBeLessThan(3);
-    expect(contrast(OPTION.nasdaq100, W)).toBeLessThan(3);
+    for (const [name, fill] of Object.entries(OPTION))
+      if (name !== 'savings') expect(contrast(fill, W), name).toBeGreaterThanOrEqual(3);
+  });
+  it('every pair of options differs in lightness, not just hue (at least 1.4 : 1)', () => {
+    // So the options can be told apart without seeing colour: colour-blind readers,
+    // or a page printed in grey (Dad's decision, stage 7 2b review).
+    const all = Object.entries(OPTION);
+    for (const [i, [a, x]] of all.entries())
+      for (const [b, y] of all.slice(i + 1))
+        expect(contrast(x, y), `${a} and ${b}`).toBeGreaterThanOrEqual(1.4);
   });
   it('up and down days are equally strong (a drop is as clear as a rise)', () => {
     const up = contrast(MOVE.up, W);

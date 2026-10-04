@@ -138,7 +138,7 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 - You have {available} available.
 - You don't have any {fund} units to sell.
 - There's no price for the {fund} fund yet, so it can't be sold by amount.
-- Your {fund} units are worth about {value}, so you can sell up to that (or choose "sell all").
+- Your {fund} units are worth about {value}, so you can sell up to that (or choose "sell all"). ({value} is the value she's shown, to the nearest cent. Typing exactly that value sells all of it instead of refusing.)
 
 ### "Something looks wrong?"
 
@@ -258,7 +258,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 | Fund bought / sold | Bought {fund} · Sold {fund} | {amount} |
 | Split | {fund} split its units · Same value, more units. | |
 | Correction | A correction (with its note) | +/−{amount} |
-| Penalty | A penalty (with its note) | −{amount} |
+| Penalty | A penalty (its note opens under "How was this calculated?", §9) | −{amount} |
 | Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund} (Waiting for the market close) | {amount}, or All of it |
 | Declined | Dad said not this time (money in / money out) · Dad says: "{reason}" | {amount} |
 | Expired | A request ran out of time · Nobody answered within 7 days, so it was cancelled. You can ask again any time. | {amount} |
@@ -301,7 +301,7 @@ From the app's screen (`src/kid/trade/`: wording in `tradeText.ts` and `moves.ts
 - **How much?**
   - Under the box:
     - Deposit: You can put in up to {deposit room} more.
-    - Fund sale: You can sell up to {most she can sell}, or all of it. (Her units' value rounded down to the cent, the same limit the database uses. Home and the warnings show the value rounded to the nearest cent, so they can be a cent higher.)
+    - Fund sale: Your {fund} is worth about {value}. (The same value as Home, to the nearest cent. Typing it sells all of her units.)
     - Anything else: {available} free to use.
     - Each has a **?**: Deposit cap, Unit price or Available.
   - Fund sale: **Sell all of it** (the box then reads "All of it").
@@ -339,6 +339,7 @@ Shown under the box; nothing is checked with the bank until the amount makes sen
 - 💡 **Fund buy:** Your buy happens at {Monday's 3:00 pm close (Nov 2)}, at that day's price. It could be higher or lower than today's, so you'll see how many units you got after the close. (**?** Market close)
 - 💡 **Fund sale, by amount:** Your sale happens at {close}. You'll get {amount}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them.
 - 💡 **Fund sale, all of it:** Your sale happens at {close}. You'll get whatever your units are worth at that day's price.
+- 💡 **Fund sale, typing the value she's shown:** That's what all of your {fund} is worth, so this sells all of it. (Then the "all of it" note above, and the summary asks "Sell all of your {fund}?".)
 
 The close reads "today's 2:00 pm close", "tomorrow's 2:00 pm close", "yesterday's …", or "{weekday}'s {time} close ({date})".
 
@@ -389,3 +390,35 @@ Each line ends with "· asked {date}". With nothing waiting: Nothing waiting rig
 
 - **Updating…** Your numbers are being double-checked. They'll be back soon. You can make moves again once they're back.
 - **If Buy / Sell can't load:** Big Bucks couldn't load your money just now. Please try again in a minute. · Try again
+
+## 9. Notices, "How was this calculated?" and "Something looks wrong?" (stage 7)
+
+From the app's screens (`src/kid/notices/`, `src/kid/home/ActivityList.tsx`, `src/kid/History.tsx`), so edits are a code change. Notice titles and bodies are §1; the working itself is §3 and §4, written by the database when the line was posted.
+
+### The notices list (the bell)
+
+- **Notices** · each notice: {title} · **New** (if she hadn't seen it) · {body} · {date}
+- A "Dad answered your question" notice also has **See your questions**, which goes to her questions on the history page.
+- Opening the list marks what's on it as read. The **New** tags stay until she leaves the list.
+- **Nothing yet:** Nothing new. You're all caught up!
+- **Show more** (after 50) · **Back to Home**
+- **If it can't load:** Big Bucks couldn't load your notices just now. Please try again in a minute.
+
+### A history line, opened (tap any line on Home or "See all")
+
+- **How was this calculated?** followed by the line's working, on savings interest, GIC interest, dividends, fund buys and sales, a GIC broken early, and a penalty. Example: "$100.21 × 2.5% × 1/12 = $0.2088, rounded up to $0.21".
+- Her questions about that line:
+  - **You asked** ({date}): {her question}
+  - **Dad answered** ({date}): {Dad's answer}, or: Waiting for Dad's answer.
+- **Something looks wrong?**
+  - What looks wrong? Dad will see this line with your question. (a box to type in)
+  - **Send to Dad** · **Cancel**
+  - **Nothing typed:** Write your question first.
+  - **Sent:** Sent! Dad will answer here, and you'll get a notice when he does.
+  - **A line that's a request** (waiting, declined or expired) has no ledger entry to attach yet, so the question is saved starting with: About "{line}, {amount}" on {date}: …
+  - Other problems are the database's own words (§2, "Something looks wrong?").
+
+### Your questions (on the "See all" page)
+
+- **Your questions** · every question, newest first, with Dad's answer or "Waiting for Dad's answer."
+- **None yet:** No questions yet. If a line ever looks wrong, tap it and choose "Something looks wrong?".

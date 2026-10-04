@@ -141,7 +141,7 @@ export function describeActivity(r: ActivityRow): ActivityLine {
         ...base,
         icon: '⚠️',
         title: 'A penalty',
-        detail: r.note,
+        detail: null, // its working opens under "How was this calculated?"
         amount: `−${money()}`,
         tone: 'out',
       };

@@ -35,6 +35,7 @@ import {
   isCaution,
   placeBlocked,
   placeLabel,
+  sellsAll,
   summaryFor,
   waitingLine,
   warningText,
@@ -253,7 +254,7 @@ export default function Trade() {
   const ctx = {
     kind: move?.kind ?? 'deposit',
     year,
-    sellAll,
+    sellAll: sellAll || sellsAll(current),
     amount,
     fundName: fund?.name ?? 'fund',
   } as const;
@@ -303,7 +304,7 @@ export default function Trade() {
             summary={summaryFor({
               kind: move.kind,
               amount,
-              sellAll,
+              sellAll: sellAll || sellsAll(current),
               fund,
               gic,
               quote,

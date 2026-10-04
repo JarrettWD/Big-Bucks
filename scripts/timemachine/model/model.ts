@@ -8,6 +8,7 @@
 
 import { Q, sumQ } from './rational.ts';
 import {
+  NIGHTLY_RUN,
   type Day,
   type Moment,
   addDays,
@@ -291,6 +292,21 @@ export class Model {
     for (let x = d, i = 0; i < 30; x = addDays(x, -1), i++) {
       const c = this.closes.get(`${fund}|${x}`);
       if (c && (!seen || c.publishedAt <= seen)) return c.close;
+    }
+    return null;
+  }
+
+  /**
+   * The latest close the database knows at moment t: a day's close arrives with the
+   * nightly run (NIGHTLY_RUN), or later when it's published late. This is the price
+   * a request is checked against (a sale by amount), not the one it settles at.
+   */
+  knownClose(fund: FundId, t: Moment): Q | null {
+    for (let x = dayOf(t), i = 0; i < 30; x = addDays(x, -1), i++) {
+      const c = this.closes.get(`${fund}|${x}`);
+      if (!c) continue;
+      const arrives = c.publishedAt > at(x, NIGHTLY_RUN) ? c.publishedAt : at(x, NIGHTLY_RUN);
+      if (arrives <= t) return c.close;
     }
     return null;
   }
@@ -660,19 +676,35 @@ export class Model {
         if (a.kind === 'buy') {
           if (a.cents < MIN_GIC_OR_FUND) return no('under the $10 minimum');
           if (a.cents > this.available(a.kid)) return no('more than available');
-        } else {
+        }
+        let kind = a.kind;
+        if (a.kind !== 'buy') {
           const units = this.unitsAt(a.kid, a.fund, t);
           if (units.sign() <= 0) return no('no units to sell');
-          if (a.kind === 'sell' && a.cents < MIN_GIC_OR_FUND) return no('under the $10 minimum');
+          if (a.kind === 'sell') {
+            if (a.cents < MIN_GIC_OR_FUND) return no('under the $10 minimum');
+            // Dad's decision (stage 7, 2b review): typing the value she's shown (to the
+            // nearest cent) sells all, and so does anything up to the exact value when
+            // that is a fraction of a cent higher. More than that is refused.
+            const close = this.knownClose(a.fund, t);
+            if (close) {
+              const exact = units.mul(close).mul(Q.of(100));
+              const shown = exact.round();
+              const amount = Q.of(a.cents);
+              const top = exact.cmp(Q.of(shown)) > 0 ? exact : Q.of(shown);
+              if (a.cents >= shown && amount.cmp(top) <= 0) kind = 'sell_all';
+              else if (amount.cmp(exact) > 0) return no('more than her units are worth');
+            }
+          }
         }
         const nc = this.nextClose(a.fund, t);
         k.tradeDays.add(key);
         this.reqs.set(a.label, {
           label: a.label,
           kid: a.kid,
-          kind: a.kind,
+          kind,
           fund: a.fund,
-          cents: a.kind === 'sell_all' ? 0n : a.cents,
+          cents: kind === 'sell_all' || a.kind === 'sell_all' ? 0n : a.cents,
           createdAt: t,
           status: 'pending',
           settleAt: nc.at,

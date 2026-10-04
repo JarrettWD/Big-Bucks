@@ -442,16 +442,107 @@
   padding: 0;
   list-style: none;
 }
+.activity__item {
+  border-top: 1px solid var(--bb-purple-tint);
+}
+.activity__item:first-child {
+  border-top: 0;
+}
+/* Each line is a button that opens its details. */
 .activity__row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
   gap: 0.6rem;
-  padding: 0.7rem 0;
-  border-top: 1px solid var(--bb-purple-tint);
+  width: 100%;
+  min-height: 48px;
+  padding: 0.7rem 0.25rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--bb-ink);
+  text-align: left;
 }
-.activity__row:first-child {
-  border-top: 0;
+.activity__row:hover,
+.activity__row[aria-expanded='true'] {
+  background: var(--bb-purple-tint);
+}
+.activity__more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--bb-purple-soft);
+  border-radius: 0 12px 12px 0;
+  background: var(--bb-page);
+  line-height: 1.5;
+}
+.working__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+.working__text {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.question p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.question__reply {
+  margin-top: 0.2rem !important;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--bb-up);
+}
+.question__waiting {
+  color: var(--bb-ink-soft);
+}
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+.ask__label {
+  font-weight: 700;
+}
+.ask__text {
+  width: 100%;
+  min-height: 5rem;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--bb-ink);
+  background: var(--bb-white);
+}
+.ask__text:focus-visible {
+  outline: 3px solid var(--bb-gold);
+  outline-offset: 2px;
+  border-color: var(--bb-purple);
+}
+.ask__error {
+  margin: 0;
+  color: #a3123f;
+  font-weight: 600;
+}
+.ask__sent {
+  margin: 0;
+  font-weight: 600;
+  color: var(--bb-up);
 }
 .activity__icon {
   font-size: 1.4rem;

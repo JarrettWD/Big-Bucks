@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 7 part 2a (Buy / Sell) done and reviewed by Dad, local only. **Now: part 2b** (notices, "How was this calculated?", "Something looks wrong?", accessibility), then 2c (all six graphs).
+- Current stage: stage 7 parts 2a and 2b done and reviewed, local only. **Next: part 2c (all six graphs)**, plan waiting for Dad's OK.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -22,7 +22,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Dad to do by hand:
 -->
 
-### Stage 7, part 2 — 2a done and reviewed; 2b in progress (2026-10-03)
+### Stage 7, part 2 — 2a and 2b done and reviewed; 2c planned (2026-10-03)
 
 - **The plan Dad approved:**
   - **2a:** Buy / Sell, then stop for review.
@@ -120,6 +120,95 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - `npm run test:e2e`: **32 of 32**. New: selling a fund worth less than she paid, with the warning and summary in dollars against the database; she then goes back without selling. The GIC-break test now taps a card.
   - Lint is clean and the build succeeds.
 
+- **Part 2b: notices, "How was this calculated?", "Something looks wrong?" and accessibility. Built, waiting for Dad's review.** Not committed yet. Part 2a is commit `ab6f3fc`, and its CI passed.
+- **Migration `20261008000000_notices_questions.sql`** (new; reads only):
+  - **`my_notices(account, limit, before_id)`:** her notices, newest first, each with its Alberta date (`on_day`, from `edmonton_local`) and whether it's new.
+  - **`my_questions(account)`:** her questions with Dad's answers, the line each is about, and the asked and answered dates.
+  - **Who can call them:** a kid sees only her own; a parent needs the authenticator code.
+- **The notices list (`src/kid/notices/`)** uses `my_notices`, which fixes the known issue: no dates are worked out in the browser any more.
+  - Opening the list marks its notices read, and the bell count drops. The **New** tags stay until she leaves.
+  - A "Dad answered" notice links to **See your questions**.
+  - **`albertaDate()` is removed** (with its 8 tests). The SPEC "Time and dates" rule now says the browser never turns a time into a date, and the "if Alberta's rule changes" checklist no longer mentions the browser.
+- **History lines open (Home and "See all"):** each line is a button (`aria-expanded`) with a panel under it.
+  - **How was this calculated?** shows the working the database wrote on the line when it posted. That covers savings interest, GIC interest, dividends, fund buys and sales, a GIC broken early, and a penalty. Nothing is worked out in the browser. A penalty's note moved from the line itself into this panel.
+  - **Her questions about the line**, with Dad's answers.
+  - **Something looks wrong?** calls `ask_question` with the line's ledger id.
+    - A request line (waiting, declined or expired) has no ledger entry yet, so the question begins with `About "{line}, {amount}" on {date}: ` instead.
+    - An empty question is refused on screen.
+  - **"Your questions" on the "See all" page:** the whole thread stays in her history. It shares one list with the lines, so a new question shows in both places at once (a bug the tests caught).
+- **Accessibility pass:**
+  - **New checks in `layout.spec.ts` on every kid screen,** at 6 sizes with normal and 130% text:
+    1. Every control has a name a screen reader can say.
+    2. Text contrast is measured on the real page: 4.5:1, or 3:1 for large text. A deliberately pale test line was caught at 4.08:1, so the check works.
+    3. Tap targets now include dropdowns, text boxes and the cards and checkboxes she taps.
+  - **Screens now checked:** the kid login, Home, history, a history line opened with the question box, the GIC choice, the notices list, and Buy / Sell (three states).
+  - **Result:** no problems found on any of them.
+  - **Colours that differ in lightness, not just hue:** measured, and **two pairs are too close.** GIC pink and Dow blue differ by 1.19:1, and savings gold and Nasdaq-100 orange by 1.34:1. A proposal is waiting for Dad's decision (below); nothing has changed yet.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db`: **707 of 707** (17 new in `notices_questions_test.sql`). They include:
+    - dates either side of midnight on Nov 1, 2026;
+    - paging, and "new" clearing once read;
+    - questions with answers and dates;
+    - who may call them.
+  - `npm test`: **143 of 143**. That's 151 before, minus the 8 `albertaDate()` tests.
+  - `npm run test:e2e`: **36 of 36**. New `transparency.spec.ts` (4 tests):
+    - the notices list, against the database's dates, with marking read;
+    - "How was this calculated?" against the line's working;
+    - "Something looks wrong?", with Dad's answer arriving as a notice and in her questions;
+    - asking about a waiting request.
+  - Lint is clean and the build succeeds.
+  - **Time machine not re-run:** part 2b only adds reads and screens, with no money logic. Its last run this session passed, 14 of 14.
+- **For Dad to decide: option colours spread by lightness.** Same hues, with the lightness spread so every pair differs by at least 1.44:1, up from 1.19:1:
+
+  | Option | Now | Proposed |
+  |---|---|---|
+  | Savings (gold) | `#E0A400` | `#E0A400` (same) |
+  | Nasdaq-100 (orange) | `#F76B15` | `#F06008` (a little deeper) |
+  | Dow Jones (blue) | `#2F80ED` | `#146DE4` (a little deeper) |
+  | GICs (pink) | `#D6336C` | `#A82250` (deeper raspberry) |
+  | TSX (teal) | `#0B6E69` | `#074945` (deep teal) |
+
+  - **If he agrees:** a new migration for the fund colours, then `theme.css`, `colours.ts`, and a new test that every pair differs by at least 1.4:1.
+  - **Before the graphs either way:** in 2c, each option will be named on the graphs too, so colour is never the only clue.
+- **Dad to do by hand:** nothing. To try it, open **http://127.0.0.1:5173/Big-Bucks/** in Chrome and sign in as Sky. Then:
+  - open the bell;
+  - tap a history line (Home or **See all**);
+  - tap **Something looks wrong?**.
+- **Dad's review of 2b (2026-10-03): approved, with two changes, both done.**
+  1. **Option colours spread by lightness** (migration `20261009010000_option_colours.sql`, `theme.css`, `colours.ts`):
+
+     | Option | Was | Now |
+     |---|---|---|
+     | Savings | `#E0A400` | `#E0A400` (same) |
+     | Nasdaq-100 | `#F76B15` | `#F06008` |
+     | Dow Jones | `#2F80ED` | `#146DE4` |
+     | GICs (fill and text) | `#D6336C` / `#B8255A` | `#A82250` |
+     | TSX | `#0B6E69` | `#074945` |
+
+     - **New test:** every pair of options differs by at least 1.4:1 (it was 1.19:1).
+     - **Only the savings gold** still needs its outline.
+  2. **Selling by typing the shown value** (migration `20261009000000_sell_shown_value.sql`; money logic, so known-answer tests came first and the time machine ran).
+     - **The problem:** her units' value is shown to the nearest cent ($57.30). The engine refused anything above the exact value ($57.2866…), and its message quoted the value rounded down ($57.29).
+     - **The rule now** (`sell_amount_is_all`): the shown value sells all of her units, and so does anything up to the exact value when that's a fraction of a cent higher. More is refused, quoting the shown value.
+       - `request_trade` records such a sale as "sell all", holding every unit.
+       - The preview adds a `sells_all` note.
+       - Buy / Sell shows "Your TSX is worth about $57.30", the same as Home.
+     - **Sell all at the same price pays at least the shown value,** because it's units × close, rounded up. For example, $57.1845 shown as $57.18 pays $57.19.
+     - **The honest limit:** a sale settles at the next close, so if the price falls first, selling all pays less than was shown. A test proves this too: $57.18 shown, a close of $38.00, $55.44 paid.
+     - **The rule is a little narrower than "up to the exact value rounded up":** with that, typing $100.01 on a holding worth exactly $100.00008 would have sold all, and an existing engine test rightly refuses that.
+     - **SPEC "Stock funds"** records the rule, and MESSAGES §2 and §8 are updated.
+  - **The time machine caught a gap in its own model,** not the database. The model treated a day's close as known from 3:30 pm, but the database (like production) gets it with the 4:30 pm nightly run. Comparing a sale with its value made the gap matter, so the model now has `knownClose()`, with its own test. Re-run result: **PASS, 14 of 14**, and 75 of 75 actions agreed.
+- **Tests after the 2b review:**
+  - `npm run test:db`: **728 of 728**. New in `sell_shown_value_test.sql` (21):
+    - the shown value at two prices;
+    - a cent under (a sale by amount) and over (refused);
+    - proceeds at the same price;
+    - a fall before the close;
+    - the rule itself.
+  - `npm test`: **146 of 146**: the lightness test, and the model's known close and the shown-value sale.
+  - `npm run test:e2e`: **36 of 36**. The fund-sale test now also types the shown value and gets "sells all of it" and "Sell all of your TSX?".
+  - `npm run timemachine`: **PASS, 14 of 14**.
+  - Lint is clean and the build succeeds.
 ### Alberta time-zone fix, local only (2026-10-03)
 
 - **Why:** Alberta stays on UTC−6 all year from November 1, 2026 (Official Time Act). The local Postgres still has the old rule and would turn Alberta to UTC−7 on Nov 1. Production's may do the same. Details are under stage 7 part 1 below.

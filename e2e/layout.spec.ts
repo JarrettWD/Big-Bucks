@@ -91,8 +91,12 @@ async function layoutProblems(page: Page): Promise<Problem[]> {
         .forEach((u) => overlap(t, u) && problems.push({ what: 'tabs overlap', where: '' })),
     );
 
-    // Big enough to tap.
-    for (const el of document.querySelectorAll('#root a, #root button')) {
+    // Big enough to tap. A hidden radio's target is its card (its label).
+    const targets =
+      '#root a, #root button, #root select, #root textarea, ' +
+      '#root input:not([type=radio]):not([type=checkbox]), #root label:has(input[type=radio]), ' +
+      '#root label:has(input[type=checkbox])';
+    for (const el of document.querySelectorAll(targets)) {
       if (!visible(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.height < 43.5 || r.width < 43.5)
@@ -100,6 +104,77 @@ async function layoutProblems(page: Page): Promise<Problem[]> {
           what: `too small to tap (${Math.round(r.width)}×${Math.round(r.height)})`,
           where: label(el),
         });
+    }
+
+    // Every control has a name a screen reader can say.
+    const text = (ids: string | null) =>
+      (ids ?? '')
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent ?? '')
+        .join(' ');
+    for (const el of document.querySelectorAll(
+      '#root button, #root a[href], #root input, #root select, #root textarea',
+    )) {
+      const field = el.matches('input, select, textarea');
+      const name =
+        el.getAttribute('aria-label') ||
+        text(el.getAttribute('aria-labelledby')) ||
+        (field
+          ? [...((el as HTMLInputElement).labels ?? [])].map((l) => l.textContent).join(' ')
+          : el.textContent) ||
+        el.getAttribute('title') ||
+        '';
+      if (!name.trim()) problems.push({ what: 'has no name for screen readers', where: label(el) });
+    }
+
+    // Text is readable: 4.5 : 1 against what's behind it (3 : 1 for large text).
+    // Checked on the real page, for every element with text of its own. Disabled
+    // controls are exempt; text over a gradient (the total-worth panel) is checked
+    // by the colour tests instead.
+    const rgb = (c: string) => {
+      const m = c.match(/rgba?\(([^)]+)\)/);
+      if (!m) return null;
+      const [r, g, b, a = 1] = m[1]
+        .split(/[\s,/]+/)
+        .filter(Boolean)
+        .map(Number);
+      return { r, g, b, a };
+    };
+    const lum = ({ r, g, b }: { r: number; g: number; b: number }) => {
+      const ch = (v: number) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+    };
+    for (const el of document.querySelectorAll('#root *')) {
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent!.trim());
+      if (!own || !visible(el) || el.closest('[aria-hidden="true"], svg, :disabled')) continue;
+      let bg: { r: number; g: number; b: number; a: number } | null = null;
+      let image = false;
+      for (let e: Element | null = el; e; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        if (s.backgroundImage !== 'none') {
+          image = true;
+          break;
+        }
+        const c = rgb(s.backgroundColor);
+        if (c && c.a >= 0.99) {
+          bg = c;
+          break;
+        }
+      }
+      if (image) continue;
+      const s = getComputedStyle(el);
+      const fg = rgb(s.color);
+      if (!fg) continue;
+      const back = bg ?? { r: 255, g: 255, b: 255, a: 1 };
+      const [hi, lo] = [lum(fg), lum(back)].sort((x, y) => y - x);
+      const ratio = (hi + 0.05) / (lo + 0.05);
+      const px = parseFloat(s.fontSize);
+      const large = px >= 24 || (px >= 18.66 && Number(s.fontWeight) >= 700);
+      if (ratio < (large ? 3 : 4.5))
+        problems.push({ what: `text contrast ${ratio.toFixed(2)} : 1`, where: label(el) });
     }
     return problems;
   });
@@ -117,8 +192,14 @@ for (const size of SIZES) {
   test(`kid screens fit at ${size.name} (${size.width}×${size.height}), normal and large text`, async ({
     page,
   }) => {
-    test.setTimeout(150_000); // 6 screens × 2 text sizes, with full-page screenshots
+    test.setTimeout(240_000); // 9 screens × 2 text sizes, with full-page screenshots
     await page.setViewportSize({ width: size.width, height: size.height });
+    // The kid login, first (a new device: the username step).
+    for (const text of TEXT) {
+      await page.goto('./login');
+      await expect(page.getByLabel('Your username')).toBeVisible();
+      await check(page, `login-${size.name}-${text.name}`, text.scale);
+    }
     const robin = kid('Robin');
     await kidSignIn(page, robin.username, robin.pin);
     await expect(page.locator('.home__activity .activity__row').first()).toBeVisible();
@@ -137,6 +218,22 @@ for (const size of SIZES) {
       await page.goto('./kid/history');
       await expect(page.locator('.activity__row').first()).toBeVisible();
       await check(page, `history-${size.name}-${text.name}`, text.scale);
+
+      // A history line opened: its working, and the "Something looks wrong?" form.
+      await page.locator('.activity__row', { hasText: 'Savings interest' }).first().click();
+      await expect(page.getByText('How was this calculated?')).toBeVisible();
+      await page.getByRole('button', { name: 'Something looks wrong?' }).click();
+      await check(page, `history-open-${size.name}-${text.name}`, text.scale);
+
+      // The notices list. Marking them read is blocked here, so Robin's notices stay
+      // new for the Home tests that run after these.
+      await page.route('**/rest/v1/rpc/mark_notices_read', (r) =>
+        r.fulfill({ status: 200, contentType: 'application/json', body: '0' }),
+      );
+      await page.goto('./kid/notices');
+      await expect(page.locator('.notice').first()).toBeVisible();
+      await check(page, `notices-${size.name}-${text.name}`, text.scale);
+      await page.unroute('**/rest/v1/rpc/mark_notices_read');
 
       await page.goto(choose!.replace(/^\/Big-Bucks\//, './'));
       await expect(page.getByRole('heading', { name: 'Your GIC grew!' })).toBeVisible();

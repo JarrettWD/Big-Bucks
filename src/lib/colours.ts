@@ -36,15 +36,15 @@ export const MOVE = {
 /** The option colours, the same everywhere. The funds' come from the database (funds.colour). */
 export const OPTION = {
   savings: '#E0A400',
-  gic: '#D6336C',
-  dow: '#2F80ED',
-  nasdaq100: '#F76B15',
-  tsx: '#0B6E69',
+  gic: '#A82250',
+  dow: '#146DE4',
+  nasdaq100: '#F06008',
+  tsx: '#074945',
 } as const;
 
 /** When an option's name or status is written in its own colour, this shade is used. */
 export const OPTION_TEXT = {
-  gic: '#B8255A',
+  gic: '#A82250',
 } as const;
 
 // ---- contrast maths (WCAG relative luminance) ----

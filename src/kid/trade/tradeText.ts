@@ -80,7 +80,8 @@ export type Warning =
       maturity_date: string;
     }
   | { code: 'fund_below_cost'; value_cents: Cents; cost_cents: Cents; loss_cents: Cents }
-  | { code: 'market_price'; settles: string };
+  | { code: 'market_price'; settles: string }
+  | { code: 'sells_all' };
 
 export interface GicQuote {
   term_months: number;
@@ -130,7 +131,7 @@ export function amountHelp(kind: Kind, o: TradeOptions, fund?: TradeFund): strin
     case 'deposit':
       return `You can put in up to ${formatCents(o.cap_room_cents)} more.`;
     case 'sell_fund':
-      return `You can sell up to ${formatCents(fund?.sellable_cents ?? 0)}, or all of it.`;
+      return `Your ${fund?.name ?? 'fund'} is worth about ${formatCents(fund?.sellable_cents ?? 0)}.`;
     default:
       return `${formatCents(o.available_cents)} free to use.`;
   }
@@ -159,8 +160,14 @@ export function warningText(
       if (ctx.sellAll)
         return `Your sale happens at ${w.settles}. You'll get whatever your units are worth at that day's price.`;
       return `Your sale happens at ${w.settles}. You'll get ${ctx.amount ?? 'that amount'}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them.`;
+    case 'sells_all':
+      return `That's what all of your ${ctx.fundName} is worth, so this sells all of it.`;
   }
 }
+
+/** True when the amount she typed sells everything (the database decided: sells_all). */
+export const sellsAll = (p: Preview | null) =>
+  p?.warnings.some((w) => w.code === 'sells_all') ?? false;
 
 /** Warnings that are cautions (shown with ⚠️), as opposed to "good to know" notes. */
 export const isCaution = (w: Warning) => w.code === 'early_break' || w.code === 'fund_below_cost';

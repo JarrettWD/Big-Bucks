@@ -128,7 +128,7 @@ select is((select sum(mix_pct) from public.fund_overview(tests.acct('kid_a'))), 
 select results_eq(
   $$select name, colour, latest_close, previous_close, latest_close_date
       from public.fund_overview(tests.acct('kid_a')) where fund_id = 'dow'$$,
-  $$values ('Dow Jones'::text, '#2F80ED'::text, 410::numeric, 400::numeric, date '2026-10-02')$$,
+  $$values ('Dow Jones'::text, '#146DE4'::text, 410::numeric, 400::numeric, date '2026-10-02')$$,
   'it carries the fund''s name, colour and the two closes behind the daily change');
 select results_eq(
   $$select gain_cents, cost_cents from public.fund_overview(tests.acct('kid_a')) where fund_id = 'dow'$$,

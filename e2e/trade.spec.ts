@@ -185,9 +185,21 @@ test('selling a fund worth less than she paid shows that, calmly, in dollars', a
   await expect(
     page.getByText(`It's worth ${formatCents(-Number(f.gain))} less than you paid.`),
   ).toBeVisible();
-  // She holds on: nothing is sold.
   await page.getByRole('button', { name: 'Go back' }).click();
   await expect(page.getByRole('heading', { name: 'Buy / Sell' })).toBeVisible();
+
+  // Typing the value she's shown (the same as Home's) sells all of it, never an error.
+  await page.getByText('Sell all of it').click(); // untick
+  await expect(page.getByText(`Your TSX is worth about ${formatCents(f.value)}.`)).toBeVisible();
+  await amountBox(page).fill(formatCents(f.value).slice(1));
+  await expect(
+    page.getByText("That's what all of your TSX is worth, so this sells all of it."),
+  ).toBeVisible();
+  await expect(page.locator('.trade__problem:not(:empty)')).toHaveCount(0);
+  await next(page).click();
+  await expect(page.getByRole('heading', { name: 'Sell all of your TSX?' })).toBeVisible();
+  // She holds on: nothing is sold.
+  await page.getByRole('button', { name: 'Go back' }).click();
 });
 
 test('a fund trade: when it settles, then one trade per fund per day', async ({ page }) => {

@@ -1,0 +1,55 @@
+/* The notices list. "New" is a word, not just a colour. */
+
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--bb-purple-tint);
+  border-radius: 16px;
+  line-height: 1.45;
+}
+.notice--new {
+  border-color: var(--bb-purple-soft);
+  background: var(--bb-purple-tint);
+}
+.notice__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.notice__title {
+  overflow-wrap: anywhere;
+}
+.notice__new {
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  background: var(--bb-purple);
+  color: var(--bb-white);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.notice__body {
+  overflow-wrap: anywhere;
+}
+.notice__date {
+  color: var(--bb-ink-soft);
+  font-size: 0.95rem;
+}
+.notice__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bb-purple);
+  font-weight: 700;
+}

@@ -4,9 +4,9 @@ select plan(18);
 
 select results_eq(
   $$select id, name, proxy_symbol, market::text, colour from public.funds order by sort_order$$,
-  $$values ('dow', 'Dow Jones', 'DIA', 'nyse', '#2F80ED'),
-           ('nasdaq100', 'Nasdaq-100', 'QQQ', 'nyse', '#F76B15'),
-           ('tsx', 'TSX', 'XIC', 'tsx', '#0B6E69')$$,
+  $$values ('dow', 'Dow Jones', 'DIA', 'nyse', '#146DE4'),
+           ('nasdaq100', 'Nasdaq-100', 'QQQ', 'nyse', '#F06008'),
+           ('tsx', 'TSX', 'XIC', 'tsx', '#074945')$$,
   'the three funds, their ETFs, markets and colours (blue, orange, teal)');
 
 select results_eq(

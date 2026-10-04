@@ -1,10 +1,12 @@
-// "See all": her whole history, newest first, 30 lines at a time.
+// "See all": her whole history, newest first, 30 lines at a time, and her
+// questions to Dad with his answers (the thread stays in her history).
 
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useKid } from './KidShell';
-import { ActivityList } from './home/ActivityList';
+import { ActivityList, QuestionList } from './home/ActivityList';
+import { useQuestions } from './useQuestions';
 import type { ActivityRow } from './home/activityText';
 import './home/Home.css';
 
@@ -16,6 +18,15 @@ export default function History() {
   const [more, setMore] = useState(true);
   const [busy, setBusy] = useState(false);
   const [year, setYear] = useState(0);
+  const shared = useQuestions(profile.accountId);
+  const { questions } = shared;
+  const { hash } = useLocation();
+
+  // From a "Dad answered" notice: go straight to her questions.
+  useEffect(() => {
+    if (hash === '#questions' && questions.length > 0)
+      document.getElementById('questions')?.scrollIntoView();
+  }, [hash, questions.length]);
 
   const loadMore = useCallback(
     async (after: ActivityRow) => {
@@ -57,7 +68,7 @@ export default function History() {
         <h1 id="h-history" className="card__title">
           Your history
         </h1>
-        {year > 0 && <ActivityList rows={rows} thisYear={year} />}
+        {year > 0 && <ActivityList rows={rows} thisYear={year} shared={shared} />}
         {more && rows.length > 0 && (
           <button
             type="button"
@@ -71,6 +82,20 @@ export default function History() {
         <Link className="btn" to="/kid">
           Back to Home
         </Link>
+      </section>
+
+      <section className="card" id="questions" aria-labelledby="h-questions">
+        <h2 id="h-questions" className="card__title">
+          Your questions
+        </h2>
+        {questions.length === 0 ? (
+          <p className="muted">
+            No questions yet. If a line ever looks wrong, tap it and choose "Something looks
+            wrong?".
+          </p>
+        ) : (
+          year > 0 && <QuestionList questions={questions} thisYear={year} />
+        )}
       </section>
     </div>
   );
