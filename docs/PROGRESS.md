@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 7 finished** (2026-10-03), local only: Home, Graphs and Buy / Sell, all reviewed. **Next: stage 8** (the parent side, admin settings and onboarding), when Dad names it.
+- Current stage: **stage 8 in progress** (2026-10-03), local only: Part A (the Approvals screen) first, then a stop for Dad's review, then Part B.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,20 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 8 — Parent screens, settings and onboarding, local only (started 2026-10-03)
+
+- **The plan Dad approved (2026-10-03):**
+  - **Part A, the Approvals screen** (deposits, withdrawals and "Something looks wrong?" questions), then stop for Dad's review.
+  - **Part B, the rest:** the dashboard, settings (rates, specials, cap, inflation, yields, feature switches, notes and glossary wording, the Download backup button placed but off until stage 5), onboarding with the account agreement and "What's new", and **Fix a mistake**.
+  - **Phone first:** Dad mostly uses a Samsung S26 phone, sometimes a PC. Every screen still follows the screen-size rule.
+  - **Every parent action that changes money or rates** shows a summary and a confirmation first, and is recorded with who did it and when.
+  - Parent wording can be plainer; anything the girls see as a result goes in MESSAGES.md.
+  - The demo data fills the screens.
+- **Dad's additions at approval:**
+  1. **Previews never cause anything outside the database,** now or later (for example push notifications in a future stage). A test enforces it, and CLAUDE.md tells future notification code to skip previews.
+  2. **Recreating the parent functions changes nothing except adding the log row,** with a test or diff check proving behaviour is otherwise unchanged.
+  3. **Fix a mistake (Part B):** from any history line and from a question. Corrections can go either way, but each is a new linked entry (never an edit), has a note she can read, rounds in her favour, needs an extra confirmation when it reduces her balance, and can never take savings below zero. Known-answer tests first, plus a time machine run.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 
