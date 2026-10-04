@@ -129,6 +129,24 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - `npm run timemachine`: **PASS, 14 of 14**.
     - `npm run lint` is clean and `npm run build` succeeds.
   - **`dev-5180`** stays in `.claude/launch.json` (Dad's choice): a second dev server on port 5180 for when 5173 is taken.
+- **Part A committed** (`26949da`, 2026-10-04) after Dad's review. CI passed (test and timemachine).
+- **The Part B plan Dad approved (2026-10-04):** four sub-parts, each followed by a stop for Dad's review.
+  - **B1:** request expiry becomes a parent setting, plus the dashboard (described below).
+  - **B2:** Settings: the rates screen with specials, preview and history; the cap, inflation, yields, expiry and feature switches; editing market-move notes and glossary wording; the Download backup button, placed but off until stage 5.
+  - **B3:** Fix a mistake.
+  - **B4:** onboarding, the account agreement and "What's new".
+- **Dad's two additions:**
+  1. **Request expiry is a parent setting:** default 7 days, allowed 3–30, changed from Settings with the usual preview, confirmation and log row. Each request's expiry is fixed when she asks; a changed setting applies only to new requests. Update SPEC, the glossary and any kid wording that says "7 days".
+  2. **Dashboard warning** when any real kid's request expires within 48 hours, with dates worked out by the database. Test accounts' warnings are folded away like their alerts.
+- **Dad's answers to the plan's questions:**
+  1. Stop for review after each of B1, B2, B3 and B4.
+  2. **Yes, tell the girls when request expiry changes,** with a short notice (for example "Dad now has up to 10 days to answer your requests"), sent when the change takes effect. The account agreement (B4) must use the current setting, not a fixed "7 days".
+  3. **Corrections only in dollars,** into or out of savings.
+  4. **Warning wording:** "expires tomorrow at 4:00 pm (in 29 hours)".
+- **Design notes from the plan:**
+  - Each request gets `expires_at` when she asks. The nightly expiry job, approving, the Approvals screen and the dashboard all use it.
+  - Two of Part A's originals change on purpose: `approve_request_unlogged` (the expiry check) and `set_setting_unlogged` (the new key and its notice). A test proves nothing else in them changed.
+  - Corrections use a new `corrects_id` link, not `reverses_id`, which reconcile treats as "never happened".
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 
