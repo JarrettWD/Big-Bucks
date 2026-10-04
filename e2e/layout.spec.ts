@@ -192,7 +192,7 @@ for (const size of SIZES) {
   test(`kid screens fit at ${size.name} (${size.width}×${size.height}), normal and large text`, async ({
     page,
   }) => {
-    test.setTimeout(240_000); // 9 screens × 2 text sizes, with full-page screenshots
+    test.setTimeout(480_000); // 17 screens × 2 text sizes, with full-page screenshots
     await page.setViewportSize({ width: size.width, height: size.height });
     // The kid login, first (a new device: the username step).
     for (const text of TEXT) {
@@ -261,6 +261,23 @@ for (const size of SIZES) {
       await page.getByLabel('From').selectOption(gic!);
       await expect(page.locator('.trade__warnings li.is-caution')).toBeVisible();
       await check(page, `trade-break-${size.name}-${text.name}`, text.scale);
+
+      // Graphs: all six, the growth graph in dollars with its table open, and a fund
+      // with its market-move note.
+      for (const g of ['worth', 'growth', 'money', 'mix', 'gics', 'funds']) {
+        await page.goto(`./kid/graphs?g=${g}`);
+        await expect(page.locator('.graph__figure, .ladder, .mix').first()).toBeVisible();
+        await check(page, `graphs-${g}-${size.name}-${text.name}`, text.scale);
+      }
+      await page.goto('./kid/graphs?g=growth');
+      await page.getByRole('button', { name: 'Dollars' }).click();
+      await page.getByRole('button', { name: 'Show as a table' }).click();
+      await expect(page.locator('.gtable')).toBeVisible();
+      await check(page, `graphs-growth-table-${size.name}-${text.name}`, text.scale);
+      await page.goto('./kid/graphs?g=funds');
+      await page.getByRole('button', { name: 'Nasdaq-100' }).click();
+      await expect(page.locator('.notes-list')).toBeVisible();
+      await check(page, `graphs-fund-note-${size.name}-${text.name}`, text.scale);
     }
   });
 }

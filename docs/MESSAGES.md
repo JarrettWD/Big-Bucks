@@ -422,3 +422,84 @@ From the app's screens (`src/kid/notices/`, `src/kid/home/ActivityList.tsx`, `sr
 
 - **Your questions** · every question, newest first, with Dad's answer or "Waiting for Dad's answer."
 - **None yet:** No questions yet. If a line ever looks wrong, tap it and choose "Something looks wrong?".
+
+## 10. Graphs (stage 7)
+
+From the app's screens (`src/kid/graphs/graphText.ts`), so edits are a code change. The market-move notes themselves are §5; the database's own errors are §2, "Graphs". The two new **?** words, **Growth** and **Money earned**, are in the glossary.
+
+### Every graph
+
+- **Graphs** · tabs: **Total worth** · **Growth** · **Money in** · **Mix** · **GICs** · **Funds**
+- **Words to know:** each word with its **?** beside it.
+- **Time range:** **1M** · **3M** · **6M** · **1Y** · **All** · **Since I bought** (screen readers hear "1 month", "3 months", "6 months", "1 year", "All of it", "Since your first buy")
+- **Show in:** **$** · **%** (screen readers hear "Dollars" and "Percent"). Only on Growth and Funds.
+- **Show as a table** · **Hide the table** (newest day first)
+- **Loading:** Loading the graph…
+- **If it can't load:** Big Bucks couldn't load this graph just now. Please try again in a minute. · **Try again**
+- **Nothing yet:** Nothing to show yet. Once you have money in Big Bucks, it'll show up here.
+- **While the nightly check is fixing something:** the "Updating…" message (§6) instead of the graph.
+
+### Total worth over time
+
+- How your savings, GICs and funds add up to your total worth.
+- **Words to know:** Total worth
+- The key: each option, with what it's worth today.
+- **Money in** (a filled dot) · **Money out** (a hollow dot) · A dot marks a day you put money in or took it out, so new money isn't mistaken for growth.
+- **Tooltip and table:** each option, **Total**, and on a day money moved: You put in {amount} / You took out {amount}.
+
+### Growth by option
+
+- How much each option grew by itself. Money you put in or take out doesn't count, only what it earned.
+- **Words to know:** Growth · Risk
+- The key: each option with its growth, like **+1.11%** (or in dollars, **+$4.50**).
+- The same dots as Total worth, on the line where the money moved. **Tooltip:** {option} · You put in {amount}
+- **When she has savings:** Savings interest arrives on the 1st of each month, so the savings line steps up a little then.
+- Savings grows slow and steady, GICs grow in a step when they're ready, and funds bounce up and down.
+
+### Money in vs money earned
+
+- Money in is everything you've put in, minus what you've taken out. The gap up to your total worth is what your money earned.
+- **Words to know:** Net deposits · Money earned
+- Above the graph, big: **Money earned so far** · **{amount}** (like +$21.64, or −$13.95)
+- Under it:
+  - **When she's earned money:** That's what your money has made for you. 🎉
+  - **When she's behind:** Right now your total worth is less than you put in. Funds go up and down, so that can change.
+  - **When it's level:** Your total worth is the same as the money you put in.
+- **For screen readers, on the graph:** So far, your money has earned {amount}. 🎉 / Right now your total worth is {amount} less than you put in. Funds go up and down, so that can change. / Your total worth is the same as the money you put in.
+- The key: **Total worth** {amount} · **Money in** {amount}. **Table:** Day · Money in · Total worth · Earned
+
+### My mix today
+
+- Where your money is today.
+- **Words to know:** Diversification
+- The key: {option} **{percent}%** · {amount} (whole percents that add up to exactly 100)
+- Spreading your money out is called diversification: one bad day doesn't hurt as much.
+- **With everything in one place:** All your money is in {option} right now.
+- **Table:** Option · Worth · Share
+
+### GIC ladder
+
+- When each of your GICs is ready, so you can see when your money unlocks.
+- **Words to know:** GIC ladder · Maturity
+- Each GIC: {amount} · {term} at {rate} · a bar from today to its ready date · Ready {date}: {what she'll get}, or Ready now: {amount}
+- Under the bars: Today · 1 year · 2 years
+- **None:** You don't have any GICs right now. You can buy one on Buy / Sell.
+- **Table:** GIC · Started · Ready (or Now) · You'll get
+
+### Stock fund detail
+
+- The price of one unit of a fund, with your buys and sells marked.
+- **Words to know:** Unit price · Volatility · Rate of return
+- **Which fund?** Dow Jones · Nasdaq-100 · TSX
+- **Her figures, labelled apart:**
+  - **1M, 3M, 6M:** **The fund's change while you had it** {growth %} · **Your money's change** {dollars} · or: You didn't own any {fund} in this time.
+  - **When they point opposite ways** (one plain sentence under them):
+    - Fund up, money down: These point different ways because of timing: you had more money in the {fund} on its down days than on its up days. When you buy matters, not just what you buy.
+    - Fund down, money up: These point different ways because of timing: you had more money in the {fund} on its up days than on its down days. When you buy matters, not just what you buy.
+  - **Since I bought:** **Worth now** {value} · **You paid** {cost} · **Your money's change** {gain} ({percent}) · or: You don't own any {fund} right now.
+- **The whole fund:** Over the whole time shown, the {fund} fund went up {percent}. / …went down {percent}. / …didn't change.
+- The marks: ▲ **You bought** · ▼ **You sold** · ◆ **Big market days**
+- Her trades: {date} · You bought {amount} at {price} / You sold {amount} at {price}
+- **Big market days:** {date} · {the market-move note}
+- Buying low and selling high is hard to time. Nobody knows tomorrow's price.
+- **Table:** Day · Unit price · Change · You

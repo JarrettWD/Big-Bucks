@@ -8,13 +8,13 @@
 //   /parent/mfa       parent authenticator code (set up the first time)
 //   /parent/...       parent shell, only for a parent with the code done (aal2)
 
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
 import KidShell from './kid/KidShell';
-import { KidGraphs, KidWishList } from './kid/KidScreens';
+import { KidWishList } from './kid/KidScreens';
 import Notices from './kid/notices/Notices';
 import Trade from './kid/trade/Trade';
 import GicChoice from './kid/GicChoice';
@@ -25,6 +25,9 @@ import KidLogin from './pages/KidLogin';
 import ParentLogin from './parent/ParentLogin';
 import ParentMfa from './parent/ParentMfa';
 import ParentShell, { ParentDashboard, ParentSettings } from './parent/ParentShell';
+
+// Graphs carries Recharts, so it loads only when the Graphs tab opens.
+const Graphs = lazy(() => import('./kid/graphs/Graphs'));
 
 function Splash() {
   return <main className="splash" aria-busy="true" aria-label="Loading" />;
@@ -120,7 +123,14 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="history" element={<History />} />
             <Route path="gic/:id" element={<GicChoice />} />
-            <Route path="graphs" element={<KidGraphs />} />
+            <Route
+              path="graphs"
+              element={
+                <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
+                  <Graphs />
+                </Suspense>
+              }
+            />
             <Route path="trade" element={<Trade />} />
             <Route path="wishlist" element={<KidWishList />} />
             <Route path="notices" element={<Notices />} />

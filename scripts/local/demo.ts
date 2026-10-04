@@ -143,6 +143,14 @@ async function main(): Promise<void> {
       tsxCloses[tsxCloses.length - 3 + i].close =
         `${m / 1000n}.${(m % 1000n).toString().padStart(3, '0')}`;
     });
+    // One big day for the Graphs tab's market-move notes: about 15 market days
+    // before the end, the Nasdaq-100 jumps 3% and stays up (every later close is
+    // 3% higher too, so the next day isn't a big drop). Made-up prices.
+    const nasdaqCloses = closes.filter((c) => c.fund === 'nasdaq100');
+    nasdaqCloses.slice(nasdaqCloses.length - 15).forEach((c) => {
+      const m = (BigInt(c.close.replace('.', '')) * 1030n) / 1000n;
+      c.close = `${m / 1000n}.${(m % 1000n).toString().padStart(3, '0')}`;
+    });
     const published = new Set<string>();
     const publishUpTo = async (moment: string) => {
       for (const c of closes) {

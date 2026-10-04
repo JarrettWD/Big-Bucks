@@ -1,6 +1,6 @@
 # Big Bucks — Glossary (draft for review)
 
-These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`.
+These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned).
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migration isn't changed. This file is a review copy and is regenerated from the database after each change.
 
@@ -22,6 +22,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Gain:** When something is worth more than you paid for it. You only lock in a gain when you sell.
 - **GIC:** Short for Guaranteed Investment Certificate. You promise to leave your money alone for a set time, and in return you get a higher rate that can't change.
 - **GIC ladder:** Having several GICs that finish at different times, like the steps of a ladder. Some of your money is always close to being free.
+- **Growth:** How much an option grew by itself, as a percent. Money you put in or take out doesn't count, only what your money earned.
 - **Index:** A list of companies used to measure how part of the stock market is doing, like a scoreboard. The Dow, the Nasdaq-100 and the TSX are all indexes.
 - **Inflation:** Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
 - **Interest:** Money the bank pays you for keeping your money there. The more you have saved, and the longer you leave it, the more interest you get.
@@ -32,6 +33,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Market close:** The end of the stock market's day, at 4:00 pm in Toronto. In Alberta that's 2:00 pm from March to early November, and 3:00 pm the rest of the year. The price at that moment is called the close.
 - **Market holiday:** A day the stock market is closed, like Christmas. Trades wait for the next day the market is open.
 - **Maturity:** The day your GIC's promise is finished. You get your money back plus the interest, and you choose what to do next.
+- **Money earned:** Your total worth minus your net deposits. It's the part of your money that your money made for you.
 - **Nasdaq-100:** An index of 100 of the biggest companies on the Nasdaq stock market, mostly technology companies. It's the thrill ride: bigger ups and bigger downs.
 - **Net deposits:** All the money you've put in, minus all the money you've taken out.
 - **On hold:** Money set aside for a request that's waiting, so you can't use the same dollars twice.

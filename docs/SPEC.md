@@ -209,6 +209,8 @@ The Graphs tab shows how each option has grown and teaches risk against reward. 
 
 **Rate of return on stock funds** (1M, 3M, 6M, since first purchase) counts only gains and losses, not money deposited. Decided: her gain divided by what she paid for the units she holds, shown as both $ and %. The fund's own performance still shows on the fund charts.
 
+**Growth by option** (decided 2026-10-03): time-weighted. Each day's change leaves out money moved in or out, so a deposit, a buy or a GIC bought from savings is never growth. Growth is interest for savings and GICs (a penalty counts as a loss), and for a fund its change in value plus the dividends it paid into savings. Each day is measured against the value at the end of the day before; on an option's first day, against the money that came in. A range starts at 0%. The fund detail's "1M, 3M, 6M" return uses the same measure; "since first purchase" stays as decided above (gain ÷ what she paid for the units she holds).
+
 **Design notes**
 
 - Use the same colour for each option everywhere.

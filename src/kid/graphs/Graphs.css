@@ -1,0 +1,445 @@
+/* Graphs. Sizes in rem so Android's large text scales everything; controls are
+   at least 48 px tall. One graph at a time, picked with tabs at the top: three
+   across on phones (two rows), all six in a row from 720 px. */
+
+.graphs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.graphs__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.7rem;
+  color: var(--bb-purple);
+}
+
+/* The six tabs */
+.graphs__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 16px;
+  background: var(--bb-purple-tint);
+}
+@media (min-width: 720px) {
+  .graphs__tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.graphs__tab {
+  min-height: 48px;
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--bb-purple);
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.graphs__tab[aria-selected='true'] {
+  background: var(--bb-purple);
+  color: var(--bb-white);
+}
+
+/* One graph */
+.graph {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+.graph__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.graph__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.35rem;
+  color: var(--bb-ink);
+}
+.graph__headline {
+  margin: 0;
+  font-weight: 700;
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+.graph__lesson {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+.graph__msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+.graph__msg p {
+  margin: 0;
+}
+.graph__loading {
+  min-height: 6rem;
+}
+.graph__sub {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--bb-ink);
+}
+.graph__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+
+/* Ranges, $ / %, which fund */
+.graph__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 14px;
+  background: var(--bb-purple-tint);
+  max-width: 100%;
+}
+.choice__btn {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.25rem 0.8rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bb-purple);
+  font-weight: 700;
+  font-size: 1rem;
+}
+.choice__btn[aria-pressed='true'] {
+  background: var(--bb-purple);
+  color: var(--bb-white);
+}
+
+/* The chart itself */
+.graph__figure {
+  margin: 0;
+  min-width: 0;
+}
+.graph__figure .recharts-surface:focus-visible,
+.graph__figure .recharts-wrapper:focus-visible {
+  outline: 3px solid var(--bb-gold);
+  outline-offset: 2px;
+}
+
+/* The key: each colour named */
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.key__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--bb-ink);
+}
+.key__name {
+  font-weight: 600;
+}
+.key__value {
+  color: var(--bb-ink);
+}
+.swatch {
+  flex: none;
+}
+.flowkey {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--bb-ink-soft);
+  line-height: 1.45;
+}
+.flowkey > span:not(.flowkey__why) {
+  margin-right: 0.6rem;
+  color: var(--bb-ink);
+}
+.flowkey__why {
+  flex-basis: 100%;
+}
+
+/* Tooltip */
+.tip {
+  max-width: 16rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-white);
+  border: 2px solid var(--bb-purple-soft);
+  color: var(--bb-ink);
+  box-shadow: 0 4px 16px rgb(31 22 64 / 0.15);
+}
+.tip p {
+  margin: 0;
+}
+.tip__title {
+  font-weight: 700;
+  margin-bottom: 0.25rem !important;
+}
+.tip__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* My mix: the donut beside its key from 560 px */
+.mix {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+@media (min-width: 560px) {
+  .mix {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.mix__figure {
+  margin: 0;
+  min-width: 0;
+}
+.key--mix {
+  flex-direction: column;
+}
+
+/* GIC ladder */
+.ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ladder__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.ladder__label,
+.ladder__ready {
+  margin: 0;
+  color: var(--bb-ink);
+  line-height: 1.4;
+}
+.ladder__label {
+  font-weight: 700;
+}
+.ladder__track {
+  height: 1.25rem;
+  border-radius: 8px;
+  background: var(--bb-purple-tint);
+  overflow: hidden;
+}
+.ladder__bar {
+  height: 100%;
+  border-radius: 8px;
+  background: var(--opt-gic);
+}
+.ladder__bar--ready {
+  background: var(--bb-gold);
+  box-shadow: inset 0 0 0 1.5px var(--bb-outline);
+}
+.ladder__axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--bb-ink-soft);
+  font-size: 0.9rem;
+}
+
+/* Show as a table. On narrow screens each row becomes a little card of
+   "label: value" lines, so nothing scrolls sideways. */
+.graph__table {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.gtable__wrap {
+  width: 100%;
+  max-height: 28rem;
+  overflow-y: auto;
+}
+.gtable {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--bb-ink);
+  font-variant-numeric: tabular-nums;
+}
+.gtable caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 0.4rem;
+}
+.gtable th,
+.gtable td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #ebe7f7;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.gtable th:first-child,
+.gtable td:first-child {
+  text-align: left;
+}
+.gtable thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bb-white);
+}
+@media (max-width: 719px) {
+  .gtable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .gtable tr {
+    display: block;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #ebe7f7;
+  }
+  .gtable th,
+  .gtable td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.15rem 0;
+    border: 0;
+    text-align: right;
+  }
+  .gtable tbody th {
+    font-weight: 700;
+  }
+  .gtable td::before {
+    content: attr(data-label);
+    color: var(--bb-ink-soft);
+    text-align: left;
+  }
+}
+
+/* Words to know: each word beside its ? */
+.graph__terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.graph__terms li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--bb-ink);
+  font-weight: 600;
+}
+
+/* Money earned so far, big and friendly */
+.earned {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.earned p {
+  margin: 0;
+}
+.earned__label {
+  color: var(--bb-ink-soft);
+  font-weight: 600;
+}
+.earned__amount {
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 2.4rem;
+  line-height: 1.1;
+  color: var(--bb-purple);
+  overflow-wrap: anywhere;
+}
+
+/* A fund's figures: the fund's change and her money's change, labelled apart */
+.figures {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.figures__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+}
+.figures__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.2rem 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #ebe7f7;
+  color: var(--bb-ink);
+}
+.figures__row dt {
+  font-weight: 600;
+}
+.figures__row dd {
+  margin: 0 0 0 auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.figures__why {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+  line-height: 1.45;
+}

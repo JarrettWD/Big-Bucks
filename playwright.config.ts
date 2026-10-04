@@ -15,12 +15,13 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    // The screen-size checks run first, while the demo is untouched (Robin's GIC
-    // is still waiting for her choice); the other tests change demo data.
-    { name: 'layout', testMatch: /layout.spec.ts/, use: { ...devices['Pixel 7'] } },
+    // The screen-size checks and the Graphs tests run first, while the demo is
+    // untouched (Robin's GIC is still waiting for her choice); they only read. The
+    // other tests change demo data.
+    { name: 'layout', testMatch: /(layout|graphs).spec.ts/, use: { ...devices['Pixel 7'] } },
     {
       name: 'android-chrome',
-      testIgnore: /layout.spec.ts/,
+      testIgnore: /(layout|graphs).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },

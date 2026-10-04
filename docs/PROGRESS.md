@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: stage 7 parts 2a and 2b done and reviewed, local only. **Next: build part 2c (all six graphs)**, using the approved plan and Dad's answers under stage 7 part 2 below.
+- Current stage: **stage 7 finished** (2026-10-03), local only: Home, Graphs and Buy / Sell, all reviewed. **Next: stage 8** (the parent side, admin settings and onboarding), when Dad names it.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -22,7 +22,40 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Dad to do by hand:
 -->
 
-### Stage 7, part 2 — 2a and 2b done and reviewed; 2c planned and approved (2026-10-03)
+### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
+
+The whole stage in one place. The details, Dad's decisions and each review are in the part 1 and part 2 entries below, and the Alberta time fix made during the stage.
+
+- **Built:**
+  - **Home** (part 1): total worth, the "Things for you" banner (a matured GIC, the newest notice), savings with what's on hold and free to use, GICs with their locked rates and ready dates, her mix and all three funds with sparklines, and recent activity with **See all**.
+  - **The GIC choice** (part 1): renew, a new term, or move to savings, with what each earns.
+  - **Buy / Sell** (part 2a): the Buy / Sell toggle with From ➜ To, the amount checked after she pauses, the spec's warnings, a summary before **Yes, do it**, GICs as tappable cards, her waiting requests, and selling by typing the shown value.
+  - **Transparency** (part 2b): the notices list with the database's dates, **How was this calculated?** on every line, **Something looks wrong?** with Dad's answers in her history, and the accessibility pass.
+  - **Graphs** (part 2c): all six graphs, one at a time with tabs: total worth over time, growth by option (time-weighted), money in vs money earned, my mix today, the GIC ladder, and stock fund detail with her buys and sells and the market-move notes.
+  - **Alberta time:** UTC−6 all year from Nov 1, 2026, pinned in the database.
+- **Migrations added in stage 7** (all read functions except the time fix and the sell-all rule): `20261005000000_kid_home`, `20261006000000_alberta_time`, `20261007000000_buy_sell`, `20261008000000_notices_questions`, `20261009000000_sell_shown_value`, `20261009010000_option_colours`, `20261010000000_graphs`.
+- **Tests (final run, 2026-10-03):**
+  - `npm run test:db` (pgTAP): **769 of 769**, after `supabase db reset`.
+  - `npm test` (Vitest): **162 of 162**.
+  - `npm run test:e2e` (Playwright): **41 of 41**, including the layout and accessibility checks on every kid screen and all six graphs at six sizes, normal and 130% text.
+  - `npm run timemachine`: **PASS, 14 of 14**.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none can be ticked yet: every box in Phase 1 is proven live, and the "Before any real money" group needs stage 4 (backups) and stage 5. Stage 7 makes the kid side of these testable in the local copy, ready for the solo beta:
+  - **Money in and out:** a deposit request holding money; a deposit over the cap refused with a clear message; a withdrawal showing when Dad can say yes (24 hours); cashing out of a GIC or fund only through savings (Buy / Sell only offers moves through savings); a declined request with Dad's reason in her history.
+  - **Savings and GICs:** savings interest with its "How was this calculated?" working; the maturity banner and the choice screen; breaking a GIC early with the warning in dollars.
+  - **Stock funds:** each trade's settle time ("Monday's 2:00 pm close"), 3:00 pm in winter; one trade per fund per day ("traded today"); a partial sell; **the standard note on a day a fund moves more than 2%** (on the fund graph).
+  - **Rates and settings:** rate and cap notices in the bell.
+  - **Safeguards:** "Something looks wrong?" from her side (Dad's side of answering is stage 8).
+- **Known issues and limits:**
+  - Dad's screens (approving, declining, answering questions, rates and settings) are stage 8; until then the demo and tests do Dad's part through the database functions.
+  - "Cancel a waiting request" is on the version 2 list.
+  - Savings growth steps once a month (interest posts on the 1st), as Dad decided; the graph says so.
+  - The "Show as a table" view for "All" can be long (one row a day). Fine for a year or two; worth a look after a few years.
+  - The demo's TSX dip and Nasdaq-100 jump are made-up prices, in the demo only.
+  - Nothing is deployed: the app still runs only against the local database. Deploy and phone install come after stage 4.
+- **Dad to do by hand:** nothing. To try it: `npm run demo`, open **http://127.0.0.1:5173/Big-Bucks/** in Chrome, and sign in as Robin or Sky with the PINs it prints.
+
+### Stage 7, part 2 — Buy / Sell, transparency and the graphs: all reviewed (2026-10-03)
 
 - **The plan Dad approved:**
   - **2a:** Buy / Sell, then stop for review.
@@ -251,6 +284,77 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - **Playwright:** each graph against the database (the last total-worth point equals Home's), the ranges, the $ / % switch, the table view and the notes; plus the layout and accessibility checks on Graphs.
     - **Time machine:** a run before stopping.
   - **Then stop for Dad's review.** That ends stage 7: the full stage 7 entry, with the ACCEPTANCE.md boxes.
+
+- **Part 2c, the six graphs: built and reviewed (2026-10-03).** Dad's review and the changes are at the end of this entry.
+- **Migration `20261010000000_graphs.sql`** (new; reads only, no money rule changed):
+  - **`graph_ranges(account)`:** today, her first day, where each range starts (1M, 3M, 6M, 1Y, All), each fund's first purchase, and the GIC ladder's end (today + 24 months). Total worth and growth never start before her first day; a fund's price goes further back.
+  - **`growth_by_option(account, from, to)`:** each day's time-weighted growth for savings, GICs and each fund, the dollars earned, and the money moved in or out (for the dots). The rule, now in SPEC "Graphs & dashboards":
+    - growth is interest for savings and GICs (a penalty counts as a loss), and for a fund its change in value plus the dividends it paid;
+    - money moved in or out is never growth (a deposit, a buy, a GIC bought from savings, a matured GIC moving back);
+    - each day is measured against the end of the day before (interest and dividends post at the start of a day; trades settle at the close, after the day's move); on an option's first day, against the money that came in;
+    - a range starts at 0%.
+  - **`money_in_vs_earned(account)`:** each day since her first: net deposits, total worth, and the gap (what her money earned).
+  - **`my_mix(account)`:** savings, GICs and each fund she holds, in whole percents adding to exactly 100 (largest remainder, ties in screen order).
+  - **`gic_ladder(account)`:** her active GICs and any matured one waiting for her choice ("ready"), soonest first.
+  - **`fund_chart(account, fund, from)`:** the fund's closes (each with its % change since the range's first close), her buys and sells (day, price, units, money), the fund's market-move notes, her growth in the range (the same measure as the growth graph) and what she holds now (Home's "since first purchase" figures).
+  - **Glossary:** two new words, **Growth** and **Money earned** (in `docs/GLOSSARY.md` for review).
+  - **Who can call them:** a kid sees only her own account; a parent needs the authenticator code; signed-out visitors can't.
+  - **Changed from the plan:** the separate `market_notes(from, to)` became part of `fund_chart` (the notes are only shown there), and `graph_ranges` was added so the app never works out a range's start date itself.
+- **Screen `src/kid/graphs/`** (the Graphs tab):
+  - **`Graphs.tsx`:** six tabs at the top (three across on phones, six from 720 px; arrow keys, Home and End move between them). One graph at a time.
+
+    | Graph | Ranges | $ / % | Drawn as |
+    |---|---|---|---|
+    | Total worth over time | 1M / 3M / 1Y / All (3M first) | $ | stacked areas, with dots on days money came in (filled) or went out (hollow) |
+    | Growth by option | 1M / 3M / 1Y / All | ✓ (% first) | a line each, with the same dots on the line the money moved |
+    | Money in vs money earned | All | $ | total worth over money in (a step line), with a sentence on what she's earned |
+    | My mix today | Now | % | a donut, with each option's % and dollars |
+    | GIC ladder | next 24 months | $ | a bar per GIC from today to its ready date (gold when ready now) |
+    | Stock fund detail | 1M / 3M / 6M / since first buy | ✓ ($ first) | the unit price, ▲ her buys, ▼ her sells, ◆ big market days, her return, the trades and notes listed |
+
+  - **Every graph has:** one sentence on what it shows; "Words to know" with each word beside its **?**; a key naming every colour with today's figure; a tooltip; **Show as a table** (newest day first; on narrow screens each row becomes a small card of "label: value" lines, so nothing scrolls sideways).
+  - **Never colour alone:** names in the key and tooltips, line patterns (GICs dashed, TSX long-dashed), and the savings gold always has its dark outline (as a 2-tone line, an outlined area, or an outlined slice).
+  - **Recharts** is loaded only when Graphs opens: its own 415 KB file (`Graphs-….js`); the other screens' file didn't grow.
+  - **`graphData.ts`:** reshaping only (no money arithmetic or date working). Percents keep the database's two decimals ("+19.90%", not "+19.9%").
+  - **`graphText.ts`:** all the words, in **`docs/MESSAGES.md` §10**.
+- **Demo:** the Nasdaq-100 now jumps 3% about 15 market days before the end (and stays up), so a market-move note shows on the fund graph (Sep 14 in today's demo). Made-up prices, in the demo only.
+- **Found and fixed while trying it in the browser:**
+  - "+19.9%" now reads "+19.90%" (JSON drops the trailing zero).
+  - A dotted Nasdaq-100 line looked fuzzy on a bumpy line; funds are solid now, with the TSX long-dashed.
+  - Two **?** side by side didn't say which word each explained; each word now sits beside its **?**.
+  - A screen reader read the mix key as "Savings49%"; there's a space now.
+- **SPEC:** "Graphs & dashboards" records the growth rule.
+- **Tests (all run locally on 2026-10-03):**
+  - `npm run test:db` (pgTAP): **769 of 769**, after `supabase db reset`. That's 728 before plus 41 new in **`graphs_test.sql`**:
+    - **A deposit isn't growth:** in a month with a deposit, a GIC, two fund buys, a dividend and a sale, savings grew 0.00%.
+    - **The Dow, worked by hand:** +10%, a second buy (not growth), −10%, a $4.95 dividend, then a sale-day rise: 1.10 × 0.90 × 1.0111… × 1.0101… = **+1.11%**, while **−$15.05** was earned (the bigger second buy caught the drop). A range from Oct 7 starts at 0% and reads −10.00%, then −9.00%.
+    - **GICs step up at maturity** (+$0.21, 0.21%), and moving the money to savings is a flow, not a loss. **Savings:** $0.89 of interest on $884.95 is +0.10%.
+    - **The dots:** every flow in and out of savings and the Dow, on the right days.
+    - **Money in vs earned:** known answers on four days, the last point equals `account_balances` (Home's total), and what she earned equals the growth graph's dollars added up.
+    - **The mix:** 24.99%, 49.98% and 25.04% become 25, 50 and 25, adding to 100.
+    - **The ladder:** a matured GIC shows as ready, then leaves once moved; two GICs soonest first, with $3.38 and $12.00 interest.
+    - **The fund chart:** her three trades, closes with their %, the two market-move notes, her range growth (the growth graph's), what she holds, an unknown fund refused.
+    - **Who may call:** kid B can't read kid A through any of the six; a parent needs the code; signed-out visitors can't.
+    - `kid_home_test.sql`'s glossary count is now 54 (52 plus the two new words).
+  - `npm test` (Vitest): **161 of 161** (15 new in `graphData.test.ts`: ranges, row shaping, the ladder bars, price and percent formats, and the wording).
+  - `npm run test:e2e` (Playwright): **41 of 41**. New `graphs.spec.ts` (5 tests, as Robin, each against the database): total worth (the last point equals Home's total, the 1M and All ranges, the table and a money-in day); growth (each option's % and then $ against `growth_by_option`, and the table); money in vs earned, the mix (adds to 100) and the ladder; the Nasdaq-100 detail (her trades, the market-move note, % in the table, "since your first buy"); and the tabs from the keyboard. `layout.spec.ts` now checks all six graphs, the growth table open and a fund with its note, at all six sizes with normal and 130% text: no problems. The graphs tests only read, so they run first with the layout checks, before other tests change the demo.
+  - `npm run timemachine`: **PASS, 14 of 14** (75 of 75 actions agreed; graph history matched every day). No money logic changed in 2c; it was run as planned.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none can be ticked yet (they need the live app). Now visible locally: "The standard note appears on a day a fund moves more than 2%" shows on the fund graph.
+- **For Dad to look at in the review:**
+  1. **Two returns can point different ways.** In the hand-worked example, the Dow's growth is +1.11% while she lost $15.05: she put more in just before the drop. Time-weighted % (Dad's choice) measures the fund; dollars measure her timing. The fund graph shows both in one line ("Your Dow Jones in this time: −$15.05 (+1.11%)"). It's honest, and maybe a good talking point, but it could confuse. Options: keep it; show only the one matching the $ / % switch; or add a sentence when they differ.
+  2. **Money in vs money earned starts at $0,** so a small gap (Robin's $21.64) is a thin sliver. Starting the scale higher would make the gap look bigger than it is, so I kept $0. Say if you'd rather zoom in.
+  3. **The colour checker** (the chart skill's palette validator) passes the options for colour-blind separation, but flags the deep TSX teal as "reads grey" and too dark for its band. That's the colour you chose for lightness spread in 2b; the names, the long-dashed TSX line and the tables cover it. No change unless you want one.
+  4. **Savings interest steps once a month** on the growth graph (it posts on the 1st), so savings isn't perfectly smooth. Showing daily accruals would make it smooth but would show interest that isn't hers yet.
+- **Dad to do by hand:** nothing. To try it: `npm run demo`, then open **http://127.0.0.1:5173/Big-Bucks/** in Chrome, sign in as Robin or Sky, and tap **Graphs**. On **Funds**, pick **Nasdaq-100** to see a market-move note.
+- **Dad's review of 2c (2026-10-03): approved, with these changes, all done:**
+  1. **% and $ on the fund graph:** both kept, labelled apart: **The fund's change while you had it** (time-weighted %) and **Your money's change** (dollars). When they point opposite ways, one plain sentence explains it's timing (she had more money in on the down days, or the up days). "Since I bought" shows **Worth now**, **You paid** and **Your money's change**. The whole-fund line now reads "Over the whole time shown, the {fund} fund went up {percent}." Wording in MESSAGES §10.
+  2. **Money in vs money earned:** the scale still starts at $0; **Money earned so far** and the amount (like **+$21.64**) now sit above the graph in big text, with a shorter sentence under it so the number isn't said twice.
+  3. **TSX teal:** kept as `#074945` (Dad's choice).
+  4. **Savings steps:** kept; the growth graph now says "Savings interest arrives on the 1st of each month, so the savings line steps up a little then." when she has savings.
+  - **The made-up Nasdaq-100 jump is demo-only:** it's made in `scripts/local/demo.ts` at run time and written straight into the local database. No migration or seed file inserts any price (only the price job, stage 4, will write prices in production). The demo refuses to run unless the API is `http://127.0.0.1:54321`, the database is the local one (port 54322) and it says `is_local_dev = true`, a setting only the local seed file adds (`supabase db push` doesn't run seeds).
+  - **Tests after the review:** Vitest has 16 graph tests (the labels, both "why" sentences, no sentence when they agree or one is zero, the whole-fund line and the new note). The Playwright graphs tests now check the big amount and its note, both fund labels against `fund_chart`, and "Since your first buy" showing what she paid. Final results are in the stage 7 entry above.
+
 ### Alberta time-zone fix, local only (2026-10-03)
 
 - **Why:** Alberta stays on UTC−6 all year from November 1, 2026 (Official Time Act). The local Postgres still has the old rule and would turn Alberta to UTC−7 on Nov 1. Production's may do the same. Details are under stage 7 part 1 below.
