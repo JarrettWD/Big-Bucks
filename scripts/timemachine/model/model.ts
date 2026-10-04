@@ -67,7 +67,8 @@ export type Action =
   | { kind: 'sell'; kid: string; fund: FundId; cents: bigint; label: string }
   | { kind: 'sell_all'; kid: string; fund: FundId; label: string }
   | { kind: 'add_rate'; rate: RateInput }
-  | { kind: 'set_cap'; cents: bigint; effective: Day };
+  | { kind: 'set_cap'; cents: bigint; effective: Day }
+  | { kind: 'set_expiry'; days: number; effective: Day };
 
 export type Outcome = { ok: true } | { ok: false; reason: string };
 
@@ -115,6 +116,8 @@ interface Req {
   fund?: FundId;
   cents: bigint;
   createdAt: Moment;
+  /** Deposits and withdrawals: fixed when she asks, from the expiry rule in force that day. */
+  expiresAt?: Moment;
   status: 'pending' | 'approved' | 'declined' | 'expired' | 'settled';
   settleAt?: Moment;
   settleDay?: Day;
@@ -163,6 +166,7 @@ export class Model {
   private reqs = new Map<string, Req>();
   private rates: (RateInput & { seq: number; q: Q })[] = [];
   private caps: { cents: bigint; effective: Day; seq: number }[] = [];
+  private expiryRules: { days: number; effective: Day; seq: number }[] = [];
   private closes = new Map<string, { close: Q; publishedAt: Moment }>(); // `${fund}|${day}`
   private splits: { fund: FundId; day: Day; from: bigint; to: bigint }[] = [];
   private holidays = new Map<string, Holiday>(); // `${market}|${day}`
@@ -195,6 +199,8 @@ export class Model {
     ] as const)
       r('gic', t, v);
     this.caps.push({ cents: 100000n, effective: '2026-01-01', seq: this.seq++ });
+    // Dad has 7 days to answer a deposit or withdrawal, to start (stage 8: a setting).
+    this.expiryRules.push({ days: 7, effective: '2026-01-01', seq: this.seq++ });
   }
 
   /** The model's current moment. */
@@ -383,7 +389,7 @@ export class Model {
     for (const r of this.reqs.values()) {
       if (r.status !== 'pending') continue;
       if (r.kind === 'deposit' || r.kind === 'withdraw') {
-        consider(addHours(r.createdAt, 7 * 24), () => {
+        consider(r.expiresAt!, () => {
           r.status = 'expired';
         });
       } else if (r.settleAt) {
@@ -553,6 +559,16 @@ export class Model {
   // ---------------------------------------------------------------- actions
 
   /** Apply a kid or parent action at moment t. Refused actions change nothing. */
+  /** Days Dad has to answer a deposit or withdrawal asked for on day d. */
+  expiryDaysOn(d: Day): number {
+    const e = this.expiryRules
+      .filter((x) => x.effective <= d)
+      .sort((a, b) =>
+        a.effective === b.effective ? b.seq - a.seq : a.effective < b.effective ? 1 : -1,
+      )[0];
+    return e.days;
+  }
+
   act(t: Moment, a: Action): Outcome {
     this.advanceTo(t);
     const today = dayOf(t);
@@ -570,6 +586,7 @@ export class Model {
           kind: 'deposit',
           cents: a.cents,
           createdAt: t,
+          expiresAt: addHours(t, this.expiryDaysOn(today) * 24),
           status: 'pending',
         });
         return { ok: true };
@@ -585,6 +602,7 @@ export class Model {
           kind: 'withdraw',
           cents: a.cents,
           createdAt: t,
+          expiresAt: addHours(t, this.expiryDaysOn(today) * 24),
           status: 'pending',
         });
         return { ok: true };
@@ -717,6 +735,11 @@ export class Model {
         return { ok: true };
       case 'set_cap':
         this.caps.push({ cents: a.cents, effective: a.effective, seq: this.seq++ });
+        return { ok: true };
+      case 'set_expiry':
+        if (!Number.isInteger(a.days) || a.days < 3 || a.days > 30)
+          return no('expiry is 3 to 30 whole days');
+        this.expiryRules.push({ days: a.days, effective: a.effective, seq: this.seq++ });
         return { ok: true };
     }
   }

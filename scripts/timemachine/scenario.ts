@@ -301,6 +301,38 @@ export const STEPS: Step[] = [
     do: { kind: 'choose', gic: 'gA6m', choice: 'renew', newLabel: 'gA6m_r' },
     why: 'renewed: principal + interest into a new 6-month GIC',
   },
+  // Request expiry changes from 7 to 10 days on Jan 10 (stage 8): each request keeps
+  // the expiry it had when she asked.
+  {
+    at: '2028-01-05 09:00',
+    do: { kind: 'set_expiry', days: 10, effective: '2028-01-10' },
+    why: 'Dad gives himself 10 days to answer, from Jan 10',
+  },
+  {
+    at: '2028-01-08 10:00',
+    do: { kind: 'deposit', kid: 'B', cents: $(20), label: 'dB_x7' },
+    why: 'asked before the change: still 7 days',
+  },
+  {
+    at: '2028-01-12 10:00',
+    do: { kind: 'withdraw', kid: 'B', cents: $(15), label: 'wB_x10' },
+    why: 'asked after the change: 10 days, holding $15',
+  },
+  {
+    at: '2028-01-15 17:00',
+    do: { kind: 'request_status', label: 'dB_x7', status: 'expired' },
+    why: 'expired 7 × 24 hours later (10:00 Jan 15)',
+  },
+  {
+    at: '2028-01-21 17:00',
+    do: { kind: 'request_status', label: 'wB_x10', status: 'pending' },
+    why: 'still waiting after 9 days (the old rule would have expired it)',
+  },
+  {
+    at: '2028-01-22 17:00',
+    do: { kind: 'request_status', label: 'wB_x10', status: 'expired' },
+    why: 'expired 10 × 24 hours later (10:00 Jan 22), releasing the $15',
+  },
   {
     at: '2028-01-31 10:00',
     do: { kind: 'buy_gic', kid: 'B', cents: $(60), term: 1, label: 'gB1m' },

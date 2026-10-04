@@ -1,6 +1,6 @@
 # Big Bucks — Glossary (draft for review)
 
-These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned).
+These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned; `20261012000000_request_expiry_dashboard.sql` added Request expiry).
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migration isn't changed. This file is a review copy and is regenerated from the database after each change.
 
@@ -41,6 +41,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Percent (%):** "Out of 100." 5% of $100 is $5, and 5% of $200 is $10.
 - **Rate of return:** How much your money grew (or shrank), as a percent of what you put in. If $100 grows to $110, your rate of return is 10%.
 - **Renew:** Buying a new GIC with your matured money, for the same term, at today's rate.
+- **Request expiry:** When you ask to put money in or take it out, Dad has a set number of days to say yes or no. If he hasn't answered by then, the request is cancelled and any money on hold is free to use again. You can always ask again. *(New in stage 8. It doesn't name a number of days, because Dad can change it.)*
 - **Risk:** The chance that an investment loses money. Things that can grow more usually come with more risk.
 - **Savings account:** A safe place for your money that you can use any time. It pays a little interest, less than a GIC or a stock fund might earn.
 - **Settlement:** When a buy or sell actually happens. In Big Bucks, trades settle at the next market close, so a Friday evening request happens on Monday.

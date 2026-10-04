@@ -26,7 +26,7 @@ test('a new parent sets up the authenticator on first sign-in, then reaches the 
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/parent$/);
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.getByText('Sky')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'The girls' })).toContainText('Sky');
 });
 
 test('the demo parent signs in with password and code', async ({ page }) => {
@@ -38,8 +38,9 @@ test('the demo parent signs in with password and code', async ({ page }) => {
   await page.getByLabel('6-digit code').fill(await freshCode(parent.totpSecret));
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.getByText('Robin')).toBeVisible();
-  await expect(page.getByText('Sky (test account)')).toBeVisible();
+  const girls = page.getByRole('region', { name: 'The girls' });
+  await expect(girls).toContainText('Robin');
+  await expect(girls.locator('li', { hasText: 'Sky' })).toContainText('Test');
 });
 
 test('without the authenticator code a parent is blocked, on screen and in the database', async ({

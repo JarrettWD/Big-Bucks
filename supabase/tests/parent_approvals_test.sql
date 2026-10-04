@@ -73,6 +73,9 @@ insert into public.profiles (user_id, role, username, display_name)
 -- Each committed parent function (and move_preview) was renamed, not edited. These
 -- fingerprints are md5(prosrc) of the committed bodies, taken from the database
 -- before the stage 8 migration ran. If a body ever changes, this fails.
+-- Stage 8 B1 (request expiry, Dad's decision) changed two on purpose: their new
+-- fingerprints are below, and request_expiry_test.sql swaps the old lines back and
+-- gets the committed fingerprints, proving nothing else in them changed.
 
 select is(
   (select string_agg(p.proname::text || ' ' || md5(p.prosrc), ', ' order by p.proname::text)
@@ -82,10 +85,10 @@ select is(
                         'acknowledge_alert_unlogged', 'add_rate_unlogged', 'set_setting_unlogged',
                         'move_preview_unflagged')),
   'acknowledge_alert_unlogged f799cbab72b3f4c8c5ba9a4d0f906055, add_rate_unlogged 4adfee822242f3116f5c5b9e0fff973e, '
-  || 'answer_question_unlogged fca9682d14eb34d86275dde11a6fe1f0, approve_request_unlogged 758c6bc96c34b8c623881ebf65e2cf92, '
+  || 'answer_question_unlogged fca9682d14eb34d86275dde11a6fe1f0, approve_request_unlogged 8bc03e82aa00f8f603d0c3c7d0f3725f, '
   || 'decline_request_unlogged cb21305de809debe9d85f1fd8980a7f3, move_preview_unflagged 405fbd6fc29c261492392b625ce8f66e, '
-  || 'set_setting_unlogged c9802e47266c30251f14d12ed1de6d23',
-  'the committed bodies are byte for byte what stages 2, 3 and 7 committed');
+  || 'set_setting_unlogged 0f97833200dcaef970a9115b4563c47e',
+  'the originals are byte for byte as committed (approve_request_unlogged and set_setting_unlogged as changed on purpose in stage 8 B1; request_expiry_test proves only those lines changed)');
 
 select is(
   array(select w.proname::text

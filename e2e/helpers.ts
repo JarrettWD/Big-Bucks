@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { totp } from '../scripts/local/totp.ts';
 
@@ -53,24 +53,46 @@ export async function parentPassword(page: Page, email: string, password: string
   await expect(page).toHaveURL(/\/parent\/mfa$/);
 }
 
+/**
+ * One parent sign-in at a time, across all test workers. When one sign-in finishes
+ * the code step, Supabase ends the parent's other half-finished sign-ins, so
+ * overlapping sign-ins as the same parent would knock each other out. A lock
+ * directory is atomic to create; a lock older than 60 seconds is left over from a
+ * crashed run and is cleared.
+ */
+const LOCK = 'test-results/.parent-signin.lock';
+async function withSignInLock<T>(run: () => Promise<T>): Promise<T> {
+  mkdirSync('test-results', { recursive: true });
+  for (;;) {
+    try {
+      mkdirSync(LOCK);
+      break;
+    } catch {
+      try {
+        if (Date.now() - statSync(LOCK).mtimeMs > 60_000)
+          rmSync(LOCK, { recursive: true, force: true });
+      } catch {
+        // gone already
+      }
+      await new Promise((r) => setTimeout(r, 200 + Math.floor(Math.random() * 300)));
+    }
+  }
+  try {
+    return await run();
+  } finally {
+    rmSync(LOCK, { recursive: true, force: true });
+  }
+}
+
 /** The demo parent, all the way in: password, then the authenticator code. */
 export async function parentSignIn(page: Page): Promise<void> {
   const { parent } = logins().demo;
-  const dashboard = page.getByRole('heading', { name: 'Dashboard' });
-  const refused = page.getByRole('alert');
-  // Several tests sign in as the demo parent at once. When one finishes the code
-  // step, Supabase ends the parent's other half-finished sign-ins, so a test caught
-  // in between starts again from the password, as a person would.
-  for (let attempt = 0; attempt < 5; attempt++) {
+  await withSignInLock(async () => {
     await parentPassword(page, parent.email, parent.password);
     await page.getByLabel('6-digit code').fill(await freshCode(parent.totpSecret));
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(dashboard.or(refused)).toBeVisible({ timeout: 15_000 });
-    if (await dashboard.isVisible()) return;
-    await page.getByRole('button', { name: 'Cancel and sign out' }).click();
-    await page.waitForTimeout(500 + Math.floor(Math.random() * 1500));
-  }
-  await expect(dashboard).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15_000 });
+  });
 }
 
 /** An authenticator code that won't change in the next few seconds. */

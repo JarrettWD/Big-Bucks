@@ -410,6 +410,22 @@ async function main(): Promise<void> {
       `select public.add_rate('savings', null, 1.5, $1, $2)`,
       [addDays(T, 5), 'The Bank of Canada lowered its rate again.'],
     );
+    // Two requests asked 6 days ago: they run out of time tomorrow, so the dashboard
+    // warns about them (Sky's, a test account, folded away).
+    act(
+      at(addDays(T, -6), '18:00'),
+      'Robin asks to deposit $25 (runs out of time tomorrow)',
+      A,
+      'select public.request_deposit($1)',
+      [$(25)],
+    );
+    act(
+      at(addDays(T, -6), '18:30'),
+      'Sky asks to deposit $8 (runs out of time tomorrow)',
+      B,
+      'select public.request_deposit($1)',
+      [$(8)],
+    );
     act(
       at(addDays(T, -2), '16:00'),
       'Robin asks to withdraw $10 (past its 24 hours, ready for Dad)',

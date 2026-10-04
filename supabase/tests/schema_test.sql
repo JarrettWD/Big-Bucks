@@ -22,8 +22,8 @@ select enum_has_labels('public', 'request_status', array['pending', 'approved', 
   'request statuses');
 select enum_has_labels('public', 'notification_type', array[
   'rate_change', 'rate_live', 'request', 'gic_maturity', 'cap_change', 'request_expired', 'badge', 'whats_new',
-  'question'],
-  'notification types (question added in stage 2)');
+  'question', 'rule_change'],
+  'notification types (question added in stage 2, rule_change in stage 8)');
 select enum_has_labels('public', 'vehicle', array['savings', 'gic', 'stock'], 'vehicles');
 
 -- Money is integer cents; units and accruals are exact decimals; no floats anywhere

@@ -24,7 +24,9 @@ import { supabaseConfigured } from './lib/supabase';
 import KidLogin from './pages/KidLogin';
 import ParentLogin from './parent/ParentLogin';
 import ParentMfa from './parent/ParentMfa';
-import ParentShell, { ParentDashboard, ParentSettings } from './parent/ParentShell';
+import ParentShell from './parent/ParentShell';
+import Dashboard from './parent/dashboard/Dashboard';
+import Settings from './parent/settings/Settings';
 import Approvals from './parent/approvals/Approvals';
 
 // Graphs carries Recharts, so it loads only when the Graphs tab opens.
@@ -153,9 +155,9 @@ export default function App() {
               </RequireParent>
             }
           >
-            <Route index element={<ParentDashboard />} />
+            <Route index element={<Dashboard />} />
             <Route path="approvals" element={<Approvals />} />
-            <Route path="settings" element={<ParentSettings />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/parent" replace />} />
           </Route>
           <Route path="*" element={<Root />} />

@@ -309,6 +309,20 @@ for (const size of SIZES) {
         .fill('The rate went down a little.');
       await expect(question.locator('.appr__notice')).toBeVisible();
       await check(page, `parent-answer-${size.name}-${text.name}`, text.scale);
+
+      // The dashboard, with the folded test-account lists opened.
+      await page.goto('./parent');
+      await expect(page.locator('.dash__card').first()).toBeVisible();
+      for (const fold of await page.locator('.dash__fold summary').all()) await fold.click();
+      await check(page, `parent-dashboard-${size.name}-${text.name}`, text.scale);
+
+      // Settings, with a change being previewed (nothing is saved).
+      await page.goto('./parent/settings');
+      await page.getByRole('button', { name: 'Change' }).click();
+      await page.getByLabel('Days to answer (3 to 30)').fill('12');
+      await expect(page.locator('.set__notice')).toBeVisible();
+      await page.locator('.set__history summary').click();
+      await check(page, `parent-settings-${size.name}-${text.name}`, text.scale);
     }
   });
 }

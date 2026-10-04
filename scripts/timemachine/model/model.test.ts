@@ -116,6 +116,34 @@ function interestPostedSoFar(m: Model): bigint {
   return m.postings.filter((p) => p.kind === 'savings_interest').reduce((s, p) => s + p.cents, 0n);
 }
 
+describe('request expiry (stage 8: a setting, fixed when she asks)', () => {
+  it('7 days to start; a change applies only to requests made after it starts', () => {
+    const m = funded('2028-01-01 09:00', 10000n);
+    expect(
+      m.act('2028-01-05 09:00', { kind: 'set_expiry', days: 10, effective: '2028-01-10' }).ok,
+    ).toBe(true);
+    expect(m.expiryDaysOn('2028-01-09')).toBe(7);
+    expect(m.expiryDaysOn('2028-01-10')).toBe(10);
+    m.act('2028-01-08 10:00', { kind: 'deposit', kid: 'k', cents: 2000n, label: 'old' });
+    m.act('2028-01-12 10:00', { kind: 'deposit', kid: 'k', cents: 2000n, label: 'new' });
+    m.advanceTo('2028-01-15 09:59');
+    expect(m.requestStatus('old')).toBe('pending');
+    m.advanceTo('2028-01-15 10:00');
+    expect(m.requestStatus('old')).toBe('expired'); // 7 × 24 hours
+    m.advanceTo('2028-01-22 09:59');
+    expect(m.requestStatus('new')).toBe('pending');
+    m.advanceTo('2028-01-22 10:00');
+    expect(m.requestStatus('new')).toBe('expired'); // 10 × 24 hours
+  });
+  it('refuses anything but 3 to 30 whole days', () => {
+    const m = funded('2028-01-01 09:00', 10000n);
+    for (const days of [2, 31, 7.5])
+      expect(
+        m.act('2028-01-02 09:00', { kind: 'set_expiry', days, effective: '2028-01-03' }).ok,
+      ).toBe(false);
+  });
+});
+
 describe('savings interest', () => {
   it('$250 at 2% for 30 days in a non-leap year posts $0.42', () => {
     const m = funded('2027-06-01 09:00', 25000n);

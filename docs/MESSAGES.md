@@ -25,10 +25,10 @@ Each notice has a title and a body.
   - Body: Your request to {put in / take out} {amount} wasn't approved. Dad said: "{Dad's reason}"
 - **Request expired (deposit)**
   - Title: Your request ran out of time
-  - Body: Your request to put in {amount} waited 7 days without an answer, so it was cancelled. You can ask again any time.
+  - Body: Your request to put in {amount} waited {days} days without an answer, so it was cancelled. You can ask again any time.
 - **Request expired (withdrawal)**
   - Title: Your request ran out of time
-  - Body: Your request to take out {amount} waited 7 days without an answer, so it was cancelled. The money is free to use again, and you can ask again any time.
+  - Body: Your request to take out {amount} waited {days} days without an answer, so it was cancelled. The money is free to use again, and you can ask again any time.
 
 ### Fund trades
 
@@ -71,6 +71,14 @@ Each notice has a title and a body.
   - Title: The {savings / {term} GIC} special has ended
   - Body, GICs: {term} GICs are back to {regular rate}. GICs bought during the special keep {special rate}.
   - Body, savings: Savings is back to {regular rate}.
+
+### Time to answer a request (stage 8)
+
+{days} is how long Dad had for that request: the rule in force on the day she asked (7 days to start; Dad can set 3 to 30). Each request keeps the time it had when she asked.
+
+- **Dad changes how long he has to answer** (sent on the day the change takes effect: right away if it starts today, otherwise by that night's run; never repeated)
+  - Title: Dad now has up to {days} days to answer your requests
+  - Body: If he hasn't said yes or no to a deposit or withdrawal by then, it's cancelled and you can ask again. Requests you've already made keep the time they had.
 
 ### Deposit limit
 
@@ -263,7 +271,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 | Penalty | A penalty (its note opens under "How was this calculated?", §9) | −{amount} |
 | Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund} (Waiting for the market close) | {amount}, or All of it |
 | Declined | Dad said not this time (money in / money out) · Dad says: "{reason}" | {amount} |
-| Expired | A request ran out of time · Nobody answered within 7 days, so it was cancelled. You can ask again any time. | {amount} |
+| Expired | A request ran out of time · Nobody answered in time, so it was cancelled. You can ask again any time. | {amount} |
 
 - **"See all" page:** Your history · Show more · Back to Home
 

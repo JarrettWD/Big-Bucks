@@ -77,6 +77,7 @@ Each girl's app has four tabs. It should look colourful and fun, with icons and 
 - **History:** every past change is listed with its date and note.
 - **Deposit cap:** the same settings screen shows the cap (starting at $1,000 in net deposits per girl). Dad can raise or lower it for both girls at once, which keeps the rules fair. Lowering it below what a girl has already deposited never takes money away; it only blocks new deposits until she is back under the cap. The girls get an in-app notice when the cap changes.
 - **Inflation rate:** a setting (starting at 2.0%, the Bank of Canada's target) used by the inflation view. Dad can update it now and then to match the news.
+- **Time to answer a request:** how long Dad has to say yes or no to a deposit or withdrawal before it's cancelled (7 days to start, 3 to 30). A change applies to new requests only, and the girls are told when it takes effect (see Build decisions).
 
 **How the girls are notified (in the app)**
 
@@ -321,7 +322,7 @@ The girls will only trust Big Bucks, and stay interested, if the numbers are alw
 - **Never twice.** Each posting has a unique key (account, type, date), and the database rejects a duplicate, so a job that runs twice or retries can't double-pay or double-charge.
 - **No stale prices.** If the price service is down, the job retries. A trade never settles on an old or guessed price; it waits for the real close for its day, which is backfilled once available.
 - **Fund events:** if a fund's ETF splits, the job adjusts units so her holding's value doesn't change.
-- **Stale requests:** a deposit or withdrawal Dad hasn't answered within 7 days expires, and the held money is released, with a notice explaining why.
+- **Stale requests:** a deposit or withdrawal Dad hasn't answered in time expires, and the held money is released, with a notice explaining why. How long Dad has is a setting (7 days to start; see Build decisions).
 
 **Daily checks, with alerts to Dad**
 
@@ -460,7 +461,8 @@ These settle details the sections above leave open. Where they differ from an ea
 - **Every move goes through savings:** savings → GIC, savings → fund, GIC → savings, fund → savings. Fund → GIC takes two steps. This keeps the rules simple and matches "money lands in savings".
 - **Deposits** hold nothing (the money isn't in yet) but count toward the cap while pending: net deposits (approved deposits − approved withdrawals) + pending deposits + the new amount must not exceed the cap.
 - **Withdrawals** hold the amount in savings; Dad can approve only 24 hours after the request.
-- **Deposits and withdrawals** expire 7 days after the request if Dad hasn't answered, releasing any hold, with a notice.
+- **Deposits and withdrawals** expire if Dad hasn't answered in time, releasing any hold, with a notice saying how long the request waited. **How long is a parent setting** (decided 2026-10-04), `request_expiry_days`: 7 days to start, whole days from 3 to 30, changed from Settings with a preview, confirmation and log row. Each request's expiry is fixed when she asks (`requests.expires_at` = the time she asked + the setting in force that Alberta day × 24 hours); a change applies only to new requests. When a change takes effect, every kid gets a notice ("Dad now has up to 10 days to answer your requests"): right away if it starts today, otherwise from that night's run, and never the same news twice in a row. The account agreement (onboarding) quotes the setting in force, never a fixed number.
+- **Parent dashboard warning:** any real kid's request with 48 hours or less left (or already run out but not yet cancelled by the nightly run) is listed on the dashboard, in the database's words, for example "Robin's $5.00 withdrawal expires tomorrow at 4:00 pm (in 29 hours)." Test accounts' warnings are folded away, like their alerts.
 - **GIC purchases and early breaks** happen immediately (they're auto-approved moves). Dad is notified on the dashboard.
 - **Stock buys** hold the dollar amount in savings until settlement. **Stock sells** are by dollar amount or "sell all" and hold the units until settlement.
 - **One trade per fund per calendar day**, buy or sell, counting pending and settled trades.
@@ -480,7 +482,7 @@ These settle details the sections above leave open. Where they differ from an ea
 
 - `rates` rows: vehicle, GIC term, rate, effective date, optional end date, `is_special`, note. The rate on a given date is the latest regular rate effective on or before it, unless a special covers that date.
 - A GIC locks the rate in force on the day it's bought, a special included.
-- **Settings** keys include `deposit_cap_cents` (100000), `inflation_rate` (2.0), `clock_override` (local only), `launched_at`, and feature switches named `feature:<name>`, each `off`, `test` (test accounts only) or `everyone`.
+- **Settings** keys include `deposit_cap_cents` (100000), `inflation_rate` (2.0), `request_expiry_days` (7; 3 to 30), `clock_override` (local only), `launched_at`, and feature switches named `feature:<name>`, each `off`, `test` (test accounts only) or `everyone`.
 - Rates and settings are append-only like the ledger: a change is a new dated row.
 
 ### Writes, security and logins
@@ -513,4 +515,6 @@ These tables and fields add to the Data model section:
 | `login_attempts` | Failed PINs and lockouts |
 | `alerts` | Problems for Dad: failed jobs, missing prices, mismatches, backup failures, lockouts |
 | `wishlist_parent_marks` | Parent-only "Got it" marker |
-| `notifications.type` adds `cap_change`, `request_expired`, `badge`, `whats_new` | More notice types |
+| `notifications.type` adds `cap_change`, `request_expired`, `badge`, `whats_new`, `rule_change` | More notice types (`rule_change`: how long Dad has to answer changed) |
+| `requests.expires_at` | When a deposit or withdrawal runs out of time, fixed when she asks |
+| `parent_actions` | Append-only log of every parent action: who, when and what |

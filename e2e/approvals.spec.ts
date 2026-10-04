@@ -271,3 +271,58 @@ test("answering a question shows her line and its working, and she's told", asyn
     logged: 'answer_question',
   });
 });
+
+test('changing how long you have to answer: preview, confirmation, the log and her notice', async ({
+  page,
+}) => {
+  const [day] = await rows<{ later: string; later_text: string; today_text: string }>(
+    `select (public.app_today() + 3)::text as later, public.fmt_date(public.app_today() + 3) as later_text,
+            public.fmt_date(public.app_today()) as today_text`,
+  );
+  await parentSignIn(page);
+  await page
+    .getByRole('navigation', { name: 'Parent' })
+    .getByRole('link', { name: 'Settings' })
+    .click();
+  const card = page.getByRole('region', { name: 'Time to answer a request' });
+  await expect(card).toContainText('7 days');
+
+  // A change for a later day: she'd be told on that day. Going back changes nothing.
+  const before = await footprint();
+  await card.getByRole('button', { name: 'Change' }).click();
+  await card.getByLabel('Days to answer (3 to 30)').fill('12');
+  await card.getByLabel('Starts on').fill(day.later);
+  await expect(card).toContainText(`On ${day.later_text}, every kid`);
+  await expect(card.locator('.set__notice')).toContainText(
+    'Dad now has up to 12 days to answer your requests',
+  );
+  await card.getByLabel('Days to answer (3 to 30)').fill('31');
+  await expect(card).toContainText('Use whole days, from 3 to 30.');
+  await expect(card.getByRole('button', { name: /Yes, change/ })).toBeDisabled();
+  await card.getByRole('button', { name: 'Back' }).click();
+  expect(await footprint()).toBe(before);
+
+  // From today: she's told right away.
+  await card.getByRole('button', { name: 'Change' }).click();
+  await card.getByLabel('Days to answer (3 to 30)').fill('10');
+  await expect(card).toContainText('will see this right away');
+  const shown = (await card.locator('.set__notice').innerText()).replace(/\s+/g, ' ').trim();
+  await card.getByRole('button', { name: 'Yes, change to 10 days' }).click();
+
+  const [log] = await rows<{ summary: string; when: string }>(
+    `select summary, public.fmt_moment(done_at) as when from public.parent_actions
+      where action = 'set_setting' order by id desc limit 1`,
+  );
+  expect(log.summary).toBe(`Request expiry set to 10 days from ${day.today_text}.`);
+  await expect(page.getByRole('status')).toHaveText(
+    `Done. ${log.summary} Recorded: Dad, ${log.when}.`,
+  );
+  await expect(card.locator('.set__value')).toHaveText('10 days');
+
+  const [check] = await rows<Record<string, string>>(
+    `select (select value from public.settings where key = 'request_expiry_days' order by id desc limit 1) as value,
+            (select n.title || ' ' || n.body from public.notifications n where n.account_id = ${ROBIN}
+               and n.type = 'rule_change' order by n.id desc limit 1) as notice`,
+  );
+  expect(check).toEqual({ value: '10', notice: shown });
+});

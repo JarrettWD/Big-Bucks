@@ -164,7 +164,7 @@ export function describeActivity(r: ActivityRow): ActivityLine {
         ...base,
         icon: '⌛',
         title: 'A request ran out of time',
-        detail: 'Nobody answered within 7 days, so it was cancelled. You can ask again any time.',
+        detail: 'Nobody answered in time, so it was cancelled. You can ask again any time.',
         amount: money(),
         tone: 'declined',
       };

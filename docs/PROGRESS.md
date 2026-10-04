@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress** (2026-10-03), local only: Part A (the Approvals screen) first, then a stop for Dad's review, then Part B.
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. **B1 (request expiry and the dashboard) is built and waiting for review.**
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -147,6 +147,117 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - Each request gets `expires_at` when she asks. The nightly expiry job, approving, the Approvals screen and the dashboard all use it.
   - Two of Part A's originals change on purpose: `approve_request_unlogged` (the expiry check) and `set_setting_unlogged` (the new key and its notice). A test proves nothing else in them changed.
   - Corrections use a new `corrects_id` link, not `reverses_id`, which reconcile treats as "never happened".
+- **B1, request expiry and the dashboard: built, waiting for Dad's review (2026-10-04).** Not committed yet.
+- **Migration `20261012000000_request_expiry_dashboard.sql`** (new):
+  - **The setting `request_expiry_days`:** starts at 7 days; whole days from 3 to 30.
+    - Each deposit and withdrawal gets `requests.expires_at` when she asks: the setting in force that Alberta day × 24 hours.
+    - A trigger sets it, replacing anything an insert says, and another refuses any later change, for every role.
+    - Requests made before this migration got exactly 7 days.
+    - Moves have no expiry; a check constraint enforces both rules.
+  - **Two Part A originals changed on purpose:**
+    - `approve_request_unlogged`: approving uses the request's own expiry. The message now says when: "This request ran out of time on Oct 16 at 10:00 am (after 10 days), so it has expired."
+    - `set_setting_unlogged`: accepts the new key, and sends the girls' notice when a change starts today.
+    - **Proof that nothing else changed:** a test swaps the new lines back for the committed ones and gets the committed md5 fingerprint. Part A's fingerprint test now lists the two new fingerprints, with a comment saying why.
+    - The `set_setting` wrapper's log line adds "Request expiry set to 10 days from Oct 6."
+  - **The girls' notice `rule_change`:** "Dad now has up to {N} days to answer your requests", with a body saying requests already made keep their time.
+    - Sent when the change takes effect: right away when it starts today, otherwise by the expiry job on that day (catch-up included).
+    - Never sent when the number doesn't change, and never the same news twice in a row to a kid.
+  - **`expire_requests`:** expires each request at its own `expires_at` (`decided_at` = that time). Her notice says how long it waited ("waited 10 days…").
+  - **The nightly check:** `reconcile_account` is wrapped like Part A's functions (renamed to `reconcile_account_core`, body unchanged). The wrapper adds the `expiry` problem once the expiry job has done the date:
+    - a request still waiting after its expiry;
+    - one approved after it;
+    - an expired one with the wrong time.
+  - **`parent_inbox`** uses each request's own expiry.
+  - **`parent_dashboard()`**, every figure and date from the database:
+    - each kid's figures;
+    - the liability (real kids only), with test accounts listed apart;
+    - what's waiting;
+    - **the 48-hour warning**, real kids and test accounts apart;
+    - automatic moves in the last 14 days;
+    - GICs waiting for her choice or maturing within 30 days;
+    - open alerts, with quiet ones apart;
+    - rate, cap and rule notices in the last 30 days, with when each kid read them;
+    - the holiday-table warning, 60 days before a market's confirmed dates run out (unconfirmed years count as missing). The TSX's starts on Nov 1, 2026.
+    - **The warning's wording (Dad's choice):** "Robin's $25.00 deposit expires tomorrow at 6:00 pm (in 28 hours)."; "…ran out of time today at 10:00 am. Tonight's run cancels it."; "(in 30 minutes)", "(in 1 hour)". Hours round down. `fmt_relative` says today, tomorrow, yesterday or the weekday.
+  - **`parent_settings()` and `parent_change_preview()`:**
+    - The Settings screen's figures: the rule in force, any scheduled change, and the history with who and when (from the log).
+    - The rolled-back dry run (with `in_preview()` on, per CLAUDE.md) shows the log line and exactly what the girls will be told, and when. For a change that starts later, it dry-runs that day's notice too. B2 extends it to rates.
+  - **Glossary:** "Request expiry", worded without a number of days, because Dad can change it.
+- **Screens:**
+  - **Dashboard** (`src/parent/dashboard/`), on phones in this order:
+    1. **Needs you:** what's waiting, with **Open Approvals**; "⏳ Running out of time", each warning linking to Approvals; test accounts' warnings folded under "Test accounts (n)"; the holiday warning.
+    2. **Alerts**, each with **Acknowledge**: a confirmation, then a log row ("Done. Alert acknowledged. Recorded: Dad, …"). Test accounts' alerts are folded.
+    3. **The girls:** each total worth with savings, GICs, funds and money put in; **What you owe them**; test accounts listed apart, "not included".
+    4. **GICs coming due.**
+    5. **Automatic moves (last 14 days).**
+    6. **Have they read it?** Each notice, and when each kid opened it.
+    - Two columns from 960 px.
+  - **Settings** (`src/parent/settings/`), the B1 part: **Time to answer a request**.
+    - Shows the current number, any scheduled change and the history.
+    - **Change** opens a confirmation:
+      1. days (checked as typed: whole days 3–30);
+      2. **Starts on** (defaults to today, from the database);
+      3. an optional note for your records;
+      4. "This will be recorded: Request expiry set to 12 days from Oct 4.";
+      5. the girls' notice, and when they get it ("right away" or "On Oct 7");
+      6. then **Yes, change to 12 days** or **Back**.
+    - After saving: "Done. … Recorded: Dad, Oct 4 at 1:07 pm."
+  - The stage 6 placeholders are gone.
+  - **Her history line** for an expired request now reads "Nobody answered in time, so it was cancelled. You can ask again any time."
+- **Docs:**
+  - **MESSAGES.md §1:** the expired notices say "waited {days} days"; a new "Time to answer a request" section with the `rule_change` notice and when it's sent.
+  - **MESSAGES.md §7:** the expired history line.
+  - **GLOSSARY.md:** "Request expiry".
+  - **SPEC:** "Stale requests"; Build decisions (the rule, the notice, the 48-hour warning, and "the account agreement quotes the setting in force"); the admin settings list; the settings keys; the data model (`expires_at`, `rule_change`, `parent_actions`).
+  - The other "7 days" in SPEC are different rules (GIC choice, rate notice, wish-list goal) and are unchanged.
+- **Demo:** Robin's $25 and Sky's $8 deposits, asked 6 days before, so the dashboard shows a warning and a folded test-account one.
+- **Time machine:** the scenario now lengthens expiry to 10 days from Jan 10, 2028 (saved Jan 5).
+  - Sky's Jan 8 deposit still expires after 7 days (Jan 15).
+  - Her Jan 12 $15 withdrawal is still waiting on day 9, and expires after 10 days (Jan 22), releasing the hold.
+  - The independent model has its own expiry rule (set when she asks, from the rule in force that day) and its own known-answer tests.
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **911 of 911**, after `supabase db reset`. New:
+    - **`request_expiry_test.sql` (60):**
+      - the default;
+      - expiry fixed when she asks, and unchangeable by anyone;
+      - 3 and 30 allowed; 2, 31, 7.5, "ten" and "010" refused;
+      - the log line;
+      - the notice on the day a change starts, only once, and not for the same number, including on a catch-up night;
+      - 7-day and 10-day requests side by side;
+      - approve at 9:59 am, refused at 10:00 am with the new message;
+      - the expired notices saying 7 and 10 days;
+      - the Approvals screen's expiry;
+      - the two "only these lines changed" proofs;
+      - the nightly check's new rule (caught, not before expiry, not before the job runs, cleared once expired);
+      - the Settings read, the preview (with nothing left behind, and in-preview on) and who may call.
+    - **`parent_dashboard_test.sql` (19):**
+      - totals and liability against `account_balances`;
+      - waiting counts;
+      - the warning's known answers (ran out, 30 minutes, 28 hours, exactly 48 hours in, 48 hours and 1 minute out, 1 hour) and test accounts apart;
+      - moves (14 days), GICs (waiting, 22 days, too far), alerts and quiet alerts, notices read;
+      - the holiday warning on Oct 31 (none) and Nov 1 (TSX);
+      - who may call.
+    - **Updated:** the glossary count (55), the notification types (`rule_change`) and Part A's two fingerprints.
+  - `npm test` (Vitest): **174 of 174**. New: the dashboard wording (moves, GICs, counts, read status) and the Settings wording (days typed 3–30, when they're told), plus 2 model tests for the expiry rule.
+  - `npm run test:e2e` (Playwright): **57 of 57**.
+    - **New `dashboard.spec.ts`** (reads only, so it runs early, in the layout group), each check against the database:
+      - the girls' totals, what you owe, and what's waiting;
+      - Robin's warning in the database's words, Sky's folded until opened, and the link to Approvals;
+      - GICs waiting, and each notice's read status.
+    - **New in `approvals.spec.ts`:** changing expiry. A later-dated preview ("On Oct 7…") then **Back** changes nothing; 31 is refused; then 10 days from today, with the log line, the status message, the setting and Robin's notice word for word as previewed.
+    - **`layout.spec.ts`:** the dashboard (folded lists opened) and Settings (a change being previewed) at all six sizes, normal and 130% text.
+    - **`parent.spec.ts`** checks the new dashboard.
+    - **Test helper:** parent sign-ins now take turns through a lock shared by all test workers. With up to nine at once, one finishing the code step was ending another's half-finished sign-in (Supabase's rule, found in Part A).
+  - `npm run timemachine`: **PASS, 14 of 14**, on the finished B1 code. 78 of 78 actions agreed with the model (3 new), and 12 of 12 planned outcomes, including the three new expiry checks.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none can be ticked yet (they're live). Newly testable locally: an unanswered request expires at its own time with a notice, and the dashboard's liability total leaves out test accounts.
+- **Known issues and notes:**
+  - The browser pane's screenshots cropped at 2× pixel scaling during my own check (the page measured exactly 412 px, with no sideways scroll), so I reviewed the Playwright full-page shots instead.
+  - Requests still running out of time but not yet cancelled show on the dashboard until the nightly run, because nothing runs nightly locally. Run `npm run jobs:local` to process them.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run demo`, then `npm run dev`.
+  2. In an Incognito window go to **http://127.0.0.1:5173/Big-Bucks/parent/login** and sign in (password from the demo, code from `npm run demo:code`).
+  3. Look at **Dashboard**, then try **Settings → Change**.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

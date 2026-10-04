@@ -285,6 +285,12 @@ async function main(): Promise<void> {
               `select public.set_setting('deposit_cap_cents', $1, $2, 'Time machine cap change')`,
               [a.cents.toString(), a.effective],
             );
+          case 'set_expiry':
+            return db.call(
+              PARENT,
+              `select public.set_setting('request_expiry_days', $1, $2, 'Time machine expiry change')`,
+              [String(a.days), a.effective],
+            );
         }
       })();
       if (res.ok) {

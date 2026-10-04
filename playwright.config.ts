@@ -18,10 +18,14 @@ export default defineConfig({
     // The screen-size checks and the Graphs tests run first, while the demo is
     // untouched (Robin's GIC is still waiting for her choice); they only read. The
     // other tests change demo data.
-    { name: 'layout', testMatch: /(layout|graphs).spec.ts/, use: { ...devices['Pixel 7'] } },
+    {
+      name: 'layout',
+      testMatch: /(layout|graphs|dashboard).spec.ts/,
+      use: { ...devices['Pixel 7'] },
+    },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|approvals).spec.ts/,
+      testIgnore: /(layout|graphs|dashboard|approvals).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
