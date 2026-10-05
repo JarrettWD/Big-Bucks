@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings).spec.ts/,
+      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings|fix).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -43,6 +43,13 @@ export default defineConfig({
       name: 'parent-settings',
       testMatch: /settings.spec.ts/,
       dependencies: ['parent-actions'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Fix a mistake changes Robin's savings, which everything above reads.
+    {
+      name: 'parent-fix',
+      testMatch: /fix.spec.ts/,
+      dependencies: ['parent-settings'],
       use: { ...devices['Pixel 7'] },
     },
   ],

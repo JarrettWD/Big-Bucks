@@ -259,7 +259,7 @@ One append-only ledger is the source of truth. Balances and graphs are calculate
 | `notifications` | In-app notices to each girl (rate changes, approvals, maturities) | id, account_id, type (rate_change / rate_live / request / gic_maturity), title, body, related_rate_id, created_at, read_at |
 
 - **Money as integers:** store cents (bigint), not decimals, to avoid rounding errors. Units can be decimals.
-- **Corrections:** never edit or delete a ledger row. Post a reversing entry, just like real accounting. The database enforces this: no role, not even the parent, can update or delete rows in `transactions`, `rates` or `settings`.
+- **Corrections:** never edit or delete a ledger row. Post a reversing or correcting entry, just like real accounting (Dad's "Fix a mistake", see Build decisions). The database enforces this: no role, not even the parent, can update or delete rows in `transactions`, `rates` or `settings`.
 - **Available balance** = balance minus money held by pending requests.
 - **Views:** a database view such as `daily_balances` calculates each account's value per vehicle and fund per day for the graphs.
 - **RLS:** investors can select rows where account_id is their own and insert only into `requests`. The parent can do everything. Only the server writes to `transactions`.
@@ -488,6 +488,17 @@ These settle details the sections above leave open. Where they differ from an ea
 - **Dividend yield changes are announced** like rate changes (decided 2026-10-04): a notice when Dad saves one (if the number changes), and another on the day it starts if that's later.
 - **Cancelling a planned change** (decided 2026-10-04): a rate or setting change that hasn't started can be cancelled. Nothing is edited: a row in the append-only `cancellations` table marks it, and every reader of rates and settings skips cancelled rows. Kids who were told about the change (rates, specials, the deposit limit, dividend yields) get one notice that it's cancelled and what applies instead; kids who weren't told get nothing. Logged like every parent action.
 - **The Settings screen** (decided 2026-10-04) previews every change before saving: the real action runs and is rolled back, showing the line that will be logged and each notice the girls will get and when (right away, on the day a change goes live, and the day after a special ends). Rates change one at a time.
+- **Fix a mistake** (decided 2026-10-03 and 2026-10-04): Dad adds to or takes from a girl's savings with a new `correction` line, never an edit.
+  - **Savings only, in dollars, either direction.** It is linked to what it fixes: a history line (`corrects_id`, or `corrects_request_id` for a declined or expired request) and/or her question (`question_id`). A waiting request can't be corrected (approve or decline it instead). These links are not `reverses_id`: the line it fixes still counts.
+  - **A note she can read is required** (at most 300 letters). Her notice and her history line both name what it fixes ("A correction · fixes Savings interest on Oct 1").
+  - **Rounds in her favour:** Dad may type up to 4 decimal places; an addition rounds up to the cent, a reduction rounds down.
+  - **No single correction larger than the deposit cap** (Dad's B3 review). New money is a normal deposit; money out is a normal withdrawal.
+  - **The extra check** shows the amount in large type. A reduction needs a confirming tap; an addition over $100 needs the exact amount typed again (Dad's B3 review). The database enforces both: the same amount must come back with the correction, so the screen can't skip the step.
+  - **A reduction linked to a line can't take more than that line's amount**, less what earlier fixes already took from it (Dad's B3 review). An addition may be more, with a warning in the preview ("This is more than the line it fixes ($0.56). Is that right?"), not a block.
+  - **Never more than her free savings** (savings minus what her requests hold).
+  - **The graphs count it like the line it fixes** (Dad's B3 review): a fix to a deposit or withdrawal (or a declined or expired one) is money in or out, never earned or growth; a fix to anything else (interest, dividends, trades, GICs) is earned. A fix with no line (only a question about a request) is whichever Dad chooses, "Earned" by default. Stored as `transactions.counts_as`.
+  - **Nothing posts twice:** each correction carries a key from the screen (`correction:<key>`).
+  - **Where:** from any history line in "View as" (which stays read-only; its "Fix a mistake" link opens Dad's own screen for that line) and from a question on Approvals. The preview runs the real correction with `in_preview()` on and rolls it back. Logged in `parent_actions`.
 - **Market-move notes and the ? explanations** are wording, not money history, so Dad edits them in place from Settings (a note at most 300 letters, an explanation at most 400). Each edit is logged in `parent_actions` with the wording before and after. The standard note for new big-move days stays a dated setting. Glossary terms are fixed; only their wording changes.
 
 ### Writes, security and logins
@@ -523,4 +534,5 @@ These tables and fields add to the Data model section:
 | `notifications.type` adds `cap_change`, `request_expired`, `badge`, `whats_new`, `rule_change` | More notice types (`rule_change`: how long Dad has to answer changed) |
 | `requests.expires_at` | When a deposit or withdrawal runs out of time, fixed when she asks |
 | `cancellations` | A planned rate or setting change cancelled before it started (append-only; readers skip the cancelled row) |
-| `parent_actions` | Append-only log of every parent action: who, when and what (including rewording a note or a ? explanation, with the wording before and after) |
+| `parent_actions` | Append-only log of every parent action: who, when and what (including rewording a note or a ? explanation, with the wording before and after, and every correction) |
+| `transactions.corrects_id`, `.corrects_request_id`, `.question_id`, `.counts_as` | A correction's links to the history line or question it fixes, and whether the graphs count it as money in or out or as earned (stage 8) |

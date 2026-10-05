@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. **Next: B3 (Fix a mistake).**
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **Next: B4** (onboarding, the account agreement and "What's new").
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -461,6 +461,188 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - `npm run test:e2e`: **67 of 67**.
     - Lint is clean and the build succeeds.
 - **B2 committed** after Dad's review (see git log).
+- **B3, Fix a mistake: built, waiting for Dad's review (2026-10-04).** Not committed yet.
+  - **Dad's rules** (the plan's addition 3, plus his three for B3):
+    - savings only, in dollars, either direction;
+    - a new linked entry, never an edit;
+    - a note she can read is required;
+    - rounds in her favour;
+    - never more than her free savings;
+    - an extra check for every reduction;
+    - **typo guard:** an addition over the deposit cap or $100 (whichever is lower) gets the same extra check, with the amount in large type;
+    - **View as stays read-only:** a line there has a "Fix a mistake" link to Dad's own screen for that line; the fix is never made inside View as;
+    - the preview uses the preview flag.
+- **Migration `20261015000000_fix_a_mistake.sql`** (new):
+  - **Links on `transactions`:** `corrects_id` (the ledger line it fixes), `corrects_request_id` (a declined or expired request) and `question_id` (her question). Only a `correction` may carry them, and a trigger makes sure they point at the same kid and that the correction is in savings. They aren't `reverses_id`: the line being fixed still counts.
+  - **`correct_savings(account, line, question, add/take, amount, note, check, key)`**, logged in `parent_actions` in the same transaction:
+    - **Rounding in her favour:** Dad may type up to 4 decimal places. An addition rounds up to the cent and a reduction rounds down ($1.234 adds $1.24; $1.239 takes $1.23). Taking less than a cent is refused. At most $10,000.00.
+    - **The database enforces the extra check:** for a reduction, or an addition over the line, the confirmed amount must equal the amount. Without it: "Taking money away needs the extra check: confirm $1.23 first." / "Adding more than $100.00 needs the extra check: confirm $150.00 first."
+    - **Never more than free savings:** "That's more than Robin has free to use ($70.42: $100.42 in savings, $30.00 on hold for her requests). A correction can't take money she doesn't have free."
+    - **Linked:** to a history line, a question, or both. A waiting request is refused ("approve or decline it instead"). A question about a request has no ledger line, so the fix links to the question.
+    - **Nothing posts twice:** each correction carries a key from the screen (`correction:<key>`). A double tap gets "This correction is already saved."
+    - **Her notice** (new type `correction`): "Dad fixed a mistake: $1.24 added to your savings" · "It fixes "Savings interest" on Oct 1. Dad said: "September interest was short"".
+    - **Log line:** "Corrected Robin's savings: +$1.24, fixing "Savings interest" on Oct 1." The details keep what Dad typed before rounding.
+    - Fixing doesn't answer her question: Dad still answers it on Approvals.
+  - **`correction_preview(args)`:** the real correction with `in_preview()` on, always rolled back. It returns:
+    - the line;
+    - her savings, what's held and what's free;
+    - the extra-check line;
+    - the amount after rounding and her savings after;
+    - the log line and her notice.
+  - **`parent_corrections(account)`:** her corrections, newest first, with what each fixes, who and when.
+  - **`my_activity`** gains one column, `fixes` ("Savings interest on Oct 1", or "your question from Oct 3"). Nothing else in it changed.
+  - **`line_words`:** a history line in her history's words, matching `activityText.ts`.
+- **Screens:**
+  - **New `src/parent/fix/`**, at `/parent/fix/<her account>?line=…` or `?question=…`:
+    1. the line (and question) being fixed, and her savings, what's on hold and what's free to use;
+    2. **Add to her savings / Take from her savings**, the amount, and the note she'll read;
+    3. **the preview:**
+       - the rounding ("You typed $1.2340. It's rounded up to $1.24, in Robin's favour.");
+       - her savings before → after;
+       - the log line;
+       - **Robin will see this right away:** with her notice;
+    4. **the buttons:**
+       - a small addition: **Yes, add $1.24 to Robin's savings**;
+       - a reduction or a big addition: **Next: check the amount**, then a pink-bordered box with the amount in large type ("−$2.00"), why it gets a second look, and **Yes, take $2.00** or **Back**;
+    5. "Done. … Recorded: Dad, Oct 4 at 7:30 pm.", and **Corrections so far**.
+  - **View as:** opening a line (not a waiting request) shows a **Fix a mistake** link with "Opens your own parent screen for this line. Nothing changes here." There's nothing to type or press there.
+  - **Approvals:** each question has **Fix a mistake** next to **Answer**. The fix screen links back so you can answer her.
+  - **Her history:** a correction line opens to **What this fixes** ("This fixes: Savings interest on Oct 1.").
+- **Docs:** MESSAGES §1 (the notice) and §7 (the correction line); SPEC (Corrections, Build decisions "Fix a mistake", data model).
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **1146 of 1146**, from empty. New **`fix_a_mistake_test.sql` (73)**, written first and failing before the migration existed:
+    - **Before typing:** the screen's figures ($100.42 savings, $30.00 held, $70.42 free; the check line is $100 with a $1,000 cap).
+    - **Rounding:** $1.234 → 124 cents, $1.239 → −123, $0.0001 → 1. Refused: $0.004, 5 decimals, letters, a minus sign and zero.
+    - **The extra check:**
+      - none for $100.00; needed for $100.0001 and for any reduction;
+      - refused without it, or with the wrong amount;
+      - a $50 cap lowers the line to $50.
+    - **Free savings:** $70.43 refused with the figures; $70.42 and $70.429 allowed.
+    - **Links:**
+      - refused: no link, an unknown line, her sister's line or question, a waiting request, a question with a different line;
+      - allowed: a declined request, and a question about a request.
+    - **The note:** required, at most 300 letters.
+    - **The preview:** exact JSON, leaving nothing behind.
+    - **Saved for real:**
+      - the new line, with the interest line itself untouched;
+      - her savings;
+      - her notice and the log line, word for word what the preview showed;
+      - a double tap posts once;
+      - a reduction from a question, a fix to the declined request, and a test account.
+    - **The rest:**
+      - her history's `fixes`, and Dad's list;
+      - who may call: a kid, a parent without the code, a signed-out visitor and the server role are refused, and the helpers are internal;
+      - the preview flag is on in the dry run and off for the real correction;
+      - link rules: only corrections, the same kid, savings only.
+    - **Updated:** `schema_test.sql` (the new notice type), and Part A's "nothing skips the log" guard (it now allows `correct_savings`, which logs itself).
+  - `npm test` (Vitest): **191 of 191**. 8 new: the Fix a mistake wording, "What this fixes", and 3 model known answers.
+  - `npm run timemachine`: **PASS, 14 of 14**. 96 of 96 actions agreed with the model (6 new), and 27 of 27 planned outcomes.
+    - The model has its own correction rule.
+    - **New scenario steps on Feb 2, 2028:**
+      - add $0.4567 to kid A (→ $0.46);
+      - take $5.009 from kid B (→ $5.00): refused without the check, then made with it;
+      - add $120.50 to kid A: refused without the check, then made with it;
+      - taking more than kid B has free is refused.
+    - February's interest then accrues on the corrected balances, to the cent.
+    - Run on the final B3 code (run twice: once before and once after two late read-only additions, both PASS).
+  - `npm run test:e2e` (Playwright): **72 of 72**. New **`fix.spec.ts`** (5 tests, in its own project, which runs last):
+    - **View as stays read-only:** her line has no box or button for fixing, only the link. The link leads to Dad's screen for that line, the banner is gone, and nothing changed.
+    - **$1.234 added from View as:** rounded to $1.24, linked to her interest line, **her notice word for word as previewed**, the log, and "Recorded: …".
+    - **Taking $2:** the extra check in large type (at least 36 px). **Back** changes nothing; then it's saved.
+    - **$150:** the typo guard's check. Taking one cent more than she has free is refused, and the button stays off.
+    - **From a question on Approvals:** the question, its line, and the link back.
+    - **`layout.spec.ts`:** the fix screen with a reduction previewed, and at its extra check, at all six sizes, normal and 130% text.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none (no box covers corrections).
+- **Known issues and notes:**
+  - **How the graphs count a correction:** "Money in vs money earned" counts it as money earned, and "Growth by option" counts it as money moved into savings, not growth. That's right for most fixes, but a fix to a deposit shows as earned rather than as money in.
+  - **Her history shows a correction on the day it's made,** not next to the line it fixes. The correction line says what it fixes.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run demo`, then `npm run dev`.
+  2. In an Incognito window go to **http://127.0.0.1:5173/Big-Bucks/parent/login** and sign in (password from the demo, code from `npm run demo:code`).
+  3. On the **Dashboard**, tap **View as Robin** → **See all** → tap a **Savings interest** line → **Fix a mistake**.
+  4. Try **Take from her savings**, $2 and a note (from a **Money in** line: since the review, a reduction can't be more than its line), then **Next: check the amount**. **Back** changes nothing.
+- **Dad's B3 review (2026-10-04): two problems and six changes.** He added +$500 and +$1,000 corrections to a $0.56 interest line with one extra tap each, and her history showed "A correction" and his note but not what it fixed. Rounding as built is right. His changes:
+  1. any addition over $100 needs the exact amount typed again, and the database refuses it without that;
+  2. no single correction larger than the deposit cap, with a message pointing to a normal deposit;
+  3. a reduction linked to a line can't be more than that line's amount (and never more than her free savings); additions may be more;
+  4. a warning, not a block, when an addition is more than its line;
+  5. her history line and notice name what the correction fixes;
+  6. the graphs count a correction like the line it fixes.
+- **Built (still uncommitted, so the uncommitted migration `20261015000000_fix_a_mistake.sql` was changed in place):**
+  - **Typing the amount again:** `correct_savings` now takes `p_confirm`, the amount again as text, which must equal exactly what was typed before rounding.
+    - A reduction: the screen sends it when Dad taps to confirm.
+    - An addition over $100: Dad types it a second time.
+    - Refusals: "Adding more than $100.00 needs the amount typed again to confirm ($500.00)." and "The amount typed again ($15.00) doesn't match $150.00. Please type it again."
+    - The old "the lower of the cap and $100" line is now just $100, because the cap is now the ceiling.
+  - **The ceiling:**
+    - "A single correction can't be more than the deposit limit ($1,000.00). If this is new money, use a normal deposit instead."
+    - For a reduction: "…If she's taking money out, use a normal withdrawal instead."
+    - Exactly the cap is allowed. The old $10,000 limit is gone.
+  - **Line limit:** "A fix can't take more than the line it fixes: "Savings interest" on Oct 1 was $0.42." Earlier reductions from the same line count too: "…was $0.42, and earlier fixes already took $0.30, so at most $0.12 is left." Additions may be more.
+  - **Warning:** the preview returns "This is more than the line it fixes ($0.42). Is that right?" The screen shows it in a gold box; the button still works.
+  - **What it fixes, in her words:**
+    - The notice title is now the history title: "A correction · fixes Savings interest on Oct 1" (or "A correction · about your question from Oct 3").
+    - The body is "Dad added $1.24 to your savings. Dad said: "…"" or "Dad took $2.00 out of your savings. …".
+    - Her history line has the same title, with Dad's note under it. The separate "What this fixes" panel is gone.
+  - **The graphs:** a new column, `transactions.counts_as`, is set when the correction is made.
+    - `money`: a fix to a deposit or withdrawal line, or to a declined or expired deposit or withdrawal.
+    - `earned`: a fix to anything else (interest, dividends, trades, GICs, penalties). A fix to a fix counts like the fix it corrects.
+    - A fix with no line (a question about a request) is whichever Dad chooses on screen: "Earned (like interest)" (the default) or "Money in or out (like a deposit)".
+    - Three graph reads changed only on the line marked "B3":
+      - `daily_balances`: money corrections are money moved that day (the deposit dots, and "Money in vs money earned");
+      - `money_in_vs_earned`: the same, for money in before the range shown;
+      - `growth_by_option`: earned corrections are growth, not money moved.
+    - The deposit cap's "money put in" is unchanged: a correction never uses up or frees deposit room.
+  - **Screen:**
+    - after the amount, the preview says how her graphs will count it, and shows any warning;
+    - **Next: check the amount** for a reduction (a tap) or an addition over $100. The second step shows the amount in large type, plus **Type the amount again to confirm** for the addition; its button stays off until something like an amount is typed;
+    - a refusal on that step keeps Dad there to type it again.
+- **Docs:** MESSAGES §1 (the notice) and §7 (the history line); SPEC Build decisions ("Fix a mistake") and the data model.
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **1167 of 1167**, from empty. `fix_a_mistake_test.sql` now has **94** tests, rewritten first and failing against the old rules:
+    - the ceiling at $1,000 and $1,000.01, both ways, and at $50.00 and $50.01 with a $50 cap;
+    - typing again: none at $100.00, needed at $100.0001; missing, $50 for $500, "yes", and $100.00 for $100.0001 all refused;
+    - the line limit: $0.43 from a $0.42 line refused, $0.42 allowed, a $20 declined request, and two reductions together ($0.30, then $0.13 refused and $0.12 allowed);
+    - warnings: shown for $500 on a $0.42 line; none at $0.42, on a reduction, or with no line;
+    - how the graphs count it: a deposit and a declined deposit are money, interest is earned, the line decides over Dad's choice, a question-only fix defaults to earned or takes Dad's choice, anything else is refused;
+    - the notice titles and bodies, and her history lines;
+    - the graphs on a day with two money fixes (+$150.00, −$20.00) and two interest fixes (+$1.24, −$0.30):
+      - money in that day is $130.00;
+      - money in vs earned is $230.00 in and $1.36 earned;
+      - savings growth is $0.94, with $130.00 of money moved;
+    - only corrections may carry `counts_as`.
+  - `npm test` (Vitest): **193 of 193**. The model has 2 new known answers (the ceiling, and the line limit taken together), and the history title tests are new.
+  - `npm run timemachine`: **PASS, 14 of 14**. 99 of 99 actions agreed with the model and 29 of 29 planned outcomes.
+    - The model has its own ceiling and line limit: it finds her latest line of that kind and tracks what earlier fixes took from it.
+    - **The Feb 2, 2028 steps** (9 actions; each refusal was planned):
+      - +$0.4567 to kid A's interest line, with no check needed;
+      - −$5.009 from kid B's deposit line: refused without the tap, then made with it;
+      - +$120.50 to kid A: refused without typing it again, then made;
+      - +$1,500.01 refused (over the $1,500 cap);
+      - $50 from kid B's interest line refused (more than the line);
+      - $0.01 from the same line allowed;
+      - $9,000 refused.
+  - `npm run test:e2e` (Playwright): **73 of 73**. `fix.spec.ts` now has 6 tests:
+    - a $1.234 fix: her notice word for word as previewed, and **her history line "A correction · fixes Savings interest on …"**;
+    - the warning when an addition is more than its line;
+    - a reduction over its line refused, then $2 from a Money in line: one tap (no box to type in), **Back** changes nothing, then saved;
+    - over the cap refused; $150 needs typing again: $15 refused with the message, then $150.00 saved;
+    - more than she has free refused;
+    - from a question on Approvals.
+    - `layout.spec.ts`: the fix screen now previews a reduction from a deposit line.
+  - Lint is clean and the build succeeds.
+- **Demo reloaded** after the tests (new logins in `.demo-logins.local`).
+- **Known issues and notes:**
+  - "Reductions from the same line" counts only reductions, so an addition to a line doesn't make room for a bigger reduction later.
+  - A line with no amount (a fund split) can't have money taken through it; link the fix to another line or her question.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run dev`. The demo is already loaded; the logins are in `.demo-logins.local`.
+  2. Sign in as the parent in an Incognito window.
+  3. Tap **View as Robin** → **See all** → a **Savings interest** line → **Fix a mistake**.
+  4. Try **Add to her savings** with $500: a warning, then **Next: check the amount** asks you to type it again.
+  5. Try **Take from her savings** with more than the line: refused.
+- **Dad's retest (2026-10-04): B3 looks good.** He accepted both choices: GIC and penalty fixes count as earned, and corrections don't change deposit room. Committed and pushed (see git log).
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

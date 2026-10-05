@@ -266,3 +266,10 @@
 .appr__updated {
   font-size: 0.9rem;
 }
+.appr__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}

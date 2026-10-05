@@ -72,7 +72,29 @@ export type Action =
   | { kind: 'set_cap'; cents: bigint; effective: Day; label?: string }
   | { kind: 'set_yield'; fund: FundId; yield: string; effective: Day; label?: string }
   | { kind: 'cancel'; label: string }
-  | { kind: 'set_expiry'; days: number; effective: Day };
+  | { kind: 'set_expiry'; days: number; effective: Day }
+  /**
+   * Fix a mistake (stage 8): add to or take from savings. amount is dollars as Dad types them
+   * (up to 4 decimals); line is the kind of history line it's linked to (her latest one).
+   * checked: Dad gave the extra check (a tap for a reduction, the amount typed again for an
+   * addition over $100).
+   */
+  | {
+      kind: 'correct';
+      kid: string;
+      direction: 'add' | 'take';
+      amount: string;
+      line: string;
+      checked: boolean;
+    };
+
+/** The history lines a correction can be linked to in the scenario, as postings. */
+const LINE_POSTING: Record<string, PostingKind> = {
+  interest: 'savings_interest',
+  deposit: 'deposit',
+  withdraw: 'withdraw',
+  dividend: 'dividend',
+};
 
 export type Outcome = { ok: true } | { ok: false; reason: string };
 
@@ -88,7 +110,9 @@ export type PostingKind =
   | 'gic_break'
   | 'gic_to_savings'
   | 'gic_renew'
-  | 'split';
+  | 'split'
+  | 'correction_add'
+  | 'correction_take';
 
 /** One money event as it should appear in the ledger. */
 export interface Posting {
@@ -189,6 +213,8 @@ export class Model {
   private splits: { fund: FundId; day: Day; from: bigint; to: bigint }[] = [];
   private holidays = new Map<string, Holiday>(); // `${market}|${day}`
   private seq = 0;
+  /** Fix a mistake: cents already taken from each line by earlier fixes. */
+  private takenFromLine = new Map<string, bigint>();
   readonly postings: Posting[] = [];
   readonly dayFigures = new Map<string, DayFigures>(); // `${kid}|${day}`
   readonly accrualLog: {
@@ -833,6 +859,41 @@ export class Model {
           target.cancelled = false;
           return no('cancelling a promised raise needs 7 days');
         }
+        return { ok: true };
+      }
+      case 'correct': {
+        // Rounds in her favour: an addition up to the cent, a reduction down.
+        const exact = Q.dec(a.amount).mul(Q.of(100));
+        if (exact.sign() <= 0) return no('nothing to correct');
+        const cents = a.direction === 'add' ? exact.ceil() : exact.floor();
+        if (cents === 0n) return no('rounds down to nothing');
+        // No single correction larger than the deposit cap.
+        if (cents > this.capOn(today)) return no('larger than the deposit cap');
+        if (a.direction === 'take' && cents > this.available(a.kid))
+          return no('more than her free savings');
+        // The line it's linked to: her latest posting of that kind. A reduction can't
+        // take more than it, less what earlier fixes took from it.
+        const kind = LINE_POSTING[a.line];
+        if (!kind) throw new Error(`the model doesn't know "${a.line}" lines`);
+        const line = this.postings.filter((p) => p.kid === a.kid && p.kind === kind).at(-1);
+        if (!line) return no(`no ${a.line} line`);
+        const lineKey = `${a.kid}|${kind}|${line.day}|${line.cents}`;
+        const taken = this.takenFromLine.get(lineKey) ?? 0n;
+        if (a.direction === 'take' && cents > line.cents - taken)
+          return no('more than the line it fixes');
+        // The extra check: a confirming tap for every reduction; the amount typed
+        // again for an addition over $100.
+        if ((a.direction === 'take' || cents > 10_000n) && !a.checked)
+          return no('needs the extra check');
+        if (a.direction === 'take') this.takenFromLine.set(lineKey, taken + cents);
+        const k = this.kid(a.kid);
+        k.savings += a.direction === 'add' ? cents : -cents;
+        this.postings.push({
+          kid: k.id,
+          day: today,
+          kind: a.direction === 'add' ? 'correction_add' : 'correction_take',
+          cents,
+        });
         return { ok: true };
       }
       case 'set_expiry':

@@ -489,6 +489,24 @@
   margin: 0.2rem 0 0;
   overflow-wrap: anywhere;
 }
+/* Dad's "View as" only: a link out to his own Fix a mistake screen. */
+.activity__fix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+}
+.activity__fix a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+  color: var(--bb-purple);
+}
+.activity__fix-help {
+  color: var(--bb-ink-soft);
+  font-size: 0.9rem;
+}
 .questions {
   display: flex;
   flex-direction: column;

@@ -19,6 +19,21 @@ async function robinAccount(): Promise<string> {
   }
 }
 
+/** Robin's latest deposit line, for Fix a mistake (a reduction can't take more than its line). */
+async function robinDepositKey(): Promise<string> {
+  const db = await LocalDb.connect();
+  try {
+    const [r] = await db.q<{ k: string }>(
+      `select posting_key as k from public.transactions
+        where account_id = (select account_id from public.profiles where username = 'demo_robin')
+          and type = 'deposit' order by effective_at desc limit 1`,
+    );
+    return r.k;
+  } finally {
+    await db.close();
+  }
+}
+
 const SIZES = [
   { name: 'small-phone', width: 360, height: 780 },
   { name: 'galaxy-a17', width: 412, height: 915 },
@@ -355,6 +370,20 @@ for (const size of SIZES) {
       await planned.getByRole('button', { name: /^Cancel the change planned for/ }).click();
       await expect(planned.locator('.set__notice')).toBeVisible();
       await check(page, `parent-settings-cancel-${size.name}-${text.name}`, text.scale);
+
+      // Fix a mistake: a reduction previewed, then at its extra check (nothing is saved).
+      const robinId = await robinAccount();
+      await page.goto(
+        `./parent/fix/${robinId}?line=${encodeURIComponent(await robinDepositKey())}`,
+      );
+      await page.getByLabel('Take from her savings').check();
+      await page.getByLabel('Amount in dollars').fill('2.5');
+      await page.getByLabel('Note she will read (required)').fill('That was counted twice');
+      await expect(page.locator('.set__notice')).toBeVisible();
+      await check(page, `parent-fix-${size.name}-${text.name}`, text.scale);
+      await page.getByRole('button', { name: 'Next: check the amount' }).click();
+      await expect(page.locator('.fix__big')).toBeVisible();
+      await check(page, `parent-fix-check-${size.name}-${text.name}`, text.scale);
 
       // View as Robin: her Home, her history with a line open, her notices, her graphs.
       const robin = await robinAccount();

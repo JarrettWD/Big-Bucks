@@ -414,6 +414,124 @@ export const STEPS: Step[] = [
     do: { kind: 'buy_gic', kid: 'B', cents: $(60), term: 1, label: 'gB1m' },
     why: 'Jan 31 + 1 month = Feb 29 (leap day)',
   },
+  // Fix a mistake (stage 8 B3): new savings lines linked to a line in her history, rounded
+  // in her favour. A confirming tap for every reduction, the amount typed again for an
+  // addition over $100; never larger than the deposit cap ($1,500 now), never more than
+  // the line (for a reduction) or her free savings. February's interest then accrues on
+  // the corrected balances.
+  {
+    at: '2028-02-02 09:00',
+    do: {
+      kind: 'correct',
+      kid: 'A',
+      direction: 'add',
+      amount: '0.4567',
+      line: 'interest',
+      checked: false,
+    },
+    why: 'adds $0.4567, rounded UP to $0.46; small, so no extra check',
+  },
+  {
+    at: '2028-02-02 09:05',
+    do: {
+      kind: 'correct',
+      kid: 'B',
+      direction: 'take',
+      amount: '5.009',
+      line: 'deposit',
+      checked: false,
+    },
+    expect: 'refused',
+    why: 'a reduction without the confirming tap',
+  },
+  {
+    at: '2028-02-02 09:06',
+    do: {
+      kind: 'correct',
+      kid: 'B',
+      direction: 'take',
+      amount: '5.009',
+      line: 'deposit',
+      checked: true,
+    },
+    why: 'takes $5.009, rounded DOWN to $5.00, after the tap',
+  },
+  {
+    at: '2028-02-02 09:10',
+    do: {
+      kind: 'correct',
+      kid: 'A',
+      direction: 'add',
+      amount: '120.5',
+      line: 'deposit',
+      checked: false,
+    },
+    expect: 'refused',
+    why: 'the typo guard: adding more than $100 without typing it again',
+  },
+  {
+    at: '2028-02-02 09:11',
+    do: {
+      kind: 'correct',
+      kid: 'A',
+      direction: 'add',
+      amount: '120.5',
+      line: 'deposit',
+      checked: true,
+    },
+    why: 'adds $120.50, typed again',
+  },
+  {
+    at: '2028-02-02 09:12',
+    do: {
+      kind: 'correct',
+      kid: 'A',
+      direction: 'add',
+      amount: '1500.01',
+      line: 'deposit',
+      checked: true,
+    },
+    expect: 'refused',
+    why: 'larger than the $1,500 deposit cap, even typed again',
+  },
+  {
+    at: '2028-02-02 09:15',
+    do: {
+      kind: 'correct',
+      kid: 'B',
+      direction: 'take',
+      amount: '50',
+      line: 'interest',
+      checked: true,
+    },
+    expect: 'refused',
+    why: 'more than the interest line it is linked to',
+  },
+  {
+    at: '2028-02-02 09:16',
+    do: {
+      kind: 'correct',
+      kid: 'B',
+      direction: 'take',
+      amount: '0.01',
+      line: 'interest',
+      checked: true,
+    },
+    why: 'a cent from the same interest line is fine',
+  },
+  {
+    at: '2028-02-02 09:17',
+    do: {
+      kind: 'correct',
+      kid: 'B',
+      direction: 'take',
+      amount: '9000',
+      line: 'deposit',
+      checked: true,
+    },
+    expect: 'refused',
+    why: 'more than the cap, the line and her free savings',
+  },
   {
     at: '2028-02-23 09:00',
     do: {

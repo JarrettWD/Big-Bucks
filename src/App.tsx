@@ -27,6 +27,7 @@ import ParentMfa from './parent/ParentMfa';
 import ParentShell from './parent/ParentShell';
 import Dashboard from './parent/dashboard/Dashboard';
 import Settings from './parent/settings/Settings';
+import FixMistake from './parent/fix/FixMistake';
 import ParentViewAs from './parent/viewas/ParentViewAs';
 import Approvals from './parent/approvals/Approvals';
 
@@ -187,6 +188,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="approvals" element={<Approvals />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="fix/:accountId" element={<FixMistake />} />
             <Route path="*" element={<Navigate to="/parent" replace />} />
           </Route>
           <Route path="*" element={<Root />} />

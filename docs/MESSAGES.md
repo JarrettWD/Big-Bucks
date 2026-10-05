@@ -115,6 +115,16 @@ A lower limit needs 7 days' notice (stage 8); a higher one can start right away.
   - Body: {Dad's note} This is the most you can put in, minus what you take out. Interest and gains don't count.
   - Added when it goes down: If you've already put in more than that, nothing is taken away. You just can't add more for now.
 
+### A mistake fixed (stage 8)
+
+Sent right away when Dad adds to or takes from her savings to fix a mistake. The title is the same as her history line, so she can find it. {Dad's note} is exactly as he typed it; he sees this whole notice before he confirms. {line} is the history line it fixes, in her history's words (for example "Savings interest" or "Dad said not this time (money in)").
+
+- **Title, fixing a line:** A correction · fixes {line} on {date}
+- **Title, about a question with no line** (a question about a request): A correction · about your question from {date}
+- **Body, money added:** Dad added {amount} to your savings. Dad said: "{Dad's note}"
+- **Body, money taken out:** Dad took {amount} out of your savings. Dad said: "{Dad's note}"
+  - Example: A correction · fixes Savings interest on Oct 1 · Dad added $1.24 to your savings. Dad said: "September interest was short"
+
 ### Questions
 
 - **Dad answered**
@@ -295,7 +305,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 | GIC broken early | Broke a GIC early | {amount} |
 | Fund bought / sold | Bought {fund} · Sold {fund} | {amount} |
 | Split | {fund} split its units · Same value, more units. | |
-| Correction | A correction (with its note) | +/−{amount} |
+| Correction | A correction · fixes {line} on {date} (or: A correction · about your question from {date}), with Dad's note | +/−{amount} |
 | Penalty | A penalty (its note opens under "How was this calculated?", §9) | −{amount} |
 | Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund} (Waiting for the market close) | {amount}, or All of it |
 | Declined | Dad said not this time (money in / money out) · Dad says: "{reason}" | {amount} |

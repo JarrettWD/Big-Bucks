@@ -300,6 +300,30 @@ async function main(): Promise<void> {
               `select public.set_setting($1, $2, $3, 'Time machine yield change')`,
               [`dividend_yield:${a.fund}`, a.yield, a.effective],
             );
+          case 'correct': {
+            // Linked to her latest line of that kind, as Dad would pick it from her history.
+            const line = await db.call(
+              PARENT,
+              `select item_key from public.my_activity($1, 200) where kind = $2 order by at desc limit 1`,
+              [accounts[a.kid], a.line],
+            );
+            if (!line.ok || !line.value) throw new Error(`no ${a.line} line for kid ${a.kid}`);
+            const args = [
+              accounts[a.kid],
+              line.value,
+              null,
+              a.direction,
+              a.amount,
+              'Time machine fix',
+            ];
+            // The extra check, as the screen gives it: the same amount again (a tap for a
+            // reduction, the amount typed a second time for an addition over $100).
+            return db.call(
+              PARENT,
+              'select public.correct_savings($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+              [...args, null, a.checked ? a.amount : null, crypto.randomUUID()],
+            );
+          }
           case 'cancel': {
             const target = changeId.get(a.label);
             if (!target) throw new Error(`nothing labelled ${a.label}`);
@@ -583,6 +607,12 @@ async function comparePostings(
       dbPostings.push({ ...base, kind: 'gic_interest', cents: amt, gic: gl });
     else if (r.type === 'dividend')
       dbPostings.push({ ...base, kind: 'dividend', cents: amt, fund: r.fund_id as FundId });
+    else if (r.type === 'correction')
+      dbPostings.push(
+        amt > 0n
+          ? { ...base, kind: 'correction_add', cents: amt }
+          : { ...base, kind: 'correction_take', cents: -amt },
+      );
     else if (r.type === 'split_adjust')
       dbPostings.push({
         ...base,

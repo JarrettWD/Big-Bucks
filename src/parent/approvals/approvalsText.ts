@@ -89,6 +89,7 @@ export const TEXT = {
   approve: 'Approve',
   decline: 'Decline',
   answer: 'Answer',
+  fix: 'Fix a mistake',
   back: 'Back',
   yesApprove: (r: WaitingRequest) => `Yes, approve ${formatCents(r.amount_cents)}`,
   yesDecline: 'Yes, decline',

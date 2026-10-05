@@ -181,7 +181,9 @@ select is(
               or (m[1] = 'log_parent_action' and p.proname in ('approve_request', 'decline_request', 'answer_question',
                                                                  'acknowledge_alert', 'add_rate', 'set_setting',
                                                                  -- B2: three new parent actions, logged by themselves.
-                                                                 'edit_note', 'edit_glossary', 'cancel_change'))))
+                                                                 'edit_note', 'edit_glossary', 'cancel_change',
+                                                                 -- B3: Fix a mistake, logged by itself.
+                                                                 'correct_savings'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');

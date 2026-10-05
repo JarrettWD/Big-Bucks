@@ -378,3 +378,58 @@ describe("seven days' notice for a cut, and cancelling (stage 8 B2)", () => {
     expect(m.yieldOn('tsx', '2027-11-01').eq(Q.dec('3.5'))).toBe(true);
   });
 });
+
+describe('fixing a mistake (stage 8 B3)', () => {
+  // Linked to her latest deposit line ($100.00), as Dad would pick it in her history.
+  const fix = (direction: 'add' | 'take', amount: string, checked = false) =>
+    ({ kind: 'correct', kid: 'k', direction, amount, line: 'deposit', checked }) as const;
+
+  it('rounds in her favour: an addition up to the cent, a reduction down', () => {
+    const m = funded('2027-03-01 09:00', 10000n);
+    expect(m.act('2027-03-02 09:00', fix('add', '1.234')).ok).toBe(true);
+    expect(m.snapshot('k').savings).toBe(10124n);
+    expect(m.act('2027-03-02 09:01', fix('take', '1.239', true)).ok).toBe(true);
+    expect(m.snapshot('k').savings).toBe(10001n);
+    expect(m.act('2027-03-02 09:02', fix('take', '0.004', true)).ok).toBe(false);
+    expect(m.act('2027-03-02 09:03', fix('add', '0.0001')).ok).toBe(true);
+    expect(m.snapshot('k').savings).toBe(10002n);
+    expect(m.postings.filter((p) => p.kind.startsWith('correction')).map((p) => p.cents)).toEqual([
+      124n,
+      123n,
+      1n,
+    ]);
+  });
+  it('a tap for any reduction; the amount typed again for an addition over $100', () => {
+    const m = funded('2027-03-01 09:00', 10000n);
+    expect(m.act('2027-03-02 09:00', fix('take', '0.01')).ok).toBe(false);
+    expect(m.act('2027-03-02 09:00', fix('add', '100.00')).ok).toBe(true);
+    expect(m.act('2027-03-02 09:00', fix('add', '100.0001')).ok).toBe(false);
+    expect(m.act('2027-03-02 09:00', fix('add', '100.0001', true)).ok).toBe(true);
+  });
+  it('no single correction larger than the deposit cap', () => {
+    const m = funded('2027-03-01 09:00', 10000n);
+    expect(m.act('2027-03-02 09:00', fix('add', '1000.01', true)).ok).toBe(false);
+    expect(m.act('2027-03-02 09:00', fix('add', '1000', true)).ok).toBe(true);
+    expect(
+      m.act('2027-03-02 09:01', { kind: 'set_cap', cents: 5000n, effective: '2027-03-09' }).ok,
+    ).toBe(true);
+    m.advanceTo('2027-03-09 09:00');
+    expect(m.act('2027-03-09 09:00', fix('add', '50.01', true)).ok).toBe(false);
+    expect(m.act('2027-03-09 09:00', fix('add', '50.00')).ok).toBe(true);
+  });
+  it('never takes more than her free savings', () => {
+    const m = funded('2027-03-01 09:00', 10000n);
+    m.act('2027-03-02 10:00', { kind: 'withdraw', kid: 'k', cents: 3000n, label: 'w' });
+    expect(m.act('2027-03-02 10:01', fix('take', '70.01', true)).ok).toBe(false);
+    expect(m.act('2027-03-02 10:01', fix('take', '70.009', true)).ok).toBe(true);
+    expect(m.snapshot('k').available).toBe(0n);
+  });
+  it('reductions linked to a line take no more than it, together; additions may be more', () => {
+    const m = funded('2027-03-01 09:00', 10000n);
+    expect(m.act('2027-03-02 09:00', fix('add', '100')).ok).toBe(true);
+    expect(m.act('2027-03-02 09:01', fix('take', '60', true)).ok).toBe(true);
+    expect(m.act('2027-03-02 09:02', fix('take', '40.01', true)).ok).toBe(false);
+    expect(m.act('2027-03-02 09:03', fix('take', '40', true)).ok).toBe(true);
+    expect(m.act('2027-03-02 09:04', fix('take', '0.01', true)).ok).toBe(false);
+  });
+});

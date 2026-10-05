@@ -21,6 +21,8 @@ export interface ActivityRow {
   note: string | null;
   transaction_ids: number[] | null;
   request_id: number | null;
+  /** A correction: the line it fixes ("Savings interest on Oct 1"), or "your question from Oct 3". */
+  fixes?: string | null;
 }
 
 /** in: adds to her total · out: takes from it · move: between her options · waiting / declined: not in yet. */
@@ -45,6 +47,14 @@ export const FUND_NAMES: Record<string, string> = {
 const fund = (id: string | null) => (id ? (FUND_NAMES[id] ?? id) : 'a fund');
 const gic = (r: ActivityRow) => (r.gic_term ? `${termLabel(r.gic_term)} GIC` : 'GIC');
 const at = (r: ActivityRow) => (r.rate !== null ? ` at ${formatRate(r.rate)}` : '');
+
+/** A correction's title names what it fixes (MESSAGES §7), as her notice does. */
+export function correctionTitle(r: ActivityRow): string {
+  if (!r.fixes) return 'A correction';
+  return r.fixes.startsWith('your question')
+    ? `A correction · about ${r.fixes}`
+    : `A correction · fixes ${r.fixes}`;
+}
 
 export function describeActivity(r: ActivityRow): ActivityLine {
   const money = (c = r.amount_cents) => (c === null ? '' : formatCents(c));
@@ -130,7 +140,7 @@ export function describeActivity(r: ActivityRow): ActivityLine {
       return {
         ...base,
         icon: '🛠️',
-        title: 'A correction',
+        title: correctionTitle(r),
         detail: r.note,
         amount: formatCents(r.amount_cents ?? 0, { sign: true }),
         tone: c >= 0 ? 'in' : 'out',

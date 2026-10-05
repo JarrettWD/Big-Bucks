@@ -8,6 +8,7 @@
 // Wording is listed in docs/MESSAGES.md §7 and §9.
 
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDate } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
@@ -99,6 +100,7 @@ function LineDetails(p: {
   questions: Question[];
   onAsked: () => void;
 }) {
+  const view = useKidView();
   const working = WORKING_KINDS.has(p.row.kind) && p.row.note ? p.row.note : null;
   return (
     <div id={p.id} className="activity__more">
@@ -107,6 +109,20 @@ function LineDetails(p: {
           <h3 className="working__title">How was this calculated?</h3>
           <p className="working__text">{working}</p>
         </div>
+      )}
+      {view.viewing && p.row.kind !== 'request_pending' && (
+        // Dad's "View as" stays read-only: this only leads to his own parent screen.
+        <p className="activity__fix">
+          <Link
+            to={`/parent/fix/${view.accountId}?line=${encodeURIComponent(p.row.item_key)}`}
+            aria-describedby={`${p.id}-fixhelp`}
+          >
+            Fix a mistake
+          </Link>
+          <span id={`${p.id}-fixhelp`} className="activity__fix-help">
+            Opens your own parent screen for this line. Nothing changes here.
+          </span>
+        </p>
       )}
       {p.questions.length > 0 && <QuestionList questions={p.questions} thisYear={p.thisYear} />}
       <AskDad row={p.row} line={p.line} thisYear={p.thisYear} onAsked={p.onAsked} />

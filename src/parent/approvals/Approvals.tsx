@@ -6,7 +6,7 @@
 // again and logs who did it and when (parent_actions).
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { describeActivity } from '../../kid/home/activityText';
 import { formatDate } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
@@ -344,6 +344,12 @@ function QuestionCard({
           <button type="button" className="appr__btn" onClick={onOpen}>
             {TEXT.answer}
           </button>
+          <Link
+            className="appr__btn appr__btn--quiet appr__link"
+            to={`/parent/fix/${q.account_id}?question=${q.id}`}
+          >
+            {TEXT.fix}
+          </Link>
         </div>
       )}
     </li>

@@ -123,3 +123,19 @@ describe('history lines', () => {
     expect(describeActivity(row({ on_day: '2026-09-05' })).day).toBe('2026-09-05');
   });
 });
+
+describe('a correction names what it fixes (stage 8 B3)', () => {
+  const fix = (fixes: string | null) =>
+    describeActivity(row({ kind: 'correction', amount_cents: 124, note: 'Short', fixes }));
+  it('in its title, like her notice', () => {
+    expect(fix('Savings interest on Oct 1').title).toBe(
+      'A correction · fixes Savings interest on Oct 1',
+    );
+    expect(fix('your question from Oct 3').title).toBe(
+      'A correction · about your question from Oct 3',
+    );
+    expect(fix(null).title).toBe('A correction');
+    expect(fix('Savings interest on Oct 1').detail).toBe('Short');
+    expect(fix('Savings interest on Oct 1').amount).toBe('+$1.24');
+  });
+});

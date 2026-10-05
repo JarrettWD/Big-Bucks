@@ -1,0 +1,106 @@
+/* Fix a mistake: the Settings cards (Settings.css), plus the line being fixed and
+   the extra check with the amount in large type. */
+.fix {
+  max-width: 760px;
+}
+.fix__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+.fix__line-words {
+  font-weight: 700;
+}
+.fix__line-amount {
+  margin-left: auto;
+}
+.fix__label {
+  margin: 0;
+  font-weight: 600;
+}
+.fix__quote {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--bb-purple-soft);
+  background: #fbfaff;
+}
+.fix__figures {
+  margin: 0;
+  font-weight: 600;
+}
+.fix__check {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 3px solid var(--bb-pink);
+  border-radius: 12px;
+  background: var(--bb-white);
+}
+.fix__check h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.fix__check p {
+  margin: 0;
+}
+.fix__big {
+  font-family: var(--bb-font-heading);
+  font-size: clamp(2.4rem, 12vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.fix__big--add {
+  color: #1d6b3a;
+}
+.fix__big--take {
+  color: #a3123f;
+}
+.fix__past {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fix__past li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.fix__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+}
+.fix__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 600;
+}
+.fix__warning {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: #fff4d6;
+  border: 2px solid var(--bb-gold);
+  font-weight: 600;
+}
+.fix__check input {
+  min-height: 48px;
+  padding: 0.4rem 0.6rem;
+  border: 2px solid var(--bb-outline);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 1.2rem;
+}
+.fix__check label {
+  font-weight: 600;
+}
