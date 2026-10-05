@@ -47,6 +47,8 @@ export interface RateInput {
   effective: Day;
   end?: Day;
   special?: boolean;
+  /** A name the scenario can cancel it by. */
+  label?: string;
 }
 
 export type Action =
@@ -67,7 +69,9 @@ export type Action =
   | { kind: 'sell'; kid: string; fund: FundId; cents: bigint; label: string }
   | { kind: 'sell_all'; kid: string; fund: FundId; label: string }
   | { kind: 'add_rate'; rate: RateInput }
-  | { kind: 'set_cap'; cents: bigint; effective: Day }
+  | { kind: 'set_cap'; cents: bigint; effective: Day; label?: string }
+  | { kind: 'set_yield'; fund: FundId; yield: string; effective: Day; label?: string }
+  | { kind: 'cancel'; label: string }
   | { kind: 'set_expiry'; days: number; effective: Day };
 
 export type Outcome = { ok: true } | { ok: false; reason: string };
@@ -164,8 +168,22 @@ export class Model {
   private kids = new Map<string, Kid>();
   private gics = new Map<string, Gic>();
   private reqs = new Map<string, Req>();
-  private rates: (RateInput & { seq: number; q: Q })[] = [];
-  private caps: { cents: bigint; effective: Day; seq: number }[] = [];
+  private rates: (RateInput & { seq: number; q: Q; cancelled?: boolean })[] = [];
+  private caps: {
+    cents: bigint;
+    effective: Day;
+    seq: number;
+    label?: string;
+    cancelled?: boolean;
+  }[] = [];
+  private yields: {
+    fund: FundId;
+    q: Q;
+    effective: Day;
+    seq: number;
+    label?: string;
+    cancelled?: boolean;
+  }[] = [];
   private expiryRules: { days: number; effective: Day; seq: number }[] = [];
   private closes = new Map<string, { close: Q; publishedAt: Moment }>(); // `${fund}|${day}`
   private splits: { fund: FundId; day: Day; from: bigint; to: bigint }[] = [];
@@ -199,6 +217,13 @@ export class Model {
     ] as const)
       r('gic', t, v);
     this.caps.push({ cents: 100000n, effective: '2026-01-01', seq: this.seq++ });
+    for (const f of FUNDS)
+      this.yields.push({
+        fund: f,
+        q: Q.dec(DEFAULT_YIELDS[f]),
+        effective: '2026-01-01',
+        seq: this.seq++,
+      });
     // Dad has 7 days to answer a deposit or withdrawal, to start (stage 8: a setting).
     this.expiryRules.push({ days: 7, effective: '2026-01-01', seq: this.seq++ });
   }
@@ -237,7 +262,7 @@ export class Model {
   // ---------------------------------------------------------------- lookups
 
   rateOn(vehicle: 'savings' | 'gic', term: number | null, d: Day): Q {
-    const same = this.rates.filter((r) => r.vehicle === vehicle && r.term === term);
+    const same = this.rates.filter((r) => r.vehicle === vehicle && r.term === term && !r.cancelled);
     const special = same
       .filter((r) => r.special && r.effective <= d && r.end !== undefined && d <= r.end)
       .sort((a, b) => b.seq - a.seq)[0];
@@ -251,9 +276,30 @@ export class Model {
     return regular.q;
   }
 
+  /** A fund's yearly dividend yield (percent) in force on day d. */
+  yieldOn(f: FundId, d: Day): Q {
+    return this.yields
+      .filter((y) => y.fund === f && y.effective <= d && !y.cancelled)
+      .sort((a, b) =>
+        a.effective === b.effective ? b.seq - a.seq : a.effective < b.effective ? 1 : -1,
+      )[0].q;
+  }
+
+  /**
+   * Seven days' notice for a cut (stage 8 B2): the first of the 7 days from `today`
+   * on which `after` gives less than `before`, or null.
+   */
+  private firstLowerDay(today: Day, before: Q[], after: Q[]): Day | null {
+    for (let i = 0; i < 7; i++) if (after[i].cmp(before[i]) < 0) return addDays(today, i);
+    return null;
+  }
+  private week(today: Day, f: (d: Day) => Q): Q[] {
+    return Array.from({ length: 7 }, (_, i) => f(addDays(today, i)));
+  }
+
   capOn(d: Day): bigint {
     const c = this.caps
-      .filter((x) => x.effective <= d)
+      .filter((x) => x.effective <= d && !x.cancelled)
       .sort((a, b) =>
         a.effective === b.effective ? b.seq - a.seq : a.effective < b.effective ? 1 : -1,
       )[0];
@@ -455,7 +501,7 @@ export class Model {
         let last = addDays(qStart, -1);
         while (!this.isTradingDay(market, last)) last = addDays(last, -1);
         const closeAt = this.closeMoment(market, last);
-        const yld = Q.dec(DEFAULT_YIELDS[f]);
+        const yld = this.yieldOn(f, d);
         for (const k of this.kids.values()) {
           const units = this.unitsAt(k.id, f, closeAt);
           if (units.sign() <= 0) continue;
@@ -730,12 +776,65 @@ export class Model {
         });
         return { ok: true };
       }
-      case 'add_rate':
+      case 'add_rate': {
+        const { vehicle, term } = a.rate;
+        const week = () => this.week(today, (d) => this.rateOn(vehicle, term, d));
+        const before = week();
         this.addRate(a.rate);
+        if (this.firstLowerDay(today, before, week())) {
+          this.rates.pop();
+          return no("a cut needs 7 days' notice");
+        }
         return { ok: true };
-      case 'set_cap':
-        this.caps.push({ cents: a.cents, effective: a.effective, seq: this.seq++ });
+      }
+      case 'set_cap': {
+        const week = () => this.week(today, (d) => Q.of(this.capOn(d)));
+        const before = week();
+        this.caps.push({ cents: a.cents, effective: a.effective, seq: this.seq++, label: a.label });
+        if (this.firstLowerDay(today, before, week())) {
+          this.caps.pop();
+          return no("a cut needs 7 days' notice");
+        }
         return { ok: true };
+      }
+      case 'set_yield': {
+        const week = () => this.week(today, (d) => this.yieldOn(a.fund, d));
+        const before = week();
+        this.yields.push({
+          fund: a.fund,
+          q: Q.dec(a.yield),
+          effective: a.effective,
+          seq: this.seq++,
+          label: a.label,
+        });
+        if (this.firstLowerDay(today, before, week())) {
+          this.yields.pop();
+          return no("a cut needs 7 days' notice");
+        }
+        return { ok: true };
+      }
+      case 'cancel': {
+        const rate = this.rates.find((r) => r.label === a.label);
+        const cap = this.caps.find((c) => c.label === a.label);
+        const yld = this.yields.find((y) => y.label === a.label);
+        const target = rate ?? cap ?? yld;
+        if (!target) throw new Error(`nothing labelled ${a.label}`);
+        if (target.cancelled) return no('already cancelled');
+        if (target.effective <= today) return no('already started');
+        const week = (): Q[] =>
+          rate
+            ? this.week(today, (d) => this.rateOn(rate.vehicle, rate.term, d))
+            : yld
+              ? this.week(today, (d) => this.yieldOn(yld.fund, d))
+              : this.week(today, (d) => Q.of(this.capOn(d)));
+        const before = week();
+        target.cancelled = true;
+        if (this.firstLowerDay(today, before, week())) {
+          target.cancelled = false;
+          return no('cancelling a promised raise needs 7 days');
+        }
+        return { ok: true };
+      }
       case 'set_expiry':
         if (!Number.isInteger(a.days) || a.days < 3 || a.days > 30)
           return no('expiry is 3 to 30 whole days');

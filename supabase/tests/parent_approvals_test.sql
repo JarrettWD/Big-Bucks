@@ -179,7 +179,9 @@ select is(
                  p.proname || '_unlogged' = m[1]
               or (p.proname = 'move_preview' and m[1] = 'move_preview_unflagged')
               or (m[1] = 'log_parent_action' and p.proname in ('approve_request', 'decline_request', 'answer_question',
-                                                                 'acknowledge_alert', 'add_rate', 'set_setting'))))
+                                                                 'acknowledge_alert', 'add_rate', 'set_setting',
+                                                                 -- B2: three new parent actions, logged by themselves.
+                                                                 'edit_note', 'edit_glossary', 'cancel_change'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');

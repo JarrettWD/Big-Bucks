@@ -336,8 +336,9 @@ create temporary table preview_future as
   select public.parent_change_preview('set_setting',
     '{"key": "request_expiry_days", "value": "20", "effective_date": "2026-11-10", "note": "Holidays"}') as p;
 select is((select p from preview_future),
-  '{"problem": null, "notices_on": "Nov 10", "summary": "Request expiry set to 20 days from Nov 10.",
-    "notices": [{"title": "Dad now has up to 20 days to answer your requests", "kids": 2,
+  '{"problem": null, "summary": "Request expiry set to 20 days from Nov 10.",
+    "facts": {"before": "12 days", "after": "20 days", "from": "Nov 10"},
+    "notices": [{"title": "Dad now has up to 20 days to answer your requests", "kids": 2, "on": "Nov 10",
                  "body": "If he hasn''t said yes or no to a deposit or withdrawal by then, it''s cancelled and you can ask again. Requests you''ve already made keep the time they had."}]}'::jsonb,
   'a change for Nov 10: the log line, and the notice both kids will get on Nov 10');
 select ok((select s = (select count(*) from public.settings) and n = (select count(*) from public.notifications)

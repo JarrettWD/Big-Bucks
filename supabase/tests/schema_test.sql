@@ -7,9 +7,9 @@ select plan(44);
 select tables_are('public', array[
   'accounts', 'alerts', 'badges', 'fund_prices', 'fund_splits', 'funds', 'gic_holdings', 'glossary', 'goals',
   'interest_accruals', 'job_runs', 'login_attempts', 'market_holidays', 'notes', 'notifications',
-  'parent_actions', 'profiles', 'questions', 'rates', 'requests', 'settings', 'transactions', 'wishlist_items',
+  'cancellations', 'parent_actions', 'profiles', 'questions', 'rates', 'requests', 'settings', 'transactions', 'wishlist_items',
   'wishlist_parent_marks'
-], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions, stage 8)');
+], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions and cancellations, stage 8)');
 
 select hasnt_column('public', 'wishlist_items', 'parent_got_it',
   'the "Got it" marker is not a wish-list column (it lives in wishlist_parent_marks)');

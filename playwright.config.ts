@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|dashboard|viewas|approvals).spec.ts/,
+      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -35,6 +35,14 @@ export default defineConfig({
       name: 'parent-actions',
       testMatch: /approvals.spec.ts/,
       dependencies: ['android-chrome'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Settings changes rates and the cap, which the tests above read, and adds
+    // notices and log rows that the Approvals tests count. So it runs last.
+    {
+      name: 'parent-settings',
+      testMatch: /settings.spec.ts/,
+      dependencies: ['parent-actions'],
       use: { ...devices['Pixel 7'] },
     },
   ],

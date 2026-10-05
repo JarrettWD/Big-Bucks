@@ -330,13 +330,31 @@ for (const size of SIZES) {
       for (const fold of await page.locator('.dash__fold summary').all()) await fold.click();
       await check(page, `parent-dashboard-${size.name}-${text.name}`, text.scale);
 
-      // Settings, with a change being previewed (nothing is saved).
+      // Settings, with changes being previewed (nothing is saved): request expiry with
+      // its history open, then a one-week special with its notices, with every
+      // history and the glossary opened.
       await page.goto('./parent/settings');
-      await page.getByRole('button', { name: 'Change' }).click();
-      await page.getByLabel('Days to answer (3 to 30)').fill('12');
-      await expect(page.locator('.set__notice')).toBeVisible();
-      await page.locator('.set__history summary').click();
+      const expiry = page.getByRole('region', { name: 'Time to answer a request' });
+      await expiry.getByRole('button', { name: 'Change' }).click();
+      await expiry.getByLabel('Days to answer (3 to 30)').fill('12');
+      await expect(expiry.locator('.set__notice')).toBeVisible();
+      await expiry.locator('.set__history summary').click();
       await check(page, `parent-settings-${size.name}-${text.name}`, text.scale);
+      const year = page.locator('.set__row', { hasText: '1-year GIC' });
+      await year.getByRole('button', { name: 'Change the 1-year GIC rate' }).click();
+      await year.getByLabel('New rate (% per year)').fill('6.5');
+      await year.getByLabel('Limited-time special').check();
+      await expect(year.locator('.set__notice')).toHaveCount(3);
+      await page
+        .locator('.set__history')
+        .evaluateAll((all) => all.forEach((d) => ((d as HTMLDetailsElement).open = true)));
+      await check(page, `parent-settings-rate-${size.name}-${text.name}`, text.scale);
+      // Cancelling the demo's planned savings cut, previewed (nothing is saved).
+      await page.goto('./parent/settings');
+      const planned = page.locator('.set__planned').first();
+      await planned.getByRole('button', { name: /^Cancel the change planned for/ }).click();
+      await expect(planned.locator('.set__notice')).toBeVisible();
+      await check(page, `parent-settings-cancel-${size.name}-${text.name}`, text.scale);
 
       // View as Robin: her Home, her history with a line open, her notices, her graphs.
       const robin = await robinAccount();

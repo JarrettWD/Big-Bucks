@@ -219,6 +219,9 @@ async function main(): Promise<void> {
       }
     };
 
+    // Scheduled rate and setting changes the scenario may cancel, by label.
+    const changeId = new Map<string, { kind: 'rate' | 'setting'; id: number }>();
+
     const dbAction = async (a: Action): Promise<{ ok: true } | { ok: false; error: string }> => {
       const res = await (async () => {
         switch (a.kind) {
@@ -291,6 +294,21 @@ async function main(): Promise<void> {
               `select public.set_setting('request_expiry_days', $1, $2, 'Time machine expiry change')`,
               [String(a.days), a.effective],
             );
+          case 'set_yield':
+            return db.call(
+              PARENT,
+              `select public.set_setting($1, $2, $3, 'Time machine yield change')`,
+              [`dividend_yield:${a.fund}`, a.yield, a.effective],
+            );
+          case 'cancel': {
+            const target = changeId.get(a.label);
+            if (!target) throw new Error(`nothing labelled ${a.label}`);
+            return db.call(PARENT, 'select public.cancel_change($1, $2, $3)', [
+              target.kind,
+              target.id,
+              'Time machine cancellation',
+            ]);
+          }
         }
       })();
       if (res.ok) {
@@ -298,6 +316,10 @@ async function main(): Promise<void> {
         if (['deposit', 'withdraw', 'buy', 'sell', 'sell_all'].includes(a.kind))
           reqId.set((a as { label: string }).label, Number(v));
         if (a.kind === 'buy_gic') setGic(a.label, Number(v));
+        if (a.kind === 'add_rate' && a.rate.label)
+          changeId.set(a.rate.label, { kind: 'rate', id: Number(v) });
+        if ((a.kind === 'set_cap' || a.kind === 'set_yield') && a.label)
+          changeId.set(a.label, { kind: 'setting', id: Number(v) });
         if (a.kind === 'choose' && a.newLabel) setGic(a.newLabel, Number(v));
         return { ok: true };
       }

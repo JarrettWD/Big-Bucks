@@ -323,3 +323,58 @@ describe('requests', () => {
     expect(m.snapshot('k').held).toBe(0n);
   });
 });
+
+describe("seven days' notice for a cut, and cancelling (stage 8 B2)", () => {
+  const start = '2027-10-05 10:00'; // today Oct 5; a cut can start Oct 12 at the earliest
+  const rate = (r: string, effective: string, label?: string) =>
+    ({
+      kind: 'add_rate',
+      rate: { vehicle: 'savings', term: null, rate: r, effective, label },
+    }) as const;
+
+  it('refuses a cut that starts within 7 days, allows one 7 days out, and raises right away', () => {
+    const m = new Model(start, holidays);
+    expect(m.act(start, rate('1.0', '2027-10-06')).ok).toBe(false);
+    expect(m.act(start, rate('1.0', '2027-10-11')).ok).toBe(false);
+    expect(m.rateOn('savings', null, '2027-10-11').eq(Q.dec('2.0'))).toBe(true);
+    expect(m.act(start, rate('1.5', '2027-10-12')).ok).toBe(true);
+    expect(m.act(start, rate('2.5', '2027-10-05')).ok).toBe(true);
+    expect(m.rateOn('savings', null, '2027-10-05').eq(Q.dec('2.5'))).toBe(true);
+    expect(m.rateOn('savings', null, '2027-10-12').eq(Q.dec('1.5'))).toBe(true);
+  });
+  it('a cancelled change no longer counts; a promised raise inside the week cannot be cancelled', () => {
+    const m = new Model(start, holidays);
+    expect(m.act(start, rate('1.5', '2027-10-20', 'cut')).ok).toBe(true);
+    expect(m.act(start, { kind: 'cancel', label: 'cut' }).ok).toBe(true);
+    expect(m.rateOn('savings', null, '2027-10-20').eq(Q.dec('2.0'))).toBe(true);
+    expect(m.act(start, { kind: 'cancel', label: 'cut' }).ok).toBe(false);
+    expect(m.act(start, rate('3.0', '2027-10-08', 'raise')).ok).toBe(true);
+    expect(m.act(start, { kind: 'cancel', label: 'raise' }).ok).toBe(false);
+    expect(m.rateOn('savings', null, '2027-10-08').eq(Q.dec('3.0'))).toBe(true);
+  });
+  it('so does the deposit cap: a lower cap needs 7 days, a higher one starts today', () => {
+    const m = new Model(start, holidays);
+    const cap = (cents: bigint, effective: string, label?: string) =>
+      ({ kind: 'set_cap', cents, effective, label }) as const;
+    expect(m.act(start, cap(80000n, '2027-10-06')).ok).toBe(false);
+    expect(m.act(start, cap(80000n, '2027-10-05')).ok).toBe(false);
+    expect(m.capOn('2027-10-11')).toBe(100000n);
+    expect(m.act(start, cap(80000n, '2027-10-12')).ok).toBe(true);
+    expect(m.capOn('2027-10-12')).toBe(80000n);
+    expect(m.act(start, cap(150000n, '2027-10-05')).ok).toBe(true);
+    expect(m.capOn('2027-10-05')).toBe(150000n);
+    expect(m.act(start, cap(160000n, '2027-10-08', 'up')).ok).toBe(true);
+    expect(m.act(start, { kind: 'cancel', label: 'up' }).ok).toBe(false);
+  });
+  it('dividend yields follow the same rule', () => {
+    const m = new Model(start, holidays);
+    const y = (v: string, effective: string, label?: string) =>
+      ({ kind: 'set_yield', fund: 'tsx', yield: v, effective, label }) as const;
+    expect(m.act(start, y('2.0', '2027-10-06')).ok).toBe(false);
+    expect(m.act(start, y('3.5', '2027-10-05')).ok).toBe(true);
+    expect(m.yieldOn('tsx', '2027-10-05').eq(Q.dec('3.5'))).toBe(true);
+    expect(m.act(start, y('1.0', '2027-11-01', 'ycut')).ok).toBe(true);
+    expect(m.act(start, { kind: 'cancel', label: 'ycut' }).ok).toBe(true);
+    expect(m.yieldOn('tsx', '2027-11-01').eq(Q.dec('3.5'))).toBe(true);
+  });
+});

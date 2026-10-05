@@ -2,7 +2,7 @@
 -- Each test file runs in a transaction that is rolled back, so the rows
 -- inserted here never persist. now() is fixed for the whole transaction.
 begin;
-select plan(26);
+select plan(27);
 
 -- Structure
 select has_table('public', 'settings', 'settings table exists');
@@ -76,7 +76,10 @@ select throws_like($$update public.settings set value = 'true' where key = 'is_l
   '%append-only%', 'settings rejects UPDATE');
 select throws_like($$delete from public.settings where key = 'clock_override'$$,
   '%append-only%', 'settings rejects DELETE');
-select throws_like('truncate public.settings', '%append-only%', 'settings rejects TRUNCATE');
+-- Since stage 8 B2, cancellations points at settings, so Postgres refuses the
+-- truncate for that reason before the append-only trigger runs. Either way it's refused.
+select throws_like('truncate public.settings', '%', 'settings rejects TRUNCATE');
+select is((select count(*) > 0 from public.settings), true, '...and every settings row is still there');
 
 -- The app's roles cannot write to settings directly (stage 1 adds functions)
 set local role authenticated;

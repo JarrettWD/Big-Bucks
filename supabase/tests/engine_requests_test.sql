@@ -242,8 +242,11 @@ select throws_like($$select public.answer_question(pg_temp.id('qn'), 'Again')$$,
 
 -- 7. Lowering the cap never takes money away -------------------------------------------
 
-select tests.as_parent();
-select public.set_setting('deposit_cap_cents', '50000');
+-- (Inserted directly: it stands for a cut Dad announced 7 days earlier. Since stage 8
+-- B2, Dad's set_setting refuses a cap cut with less notice.)
+select tests.nobody();
+insert into public.settings (key, value, effective_date, note)
+  values ('deposit_cap_cents', '50000', public.app_today(), 'Test: a lower cap');
 select results_eq(
   $$select savings_cents, cap_cents, cap_room_cents from public.account_balances where account_id = tests.acct('kid_r')$$,
   $$values (88000::bigint, 50000::bigint, 0::bigint)$$,

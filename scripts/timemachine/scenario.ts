@@ -185,6 +185,15 @@ export const STEPS: Step[] = [
     why: "1-year GIC rate cut, 7 days' notice",
   },
   {
+    at: '2027-09-20 09:02',
+    do: {
+      kind: 'add_rate',
+      rate: { vehicle: 'savings', term: null, rate: '1.0', effective: '2027-09-22' },
+    },
+    expect: 'refused',
+    why: "a cut with only 2 days' notice is refused (stage 8 B2)",
+  },
+  {
     at: '2027-09-24 10:00',
     do: { kind: 'buy_gic', kid: 'A', cents: $(50), term: 12, label: 'gA12b' },
     why: 'locks 5.0% before the cut',
@@ -275,6 +284,73 @@ export const STEPS: Step[] = [
     at: '2027-12-03 09:01',
     do: { kind: 'deposit', kid: 'B', cents: $(500), label: 'dB3' },
     why: 'Christmas money (fits the new cap)',
+  },
+  // Stage 8 B2: cancelling scheduled changes, and 7 days' notice for cuts --------------------
+  {
+    at: '2027-11-01 09:00',
+    do: {
+      kind: 'add_rate',
+      rate: { vehicle: 'savings', term: null, rate: '1.0', effective: '2027-11-15', label: 'rCut' },
+    },
+    expect: 'ok',
+    why: 'savings cut announced 14 days ahead',
+  },
+  {
+    at: '2027-11-08 09:00',
+    do: { kind: 'cancel', label: 'rCut' },
+    expect: 'ok',
+    why: 'Dad cancels the cut before it starts: savings interest stays at 1.5%',
+  },
+  {
+    at: '2027-11-20 09:00',
+    do: {
+      kind: 'add_rate',
+      rate: { vehicle: 'gic', term: 9, rate: '5.0', effective: '2027-12-01', label: 'rUp' },
+    },
+    expect: 'ok',
+    why: '9-month GIC raise announced 11 days ahead',
+  },
+  {
+    at: '2027-11-28 09:00',
+    do: { kind: 'cancel', label: 'rUp' },
+    expect: 'refused',
+    why: 'cancelling a promised raise 3 days before it starts is refused',
+  },
+  {
+    at: '2027-12-01 09:01',
+    do: { kind: 'set_yield', fund: 'tsx', yield: '2.0', effective: '2027-12-03' },
+    expect: 'refused',
+    why: "a dividend yield cut with 2 days' notice is refused",
+  },
+  {
+    at: '2027-12-01 09:02',
+    do: { kind: 'set_yield', fund: 'tsx', yield: '3.5', effective: '2027-12-01', label: 'yUp' },
+    expect: 'ok',
+    why: "TSX yield raise from today: January's dividend pays 3.5%",
+  },
+  {
+    at: '2027-12-10 09:00',
+    do: { kind: 'set_yield', fund: 'dow', yield: '1.0', effective: '2028-01-20', label: 'yCut' },
+    expect: 'ok',
+    why: 'Dow yield cut announced 41 days ahead',
+  },
+  {
+    at: '2027-12-15 09:00',
+    do: { kind: 'cancel', label: 'yCut' },
+    expect: 'ok',
+    why: "cancelled: April's Dow dividend still pays 1.8%",
+  },
+  {
+    at: '2027-12-20 09:00',
+    do: { kind: 'set_cap', cents: $(500), effective: '2028-01-01', label: 'cCut' },
+    expect: 'ok',
+    why: 'cap cut to $500 from Jan 1',
+  },
+  {
+    at: '2027-12-27 09:00',
+    do: { kind: 'cancel', label: 'cCut' },
+    expect: 'ok',
+    why: "cancelled: January's deposits still fit under $1,000",
   },
   { at: '2027-12-03 12:00', do: { kind: 'approve', label: 'dA3' }, why: 'Dad approves' },
   { at: '2027-12-03 12:01', do: { kind: 'approve', label: 'dB3' }, why: 'Dad approves' },
@@ -491,9 +567,15 @@ export const STEPS: Step[] = [
 
   // May–June: the cap is lowered below what B has put in --------------------------------------
   {
-    at: '2028-05-01 09:00',
+    at: '2028-04-24 09:00',
     do: { kind: 'set_cap', cents: $(800), effective: '2028-05-01' },
-    why: "cap lowered below both kids' net deposits",
+    why: "cap lowered below both kids' net deposits, with 7 days' notice",
+  },
+  {
+    at: '2028-04-24 09:01',
+    do: { kind: 'set_cap', cents: $(700), effective: '2028-04-26' },
+    expect: 'refused',
+    why: "a cap cut with 2 days' notice is refused (stage 8 B2)",
   },
   {
     at: '2028-05-03 10:00',

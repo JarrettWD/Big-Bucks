@@ -70,12 +70,12 @@ Each girl's app has four tabs. It should look colourful and fun, with icons and 
 **Admin (parent) account: rate settings**
 
 - **One simple screen** lists the current savings rate and every GIC term's rate (1M to 2Y). Tap a rate, type the new one, and save. No other screens or steps.
-- **Effective date:** defaults to 7 days from today so the girls have time to react, but Dad can pick any date, including today.
+- **Effective date:** defaults to 7 days from today so the girls have time to react. A raise can start any day, including today; a cut can't start sooner than 7 days from today (decided 2026-10-04, see Build decisions).
 - **Optional note** explaining why ("The Bank of Canada cut rates"), shown to the girls with the change.
 - **Specials:** a toggle to make a rate limited-time, with a start and end date; it reverts to the regular rate automatically.
 - **Preview before saving:** shows the old and new rate, the effective date, and a reminder that existing GICs keep their locked-in rate.
 - **History:** every past change is listed with its date and note.
-- **Deposit cap:** the same settings screen shows the cap (starting at $1,000 in net deposits per girl). Dad can raise or lower it for both girls at once, which keeps the rules fair. Lowering it below what a girl has already deposited never takes money away; it only blocks new deposits until she is back under the cap. The girls get an in-app notice when the cap changes.
+- **Deposit cap:** the same settings screen shows the cap (starting at $1,000 in net deposits per girl). Dad can raise or lower it for both girls at once, which keeps the rules fair. A raise can start right away; a lower cap needs 7 days' notice (decided 2026-10-04). Lowering it below what a girl has already deposited never takes money away; it only blocks new deposits until she is back under the cap. The girls get an in-app notice when the cap changes.
 - **Inflation rate:** a setting (starting at 2.0%, the Bank of Canada's target) used by the inflation view. Dad can update it now and then to match the news.
 - **Time to answer a request:** how long Dad has to say yes or no to a deposit or withdrawal before it's cancelled (7 days to start, 3 to 30). A change applies to new requests only, and the girls are told when it takes effect (see Build decisions).
 
@@ -163,7 +163,7 @@ Rates are stored as dated records, never overwritten, so history is always corre
 
 - **Savings:** a new rate applies from its effective date onward. Interest before that date uses the old rate.
 - **GICs:** a rate change affects only *new* purchases and renewals. Existing GICs keep the rate they were bought at. That is a key lesson: locking in a good rate protects you when rates drop.
-- **Notice:** by default, give 7 days' notice of a change as an in-app message (Dad can pick a sooner date; see Admin account under App layout & screens) ("Savings rate drops to 1.5% on Nov 1"), so the girls can react, for example by buying a GIC before rates fall.
+- **Notice:** give 7 days' notice of a change as an in-app message (a raise can start sooner; a cut never can; see Build decisions) ("Savings rate drops to 1.5% on Nov 1"), so the girls can react, for example by buying a GIC before rates fall.
 - **Who changes rates:** parent only, from a settings screen, with an effective date and an optional note explaining why ("The Bank of Canada cut rates").
 - **Optional realism:** peg rates loosely to real Canadian bank rates each quarter, so rate changes line up with the news they may hear about.
 - **Specials:** now and then, offer a limited-time rate (for example, a 1-year GIC at 6% for one week) so the girls learn to spot and weigh an offer.
@@ -299,7 +299,7 @@ The ledger is a record of real money owed, so history must never be lost. The pl
 1. **Protect history inside the database.** The ledger, rate history and settings are append-only, and the database itself enforces it: no role, not even the parent, can update or delete rows in `transactions`, `rates` or `settings`. Mistakes are fixed with reversing entries. This guards against app bugs and slips, which are more likely than Supabase losing data.
 2. **Daily automatic backup to a private GitHub repo.** A scheduled GitHub Action runs `supabase db dump` (the full schema and data as SQL) and exports each table as CSV, then commits them. Git keeps every version, so any past day can be recovered. The same run also makes a normal app request through the API. Supabase counts outside requests like these as activity (its docs don't say whether internal scheduled jobs count), so the project gets two outside hits every day and won't pause, even if the girls don't open the app for weeks. The database connection string lives only in GitHub secrets; use the session pooler string, since the direct connection may not work from GitHub's runners.
 3. **A second copy on your own computer.** A scheduled job on your computer pulls the GitHub repo into a folder synced to iCloud or OneDrive. That puts a copy with a different provider, which also survives losing GitHub access.
-4. **Download backup button** on the parent dashboard: one tap exports every table as a zip of CSV and JSON. Use it before big changes such as a rate change or a correction.
+4. **Download backup button** on the parent Settings screen (decided 2026-10-04): one tap exports every table as a zip of CSV and JSON. Use it before big changes such as a rate change or a correction.
 5. **Know when a backup fails.** GitHub emails you if the daily run fails, and the run also fails on purpose if the export is empty or has fewer ledger rows than the day before.
 6. **Test a restore every few months.** Restore the latest dump into the local copy of Supabase on Dad's computer and check that each girl's balances match the live app. A backup that has never been restored isn't proven.
 
@@ -484,6 +484,11 @@ These settle details the sections above leave open. Where they differ from an ea
 - A GIC locks the rate in force on the day it's bought, a special included.
 - **Settings** keys include `deposit_cap_cents` (100000), `inflation_rate` (2.0), `request_expiry_days` (7; 3 to 30), `clock_override` (local only), `launched_at`, and feature switches named `feature:<name>`, each `off`, `test` (test accounts only) or `everyone`.
 - Rates and settings are append-only like the ledger: a change is a new dated row.
+- **Seven days' notice for a cut** (decided 2026-10-04): the database refuses any change that would lower the rate the girls expect on any of the next 7 days (today to today + 6), compared day by day with what's scheduled before the change. This covers a new rate, a special, a dividend yield, a lower deposit cap (added 2026-10-04: a cut shrinks her room to deposit) and cancelling a raise, and catches cuts hidden by stacked changes or specials. Raises can start right away. The refusal and the Settings screen both explain the rule.
+- **Dividend yield changes are announced** like rate changes (decided 2026-10-04): a notice when Dad saves one (if the number changes), and another on the day it starts if that's later.
+- **Cancelling a planned change** (decided 2026-10-04): a rate or setting change that hasn't started can be cancelled. Nothing is edited: a row in the append-only `cancellations` table marks it, and every reader of rates and settings skips cancelled rows. Kids who were told about the change (rates, specials, the deposit limit, dividend yields) get one notice that it's cancelled and what applies instead; kids who weren't told get nothing. Logged like every parent action.
+- **The Settings screen** (decided 2026-10-04) previews every change before saving: the real action runs and is rolled back, showing the line that will be logged and each notice the girls will get and when (right away, on the day a change goes live, and the day after a special ends). Rates change one at a time.
+- **Market-move notes and the ? explanations** are wording, not money history, so Dad edits them in place from Settings (a note at most 300 letters, an explanation at most 400). Each edit is logged in `parent_actions` with the wording before and after. The standard note for new big-move days stays a dated setting. Glossary terms are fixed; only their wording changes.
 
 ### Writes, security and logins
 
@@ -517,4 +522,5 @@ These tables and fields add to the Data model section:
 | `wishlist_parent_marks` | Parent-only "Got it" marker |
 | `notifications.type` adds `cap_change`, `request_expired`, `badge`, `whats_new`, `rule_change` | More notice types (`rule_change`: how long Dad has to answer changed) |
 | `requests.expires_at` | When a deposit or withdrawal runs out of time, fixed when she asks |
-| `parent_actions` | Append-only log of every parent action: who, when and what |
+| `cancellations` | A planned rate or setting change cancelled before it started (append-only; readers skip the cancelled row) |
+| `parent_actions` | Append-only log of every parent action: who, when and what (including rewording a note or a ? explanation, with the wording before and after) |

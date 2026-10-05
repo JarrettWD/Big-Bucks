@@ -72,6 +72,32 @@ Each notice has a title and a body.
   - Body, GICs: {term} GICs are back to {regular rate}. GICs bought during the special keep {special rate}.
   - Body, savings: Savings is back to {regular rate}.
 
+### Dividend rates (stage 8)
+
+Sent like a rate change. A cut needs 7 days' notice; a raise can start right away.
+
+- **Dividend rate change, when Dad saves it** (only when the number changes)
+  - Title: The {Dow Jones / Nasdaq-100 / TSX} fund's dividend rate {drops from {old} to {new} / goes up from {old} to {new}} {on {date} / today}
+    - Example: The Dow Jones fund's dividend rate drops from 1.8% to 1.0% on Oct 12
+  - Body: {Dad's note} Dividends go into your savings on the first market day of January, April, July and October, using the rate on that day.
+- **Dividend rate change, on the day it starts** (not sent when it started the day Dad saved it)
+  - Title: The {fund} fund's new dividend rate is now {rate}
+  - Body: It applies from today.
+
+### A planned change is cancelled (stage 8)
+
+Sent once, only to the kids who were told about the change: a rate change or special, a deposit limit change, or a dividend rate change. Nothing is sent for a change she was never told about (request expiry before its day, inflation, feature switches).
+
+- **Rate change cancelled**
+  - Title: The {savings rate / {term} GIC rate} change on {date} is cancelled
+  - Special: The {savings / {term} GIC} special from {start} to {end} is cancelled
+- **Deposit limit change cancelled**
+  - Title: The deposit limit change on {date} is cancelled
+- **Dividend rate change cancelled**
+  - Title: The {fund} fund's dividend rate change on {date} is cancelled
+- Body, all of them: {Dad's note} then either "The {savings rate / 1-year GIC rate / deposit limit / TSX fund's dividend rate} stays at {value}." or, when another change still happens that day, "On {date} the {…} will be {value}."
+  - Example: Changed my mind. On Oct 13 the savings rate will be 2.25%.
+
 ### Time to answer a request (stage 8)
 
 {days} is how long Dad had for that request: the rule in force on the day she asked (7 days to start; Dad can set 3 to 30). Each request keeps the time it had when she asked.
@@ -81,6 +107,8 @@ Each notice has a title and a body.
   - Body: If he hasn't said yes or no to a deposit or withdrawal by then, it's cancelled and you can ask again. Requests you've already made keep the time they had.
 
 ### Deposit limit
+
+A lower limit needs 7 days' notice (stage 8); a higher one can start right away.
 
 - **Cap change**
   - Title: The deposit limit {goes up / goes down} from {old cap} to {new cap} {on {date} / today}
@@ -192,7 +220,7 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 
 ## 5. Market-move notes (on the Graphs tab)
 
-Shown on a day a fund's close moves more than 2%. Dad can change these with the settings screen (stage 8), as well as here.
+Shown on a day a fund's close moves more than 2%. Dad can change the standard wording below from **Settings → Market-move notes** (used for new notes from the day he picks), and reword any note already written; each change is logged. Edits made in the app aren't copied back here.
 
 - **Big drop:** Big drop today. This happens a few times a year. Long-term, markets have recovered.
 - **Big jump:** Big jump today. Markets go up and down, and one great day doesn't mean the next will be.
@@ -224,7 +252,7 @@ These come from the app's screens (`src/`), not the database, so wording edits h
 
 ### The **?** explanations
 
-The text comes from the glossary (`docs/GLOSSARY.md`); the button reads "What does "{term}" mean?" for screen readers, and the card closes with **Got it**.
+The text comes from the glossary (`docs/GLOSSARY.md`; Dad can reword any explanation from **Settings → The ? explanations**); the button reads "What does "{term}" mean?" for screen readers, and the card closes with **Got it**.
 
 ### Placeholders until stage 7
 

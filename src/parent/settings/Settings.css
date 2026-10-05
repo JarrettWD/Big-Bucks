@@ -1,6 +1,6 @@
 /* Settings: cards in one column, capped for reading on wide screens. */
 .set {
-  max-width: 760px;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -78,7 +78,9 @@
 .set__change label {
   font-weight: 600;
 }
-.set__change input {
+.set__change input:not([type='radio'], [type='checkbox']),
+.set__change textarea,
+.set__find {
   box-sizing: border-box;
   width: 100%;
   max-width: 22rem;
@@ -154,4 +156,166 @@
   gap: 0.15rem 1rem;
   padding: 0.45rem 0;
   border-bottom: 1px solid #eee;
+}
+
+/* B2: the rest of Settings. Sections stack on phones; pairs sit side by side from 960px. */
+.set__jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.set__jump a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-purple);
+  font-weight: 600;
+  text-decoration: none;
+}
+.set__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (min-width: 960px) {
+  .set__group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.set__card,
+.set__group {
+  scroll-margin-top: 4.5rem;
+}
+.set__card h3 {
+  margin: 0;
+}
+.set__sub {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+}
+.set__rates,
+.set__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.set__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid #eee;
+}
+.set__row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.8rem;
+}
+.set__row-label {
+  flex: 1 1 8rem;
+  font-weight: 700;
+}
+.set__row-head .set__btn {
+  align-self: center;
+}
+.set__row-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.set__row-words,
+.set__words {
+  margin: 0;
+  flex-basis: 100%;
+}
+.set__special {
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: #fff4d6;
+  color: #5c4300;
+  font-weight: 600;
+}
+.set__about {
+  margin-top: 0.5rem;
+}
+.set__btn--small {
+  min-height: 44px;
+  padding: 0.3rem 0.95rem;
+}
+.set__change textarea {
+  min-height: 6rem;
+  max-width: 100%;
+  padding: 0.5rem 0.7rem;
+  resize: vertical;
+}
+.set__check,
+.set__choice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+}
+.set__check input,
+.set__choice input {
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+  accent-color: var(--bb-purple);
+}
+.set__choices {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.set__choices legend {
+  padding: 0;
+  font-weight: 600;
+}
+.set__facts {
+  font-weight: 700;
+}
+.set__find-label {
+  display: block;
+  margin: 0.4rem 0 0.25rem;
+  font-weight: 600;
+}
+.set__find {
+  margin-bottom: 0.4rem;
+  min-height: 44px;
+}
+.set__recent li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.15rem 1rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid #eee;
+}
+.set__planned {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.set__planned .set__scheduled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem 0.8rem;
+}
+.set__rule {
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border-left: 4px solid var(--bb-purple);
+  background: var(--bb-purple-tint);
+  border-radius: 6px;
+  font-size: 0.95rem;
 }

@@ -4,6 +4,8 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migration isn't changed. This file is a review copy and is regenerated from the database after each change.
 
+**Rewording in the app (stage 8):** Dad can also reword any explanation from **Settings → The ? explanations**. That change is made in that database only (local or live) and logged with the wording before and after; it isn't copied back to this file or the migrations.
+
 - **Available:** Money you can use right now. Money waiting in a request is on hold, so it isn't available until the request is done.
 - **Average cost:** What you paid for each unit, on average, counting all your buys. It helps you see whether your fund is up or down.
 - **Balance:** How much money is in an account right now.

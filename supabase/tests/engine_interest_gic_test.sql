@@ -174,9 +174,11 @@ select is((tests.bal('kid_g')).total_worth_cents, 30000::bigint, 'buying a GIC d
 select throws_like($$select public.buy_gic(10001, 3)$$, '%You have $100.00 available%',
   'a GIC bigger than the money available is refused');
 
--- A rate cut doesn't touch GICs she already has.
-select tests.as_parent();
-select public.add_rate('gic', 12, 4.0, date '2027-01-04', 'Test: rates fell');
+-- A rate cut doesn't touch GICs she already has. (Inserted directly: it stands for a
+-- cut Dad announced 7 days earlier. Dad's add_rate refuses a cut with less notice.)
+select tests.nobody();
+insert into public.rates (vehicle, gic_term, rate, effective_date, note)
+  values ('gic', 12, 4.0, date '2027-01-04', 'Test: rates fell');
 select tests.as_kid('kid_g');
 select public.buy_gic(1000, 12);
 select is((select rate from public.gic_holdings where id = tests.gic('kid_g', 12, '2027-01-04')), 5.000::numeric(6,3),

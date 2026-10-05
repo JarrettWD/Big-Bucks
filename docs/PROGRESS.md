@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 is committed. "View as <kid>" is committed after Dad's review. **Next: B2 (Settings).**
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. **Next: B3 (Fix a mistake).**
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,10 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 4 — Live setup (not started; comes after stage 8)
+
+- **Dad's rule (2026-10-04):** "Before creating real accounts or any real deposit: run an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix findings, then proceed."
 
 ### Stage 8 — Parent screens, settings and onboarding, local only (started 2026-10-03)
 
@@ -314,6 +318,149 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   1. Run `npm run demo`, then `npm run dev`.
   2. Sign in as the parent in an Incognito window.
   3. On the **Dashboard**, tap **View as Robin**.
+- **"View as" committed** (`32f9ef6`, 2026-10-04) after Dad's review.
+- **B2, Settings: built, waiting for Dad's review (2026-10-04).** Not committed yet.
+- **Migration `20261014000000_settings_screen.sql`** (new). No money logic changes: rates and settings are still saved by the committed `add_rate` and `set_setting`, unchanged.
+  - **Two new parent actions, each logged** in `parent_actions` in the same transaction:
+    - `edit_note(note, wording)`: reword a market-move note already written (at most 300 letters).
+    - `edit_glossary(term, wording)`: reword a **?** explanation (at most 400 letters). Terms are fixed, because the app asks for them by name.
+    - Notes and the glossary are wording, not money history, so they're edited in place. The log keeps the wording **before and after**.
+    - Refused: the same wording, no words, too long, an unknown note or term, a kid, or a parent without the code.
+  - **`parent_change_preview` now covers rates and the two edits.** It still runs the real action with `in_preview()` on and always rolls it back.
+    - Each of the girls' notices now says **when** she gets it: right away, on the day a change goes live, or the day after a special ends. For a special that's three notices.
+    - It also returns plain "facts" for the screen (before → after, from when, and for a special, the rate it goes back to).
+    - `notices_on` is gone (each notice has its own date). B1's test was updated to match.
+  - **`parent_settings` returns everything the screen shows:**
+    - every rate in force today, any special (its last day and the regular rate underneath), scheduled changes, and the full rate history with notes, who and when;
+    - the cap, inflation, the three dividend yields and the feature switches (wishlist, personalisation, badges, plus any other switch already set), each with its scheduled changes and history;
+    - the standard up-day and down-day notes, the latest 30 notes written, the glossary;
+    - the latest 10 Settings changes, with who and when.
+    - The defaults come from the database: a new rate starts 7 days out, and a special runs a week.
+- **The screen (`src/parent/settings/`):**
+  - **Jump links** at the top: Rates · Cap and limits · Inflation and dividends · Feature switches · Wording · Backup. Pairs of cards sit side by side from 960 px.
+  - **Rates:** one list (savings, then the six GIC terms), each with **Change**. Change opens, under that rate:
+    1. the new rate (typed as a percent; kept as exact text, never a decimal number);
+    2. **Limited-time special**, with first and last day;
+    3. **Starts on** (7 days out by default);
+    4. a note the girls see;
+    5. the preview: "3-month GIC: 3.0% → 2.75% from Oct 11.", "GICs already bought keep their locked-in rate.", the log line, and **each notice the girls will get and on which day**;
+    6. **Yes, save 2.75% from Oct 11** or **Back**.
+    - A special in force shows "⭐ Special until Oct 11, then 5.0%". Below the list: **History of rate changes**.
+  - **Deposit cap** (typed in dollars), **Time to answer a request** (B1, unchanged), **Inflation rate**, **Dividend yields**, **Feature switches** (Off / Test accounts only / Everyone): each the same way, with a start date, preview, confirmation and history.
+  - **Market-move notes:** the standard up-day and down-day wording (dated settings, for new notes), and the notes already written, each with **Edit**.
+  - **The ? explanations:** "Show all 55 explanations", a **Find a word** box, and **Edit** on each.
+  - **Backup:** the **Download backup** button, switched off, saying it arrives in stage 5.
+  - **Recent changes** at the bottom.
+  - As before: the button only works once the preview matches exactly what's typed, and after saving it says "Done. … Recorded: Dad, Oct 4 at 3:12 pm."
+- **Docs:**
+  - **SPEC:** the Download backup button sits on Settings (the B2 plan); Build decisions now describe the Settings preview, and editing notes and explanations in place with a log; the data model says `parent_actions` includes rewording.
+  - **MESSAGES §5 and §6** and **GLOSSARY.md:** Dad can reword these in the app. Edits made in the app stay in that database and aren't copied back to these files.
+  - No new kid wording: the rate, special and cap notices are the stage 2 ones.
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **993 of 993**, after `supabase db reset`. New **`settings_screen_test.sql`** (63):
+    - the rates as shown, and the 7-day and one-week defaults;
+    - **rate previews, exact JSON:**
+      - savings 2.0% → 1.5%: the notice now and the "now live" one on Oct 12;
+      - a one-week special: three notices with their dates;
+      - a change from today: one notice only;
+    - previews leave nothing behind (rates, settings, notices, log, notes, glossary);
+    - the real messages for a past date, a special ending before it starts, too many decimals, an unknown term, not savings or a GIC, not a number, and 100% or more;
+    - **saved for real:** her notice right away and the one on Oct 12 are **word for word what the preview showed**, and so is the log line;
+    - Settings shows the scheduled change and the history (note, who, when);
+    - **a special ending on time:** in force on its last day, gone the day after, and both kids told it has ended;
+    - cap, inflation, yield and switch previews (the cap's notice to both kids, no notice for inflation, "Off → Test accounts only"); the cap's card with its scheduled change and history;
+    - rewording a note and an explanation: the preview, the log's before and after, she reads the new wording, and every refusal;
+    - who may call: a kid, a parent without the code; only the four Settings functions are callable at all, and the helpers are internal;
+    - all three dry runs run with `in_preview()` on; the real action with it off.
+    - **Updated:** B1's preview test (the new shape), and Part A's "nothing skips the log" guard now allows the two new actions to log themselves.
+  - `npm test` (Vitest): **179 of 179** (5 new: typed percents and wording, and the rate and setting wording).
+  - `npm run test:e2e` (Playwright): **66 of 66**.
+    - **New `settings.spec.ts`**, in its own project that runs last, because it changes rates and the cap:
+      - **a rate change:** a typo is refused, **Back** changes nothing, then save; the rate, the log, the status message, and **Sky's notice word for word as previewed, also seen in her own app**;
+      - **a one-week special:** three notices, the day-after notice word for word, "Special until …, then 5.0%", and the database's rate on its last day and the day after;
+      - **the cap:** both girls' notices word for word;
+      - a feature switch, rewording a note (with **Back** first) and an explanation, each checked in the database;
+      - Download backup is switched off.
+    - **`layout.spec.ts`:** Settings with request expiry being changed, then with a one-week special previewed and every history and the glossary opened, at all six sizes, normal and 130% text: no problems.
+  - `npm run timemachine`: **not run locally** (Dad's rule: no money logic changed). CI runs it on push.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **ACCEPTANCE.md boxes:** none can be ticked yet (they're live). Newly testable locally: Dad's rate change, special, cap change and their notices, all from the app.
+- **Known issues and notes:**
+  - **Rates change one at a time.** An inverted-curve month means changing several terms, and each sends the girls its own notice.
+  - **Rewording in the app doesn't reach the repo.** A note or explanation reworded on the live app changes only that database. GLOSSARY.md and the migrations keep the original wording.
+- **Questions for Dad:**
+  1. ~~Should a dividend yield change send the girls a notice?~~ **Answered: yes** (built after the review, below).
+  2. ~~Feature names OK?~~ **Answered: yes.**
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run demo` (already done; the demo is loaded), then `npm run dev`.
+  2. In an Incognito window go to **http://127.0.0.1:5173/Big-Bucks/parent/login** and sign in (password from the demo, code from `npm run demo:code`).
+  3. Tap **Settings**. Try **Change** on a rate, tick **Limited-time special**, and watch the notices appear. **Back** changes nothing.
+- **Dad's B2 review (2026-10-04): a gap and three changes.** Dad set savings from 1.75% to 1.0% starting the next day and it was accepted, which broke the 7-day notice promise. Dad's decisions:
+  1. The database refuses a rate or dividend yield cut that starts less than 7 days out. Raises can start right away. The preview and the refusal explain the rule. Known-answer tests first, and a time machine run.
+  2. A dividend yield change sends the girls a notice, with the same advance notice as a rate change.
+  3. **Cancel** for a planned rate or setting change: an appended cancellation (no edits), logged, with one notice to the girls if they'd been told, and none if they hadn't.
+  4. The feature switch names are fine.
+  - **Asked and answered:** cancelling a promised raise less than 7 days before it starts counts as a cut, so it's refused. A cut is measured day by day: each of the next 7 days, before and after.
+- **Fixes: built, waiting for Dad's review (2026-10-04).** Not committed yet. All in the still-uncommitted migration `20261014000000_settings_screen.sql`.
+  - **7 days' notice for a cut:**
+    - For each day from today to today + 6, the rate the girls expect before the change is compared with the rate after it. If any day would be lower, the change is refused and nothing is saved.
+    - It covers a new rate, a special below the regular rate, a newer special replacing an announced one, stacked changes, a dividend yield, and cancelling a raise.
+    - It lives in the logged `add_rate` and `set_setting` wrappers. The committed originals are unchanged; their fingerprint tests still pass.
+    - The message: "This would lower the savings rate on Oct 6, sooner than 7 days from today. A cut needs 7 days' notice so the girls have time to react: start it on Oct 12 or later. A raise can start right away."
+    - The rate and yield editors show the rule up front: "A lower rate needs 7 days' notice so the girls can react: it can start on Oct 12 at the earliest. A higher rate can start today."
+  - **Dividend yield notices:** when Dad saves a change (only if the number changes), and a "now live" notice on the day it starts if that's later (from the nightly run). Wording in MESSAGES §1, "Dividend rates".
+  - **Cancel:**
+    - A new append-only table `cancellations` points at the rate or setting row. Nothing is edited or deleted.
+    - Every reader skips cancelled rows: `rate_on`, `setting_on`, `feature_enabled`, `current_rates` (her "next rate"), the nightly rate and yield notices, and the expiry rule's notice.
+    - Kids who were told get one notice ("The savings rate change on Oct 13 is cancelled", saying what applies instead). That's rates, specials, the deposit limit and dividend yields. Kids who weren't told get nothing: inflation, feature switches, standard notes, and request expiry before its day.
+    - Refused: a change that's already started, one already cancelled, and `launched_at`.
+    - Logged as "Cancelled: Savings rate set to 1.0% from Oct 13."
+    - On screen: every planned change has **Cancel change**, which shows a confirmation with an optional note, the log line and the girls' notice. The history keeps cancelled changes, marked "(cancelled)".
+  - **Time machine:** the independent model now has the 7-day rule, dated dividend yields and cancellation, with 3 new known-answer tests. The scenario has 11 new steps:
+    - a short-notice savings cut and a short-notice yield cut, both refused;
+    - a savings cut announced, then cancelled (interest stays at 1.5%);
+    - a 9-month GIC raise whose cancellation 3 days out is refused;
+    - a TSX yield raise from today (January's dividend pays 3.5%);
+    - a Dow yield cut, cancelled (April's dividend still pays 1.8%);
+    - a cap cut to $500, cancelled (January's deposits still fit).
+  - **PROGRESS, Stage 4:** Dad's rule about the pre-launch audit is recorded at the top of the stage log.
+  - **Docs:** SPEC (admin settings, rate notice, Build decisions, data model), MESSAGES §1 (dividend rates; a planned change is cancelled).
+- **Tests (all run locally on 2026-10-04):**
+  - `npm run test:db` (pgTAP): **1062 of 1062**, from empty.
+    - New **`notice_and_cancel_test.sql`** (68): Dad's case and every edge above, with exact wording; yield notices on save and on the day; cancellation for rates, specials, the cap and a yield (told), and for inflation, request expiry and a switch (not told); readers skipping cancelled rows; refusals; who may call; append-only.
+    - **Updated:**
+      - `engine_interest_gic_test.sql`: its same-day "rates fell" cut is now inserted directly, standing for a cut announced a week earlier, because Dad's path refuses it.
+      - `clock_test.sql`: truncating `settings` is still refused, but now first by the `cancellations` link, so it checks for any refusal plus that every row is still there.
+      - `schema_test.sql`: the new table.
+      - Part A's "nothing skips the log" guard: allows `cancel_change`.
+      - `settings_screen_test.sql`: scheduled changes now carry ids, and history rows carry "cancelled".
+  - `npm test` (Vitest): **182 of 182** (3 new model known answers).
+  - `npm run timemachine`: **PASS, 14 of 14**. 89 of 89 actions agreed with the model (11 new), and 23 of 23 planned outcomes. `docs/TIMEMACHINE-REPORT.md` is regenerated.
+  - `npm run test:e2e` (Playwright): **67 of 67**. New in `settings.spec.ts`: Dad's case refused on screen with the rule shown, then saved with 7 days' notice, then cancelled (Sky's notice word for word as previewed; the rate row kept, the cancellation added); a TSX yield raise and Robin's notice word for word. `layout.spec.ts` adds the Cancel confirmation at all six sizes, normal and 130% text.
+  - `npm run lint` is clean and `npm run build` succeeds.
+- **Known issues and notes:**
+  - The rule protects what the girls expect, so **a special can't be ended early** once it's inside the week, and an announced cut can't be pulled earlier.
+  - Request expiry has no notice rule (not asked). Lowering the cap still takes nothing away.
+- **Dad's second review (2026-10-04): fixes look good, plus one more.** A lower deposit cap gets the same 7-day rule (the girls are told, and a cut shrinks their room to deposit). Raises start right away. Known-answer tests first, a time machine run, then commit, push and confirm CI.
+  - **Built:**
+    - The `set_setting` wrapper and `cancel_change` check the cap day by day, like rates and yields. So a lower cap needs 7 days, and cancelling a promised cap raise inside the week is refused.
+    - Refusal: "This would lower the deposit limit on Oct 6, sooner than 7 days from today. A cut needs 7 days' notice so the girls have time to react: start it on Oct 12 or later. A raise can start right away."
+    - The cap editor shows the rule up front.
+    - The model has the same rule.
+  - **Tests:**
+    - **11 new known answers** in `notice_and_cancel_test.sql`, written first and failing before the fix: tomorrow, today and 6 days out refused (the preview too), nothing left behind, exactly 7 days allowed with the girls told a week ahead, a raise today, and cancelling a promised raise refused.
+    - **1 new model known answer.**
+    - **Updated:**
+      - `engine_requests_test.sql`: its same-day "lowering the cap never takes money away" test now inserts the cap directly (an announced cut), like the GIC test.
+      - `settings_screen_test.sql`: its cap preview is now 7 days out.
+      - **Time machine scenario:** the May cap cut (to $800 from May 1) is now announced on Apr 24, and a new step refuses a $700 cap with 2 days' notice.
+  - **Results (all run locally on 2026-10-04):**
+    - `npm run test:db`: **1073 of 1073**, from empty.
+    - `npm test`: **183 of 183**.
+    - `npm run timemachine`: **PASS, 14 of 14**. 90 of 90 actions agreed with the model, and 24 of 24 planned outcomes.
+    - `npm run test:e2e`: **67 of 67**.
+    - Lint is clean and the build succeeds.
+- **B2 committed** after Dad's review (see git log).
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 
