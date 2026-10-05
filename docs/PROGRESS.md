@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **Next: B4** (onboarding, the account agreement and "What's new").
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **B4: the kid wording is drafted in MESSAGES.md §11, waiting for Dad's review**; the screens come after.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -643,6 +643,19 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   4. Try **Add to her savings** with $500: a warning, then **Next: check the amount** asks you to type it again.
   5. Try **Take from her savings** with more than the line: refused.
 - **Dad's retest (2026-10-04): B3 looks good.** He accepted both choices: GIC and penalty fixes count as earned, and corrections don't change deposit room. Committed and pushed (see git log).
+- **B4, step 1: the kid wording, drafted for Dad's review (2026-10-04).** No screens yet (Dad's instruction). Everything is in **MESSAGES.md §11**:
+  - **Welcome**, with the steps listed; steps for switched-off features are left out.
+  - **The tour**, skippable: Home, the three options, Graphs, Buy / Sell, the Wish List and the bell.
+  - **Make it yours** and **your first wish** (each only if that feature is on).
+  - **The account agreement**:
+    - 14 house rules in kid words, from SPEC's house rules and the money rules, including Dad's line "Mom and Dad can look at your Big Bucks screens any time, just like they can see your wish list";
+    - Dad's promises;
+    - her signature, Dad's countersignature and its notice, and the history line.
+  - **The first decision**, after her first deposit lands.
+  - **What's new**, for the Wish List, Make it yours and Badges, plus the pattern for later features.
+  - **No fixed numbers:** a table lists each placeholder ({cap}, {expiry_days}, {cut_notice_days}, {savings_rate}, the GIC rate range, minimums and waiting periods) and where it's read from. Settings numbers come from the setting in force; fixed rules come from the database's own rule.
+  - **Five questions for Dad**, at the end of §11: gifts and allowance; whether the signed copy keeps that day's wording; Dad signing on his own phone; reading fixed rules from the database; the crash example.
+- **Next:** after Dad's review of the wording, a short plan for the B4 screens, then build them.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

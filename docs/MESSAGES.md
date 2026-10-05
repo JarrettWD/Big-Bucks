@@ -551,3 +551,161 @@ From the app's screens (`src/kid/graphs/graphText.ts`), so edits are a code chan
 - **Big market days:** {date} · {the market-move note}
 - Buying low and selling high is hard to time. Nobody knows tomorrow's price.
 - **Table:** Day · Unit price · Change · You
+
+## 11. Onboarding, the account agreement and What's new (stage 8 B4, draft for Dad's review)
+
+**Status:** wording only; no screens are built yet. Onboarding happens once, with Dad beside her (about 30 minutes). Steps for a feature that's switched off for her are skipped: the Wish List step if `wishlist` is off, and "Make it yours" if `personalisation` is off.
+
+**Numbers are never typed into the wording.** Each `{placeholder}` below is filled in from the database at the moment the screen is shown, so a change Dad makes in Settings shows up here by itself.
+
+| Placeholder | Where it comes from | Today |
+|---|---|---|
+| `{cap}` | Setting `deposit_cap_cents`, in force today | $1,000.00 |
+| `{expiry_days}` | Setting `request_expiry_days`, in force today | 7 |
+| `{savings_rate}` | Today's savings rate (`current_rates`) | 2.0% |
+| `{gic_lowest}`, `{gic_highest}` | Today's lowest and highest GIC rates (`current_rates`; lowest and highest rather than by term, so an inverted month still reads right) | 2.5%, 6.0% |
+| `{cut_notice_days}` | The database's notice rule for a cut to a rate, dividend rate or the deposit limit | 7 |
+| `{withdraw_wait_hours}` | The database's cooling-off rule for withdrawals | 24 |
+| `{min_savings}`, `{min_invest}` | The database's minimums (savings; a GIC or a fund) | $5.00, $10.00 |
+| `{gic_choice_days}` | The database's rule for choosing what happens to a matured GIC | 7 |
+| `{goal_wait_days}` | The database's rule for how long a wish waits before it can become a goal | 7 |
+| `{name}` | Her name | |
+
+The last five are fixed rules in the database today, not Settings numbers. The screens will read them from the same place the rules are checked, never from a copy.
+
+A **?** after a word opens its explanation (GLOSSARY.md).
+
+### Welcome
+
+- **Title:** Welcome to Big Bucks, {name}!
+- **Under it:** Watch your bucks grow.
+- **Body:** This is your very own bank and investing account. The money is real: Dad keeps the cash, and Big Bucks keeps track of every cent.
+- **What we'll do together** (a numbered list; switched-off steps are left out and the rest renumbered):
+  1. A quick look around
+  2. Make it yours
+  3. Your first wish
+  4. Your Big Bucks agreement
+  5. Your first decision
+- **Button:** Let's go!
+
+### 1. A quick look around (the tour; she can skip it)
+
+One card at a time. **Buttons:** Next · Back · Skip the tour. The last card says **Done** instead of Next.
+
+1. **Home 🏠**
+   - Home shows everything you have. Your total worth **?** is at the top.
+   - Under it are your three ways to grow money: savings, GICs and stock funds.
+   - When something needs you, like a GIC that's finished, a banner tells you.
+2. **Three ways to grow your money**
+   - Each one is a trade-off: getting your money back quickly, or giving it time to grow more.
+   - 🐷 **Savings** **?**: safe, and ready whenever you need it. It earns {savings_rate} a year in interest **?**, paid on the 1st of every month. New money always lands here first.
+   - 🔒 **GICs** **?**: you promise to leave your money alone for a while, from 1 month to 2 years (the term **?**). In return you earn more: right now from {gic_lowest} to {gic_highest} a year. Your rate is locked in **?** the day you buy.
+   - 📈 **Stock funds** **?**: a tiny piece of lots of companies, in three funds: Dow Jones, Nasdaq-100 and TSX. Over many years they have grown the most, but they go up and down, and they can be worth less than you put in.
+3. **Graphs 📊**
+   - Graphs show how your money has grown, and how each option did.
+   - Tap any **?** to learn what a word means.
+4. **Buy / Sell 🔁**
+   - This is where you move your money.
+   - Putting money in or taking it out waits for Dad, because real cash changes hands.
+   - Moving money between your options happens by itself. Stock funds buy and sell at the next market close **?**.
+5. **Wish List ⭐** (only if the Wish List is on)
+   - Add things you'd love to have, and see how close you are.
+   - Mom and Dad can see your wish list.
+6. **The bell 🔔**
+   - Notices from Dad and from Big Bucks land here, like a new rate or a request that's done.
+   - A number on the bell means something new to read.
+
+### 2. Make it yours (only if "Make it yours" is on)
+
+- **Title:** Make it yours
+- **Pick your colour** (her theme colours)
+- **Pick your animal** (the avatars)
+- **Under them:** You can change these any time.
+- **Button:** Looks great!
+
+### 3. Your first wish (only if the Wish List is on)
+
+- **Title:** What would you love to save up for?
+- **Fields:** What is it? · About how much? (you can skip this) · How much do you want it? (1 to 5 stars)
+- **Under them:** Mom and Dad can see your wish list.
+- **Buttons:** Add it · Skip for now
+- **Added:** Added to your Wish List! If you still want it in {goal_wait_days} days, you can make it a savings goal.
+
+### 4. Your Big Bucks agreement
+
+- **Title:** Your Big Bucks agreement
+- **Intro:** These are the house rules. Read them with Dad, and ask about anything that doesn't make sense. When you both agree, you each sign. A copy stays in your history.
+- **The rules:**
+  1. 💵 **The money is real.** Dad keeps the cash, and Big Bucks keeps track of every cent he owes you.
+  2. 🐷 **New money goes into savings first.** You can put in up to {cap} in all, minus what you take out. That's your deposit cap **?**. Interest and growth don't count toward it, so your money can grow past it.
+  3. 🎁 **Birthday money and allowance can go in too**, as long as it fits under your deposit cap. *(Draft: Dad to decide, see the questions below.)*
+  4. 🙋 **Dad says yes first** when money goes in or out, because real cash changes hands. Dad has up to {expiry_days} days to answer. If he hasn't answered by then, the request is cancelled and you can ask again.
+  5. 😴 **Sleep on it.** When you ask to take money out, Dad waits at least {withdraw_wait_hours} hours before he can say yes, so you have time to think it over.
+  6. ✋ **Money on hold.** While a request is waiting, its money is on hold **?**, so you can't use the same money twice.
+  7. 🔢 **The smallest amounts** are {min_savings} for savings, and {min_invest} for a GIC or a stock fund.
+  8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings.
+  9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. Sometimes markets drop a lot: a 20% drop would turn $100 into $80 for a while. Nobody knows what happens next, so patience matters.
+  10. 📈 **One trade per fund each day.** You can buy or sell each fund once a day. Buys and sells happen at the next market close.
+  11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Dad tells you at least {cut_notice_days} days before. A GIC you already have keeps its rate.
+  12. ⚖️ **Fair for both of you.** You and your sister get the same rates and the same rules.
+  13. 🔍 **Ask any time.** If something ever looks wrong, tap "Something looks wrong?" and Dad will answer. If there's a mistake, Dad fixes it openly, with a note you can read, and rounding always goes your way.
+  14. 👀 Mom and Dad can look at your Big Bucks screens any time, just like they can see your wish list.
+     - If the Wish List is off for her, the sentence ends at "any time."
+- **Dad's promises:** Dad keeps your cash safe, answers your requests, tells you before anything goes down, and fixes any mistake in your favour.
+- **Her signature:**
+  - I've read these rules with Dad, and I agree. — {name}
+  - **Button:** Sign my agreement
+- **After she signs:**
+  - You signed it! Now it's Dad's turn.
+  - Dad signs on his own phone. You'll get a notice when he does.
+- **Notice when Dad signs** (to the bell):
+  - Title: Your agreement is signed!
+  - Body: Dad signed it too. You can read it any time in your history.
+- **History line:** Your Big Bucks agreement · signed {her date}, Dad signed {Dad's date}
+  - Opened, it shows the rules exactly as they were when she signed, with both dates.
+
+### 5. Your first decision
+
+Starts once her first deposit is in her savings.
+
+- **Before her first deposit:**
+  - Your first decision starts with your first deposit.
+  - Ask Dad to put some money in: on Buy / Sell, choose Buy, then Cash ➜ Savings.
+- **Title:** 🎉 Your first {amount} is in your savings!
+- **Body:** Now for your first big decision: what should your money do? There's no wrong answer.
+- **The choices** (each opens Buy / Sell, ready to go):
+  - 🐷 **Keep it in savings.** Safe and ready any time, earning {savings_rate} a year. Waiting is a real choice too.
+  - 🔒 **Put some in a GIC.** Earn more ({gic_lowest} to {gic_highest} a year right now) by promising to leave it alone.
+  - 📈 **Try a stock fund.** It could grow the most over time, but it can also go down.
+  - Lots of people split their money between options. You can change your mind later (except that a GIC is a promise).
+- **When she's chosen** (or chosen to keep it in savings):
+  - You made your first money decision. Nice thinking!
+  - You're all set. Welcome to Big Bucks!
+  - **Button:** Go to Home
+
+### What's new
+
+Shown once, the first time she opens the app after Dad switches a feature on for her. One screen with a title, two or three short lines, and **Show me** (opens the feature) or **Got it**. The same title arrives in the bell as a notice (type `whats_new`), so she can find it again.
+
+- **Wish List**
+  - Title: New: your Wish List ⭐
+  - Add things you'd love to have, give each one stars, and see how close you are to affording it.
+  - If you still want something after {goal_wait_days} days, you can make it a savings goal.
+  - Mom and Dad can see your wish list.
+- **Make it yours**
+  - Title: New: make Big Bucks yours 🎨
+  - Pick your own colour and a cute animal.
+  - You can change them any time.
+- **Badges**
+  - Title: New: badges 🏅
+  - You earn a badge for smart money choices, like keeping a GIC until it finishes or staying calm when a fund drops.
+  - Each badge unlocks something fun for your animal to wear.
+- **Any later feature:** Title: New: {feature} · then its own two or three lines, drafted here before the feature is switched on.
+
+### Questions for Dad (B4 draft)
+
+1. **Gifts and allowance (rule 3):** SPEC says to decide whether birthday money or allowance can go straight in. The draft says yes, within the cap. Keep it, change it, or drop the rule?
+2. **The signed copy:** the draft keeps the rules exactly as they read when she signed, with the numbers of that day. When a rule changes later, she gets the usual notice and doesn't sign again. OK?
+3. **Where Dad signs:** the draft has Dad sign on his own phone (parent sign-in with the authenticator code, logged like every parent action), not on her device. OK?
+4. **Fixed rules as placeholders:** the 24-hour wait, the minimums and the 7-day periods are fixed in the database, not Settings numbers. The draft reads them from the database anyway, so the wording can never disagree with the rule. OK?
+5. **The crash example (rule 9):** "a 20% drop would turn $100 into $80 for a while". Is that the picture you want?
