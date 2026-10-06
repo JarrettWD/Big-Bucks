@@ -638,13 +638,13 @@ One card at a time. **Buttons:** Next · Back · Skip the tour. The last card sa
 - **The rules:**
   1. 💵 **The money is real.** Dad keeps the cash, and Big Bucks keeps track of every cent he owes you.
   2. 🐷 **New money goes into savings first.** You can put in up to {cap} in all, minus what you take out. That's your deposit cap **?**. Interest and growth don't count toward it, so your money can grow past it.
-  3. 🎁 **Birthday money and allowance can go in too**, as long as it fits under your deposit cap. *(Draft: Dad to decide, see the questions below.)*
+  3. 🎁 **Birthday money and allowance can go in too.** Ask for a deposit the usual way, and it has to fit under your deposit cap.
   4. 🙋 **Dad says yes first** when money goes in or out, because real cash changes hands. Dad has up to {expiry_days} days to answer. If he hasn't answered by then, the request is cancelled and you can ask again.
   5. 😴 **Sleep on it.** When you ask to take money out, Dad waits at least {withdraw_wait_hours} hours before he can say yes, so you have time to think it over.
   6. ✋ **Money on hold.** While a request is waiting, its money is on hold **?**, so you can't use the same money twice.
   7. 🔢 **The smallest amounts** are {min_savings} for savings, and {min_invest} for a GIC or a stock fund.
   8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings.
-  9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. Sometimes markets drop a lot: a 20% drop would turn $100 into $80 for a while. Nobody knows what happens next, so patience matters.
+  9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time.
   10. 📈 **One trade per fund each day.** You can buy or sell each fund once a day. Buys and sells happen at the next market close.
   11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Dad tells you at least {cut_notice_days} days before. A GIC you already have keeps its rate.
   12. ⚖️ **Fair for both of you.** You and your sister get the same rates and the same rules.
@@ -662,7 +662,22 @@ One card at a time. **Buttons:** Next · Back · Skip the tour. The last card sa
   - Title: Your agreement is signed!
   - Body: Dad signed it too. You can read it any time in your history.
 - **History line:** Your Big Bucks agreement · signed {her date}, Dad signed {Dad's date}
-  - Opened, it shows the rules exactly as they were when she signed, with both dates.
+  - From the second version on: Your Big Bucks agreement (version {n}) · signed {her date}, Dad signed {Dad's date}
+  - Opened, it shows the rules exactly as they were when she signed, numbers included, with both dates. Under them: Numbers like your deposit cap can change after you sign. When one does, you get a notice in the bell.
+
+### When the house rules change (a new version to sign)
+
+Only when a rule itself changes: a new rule, or a rule reworded. A number changing (the cap, how long Dad has to answer, a rate) doesn't need a new signature; she gets that change's usual notice. Every earlier version stays in her history, exactly as signed.
+
+- **Notice** (to the bell):
+  - Title: Your Big Bucks agreement has changed
+  - Body: Dad changed the house rules. Read the new version with Dad, and sign it when you both agree. Your old agreement stays in your history.
+- **Home banner:** Your Big Bucks agreement has changed. · **Read it**
+- **The new version:**
+  - Title: Your Big Bucks agreement (version {n})
+  - Intro: Some house rules have changed. Read them with Dad, and ask about anything that doesn't make sense. When you both agree, you each sign.
+  - Each rule that's new is marked **New**, and each rule that's reworded is marked **Changed**.
+  - Her signature, the "Now it's Dad's turn" step and Dad's notice are the same as for the first version.
 
 ### 5. Your first decision
 
@@ -702,10 +717,10 @@ Shown once, the first time she opens the app after Dad switches a feature on for
   - Each badge unlocks something fun for your animal to wear.
 - **Any later feature:** Title: New: {feature} · then its own two or three lines, drafted here before the feature is switched on.
 
-### Questions for Dad (B4 draft)
+### Dad's answers (2026-10-05)
 
-1. **Gifts and allowance (rule 3):** SPEC says to decide whether birthday money or allowance can go straight in. The draft says yes, within the cap. Keep it, change it, or drop the rule?
-2. **The signed copy:** the draft keeps the rules exactly as they read when she signed, with the numbers of that day. When a rule changes later, she gets the usual notice and doesn't sign again. OK?
-3. **Where Dad signs:** the draft has Dad sign on his own phone (parent sign-in with the authenticator code, logged like every parent action), not on her device. OK?
-4. **Fixed rules as placeholders:** the 24-hour wait, the minimums and the 7-day periods are fixed in the database, not Settings numbers. The draft reads them from the database anyway, so the wording can never disagree with the rule. OK?
-5. **The crash example (rule 9):** "a 20% drop would turn $100 into $80 for a while". Is that the picture you want?
+1. **Gifts and allowance:** yes, within the deposit cap, through a normal deposit request (rule 3).
+2. **The signed copy is frozen**, and a changed number comes by notice. A new or reworded rule means a new version to sign; the old one stays in her history (see "When the house rules change").
+3. **Dad signs on his own phone**, with the authenticator code, logged like every parent action.
+4. **Fixed rules are read from the database** like the settings, so the wording can never disagree with a rule.
+5. **The crash example** is now Dad's wording (rule 9).

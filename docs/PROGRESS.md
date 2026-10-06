@@ -656,6 +656,14 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **No fixed numbers:** a table lists each placeholder ({cap}, {expiry_days}, {cut_notice_days}, {savings_rate}, the GIC rate range, minimums and waiting periods) and where it's read from. Settings numbers come from the setting in force; fixed rules come from the database's own rule.
   - **Five questions for Dad**, at the end of §11: gifts and allowance; whether the signed copy keeps that day's wording; Dad signing on his own phone; reading fixed rules from the database; the crash example.
 - **Next:** after Dad's review of the wording, a short plan for the B4 screens, then build them.
+- **Dad's answers to the five questions (2026-10-05), now in MESSAGES §11:**
+  1. Gifts and allowance: yes, within the cap, through a normal deposit request.
+  2. The signed copy is frozen, and number changes come by notice. A new or reworded rule means a new version to sign; the old one stays in her history. Drafted: the "agreement has changed" notice, a Home banner, the new version with **New** and **Changed** marks, and the version number in the history line.
+  3. Dad signs on his own phone.
+  4. Fixed rules are read from the database.
+  5. The crash example is Dad's wording: "A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time."
+  - SPEC Build decisions now has "The account agreement".
+  - Committed and pushed (docs only), waiting for Dad's review of the wording.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 
