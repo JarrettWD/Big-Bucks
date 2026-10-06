@@ -664,6 +664,14 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   5. The crash example is Dad's wording: "A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time."
   - SPEC Build decisions now has "The account agreement".
   - Committed and pushed (docs only), waiting for Dad's review of the wording.
+- **Dad's wording review (2026-10-05), applied in MESSAGES §11:**
+  - Dad's promises no longer promise the rate notice (it's automatic) and say mistakes are fixed openly, with a note, rounding in her favour (a fix can take money back).
+  - Rule 11: Big Bucks (not Dad) gives the notice for a cut; good news can start right away.
+  - Rule 2 reworded (room comes back when money goes out). Rule 15, "Mom and Dad can see your account", has a bold heading.
+  - The tour says stock funds have "usually" grown the most, and each option "has a good side and a catch".
+  - **New rule 14:** "Your PIN is yours."
+  - **First decision:** only choices she can afford with her free savings; under {min_invest}: "Once you have {min_invest}, you can try a GIC or a fund."
+  - Committed and pushed (docs only). Next: the B4 screens plan, waiting for Dad's OK.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

@@ -597,10 +597,10 @@ One card at a time. **Buttons:** Next · Back · Skip the tour. The last card sa
    - Under it are your three ways to grow money: savings, GICs and stock funds.
    - When something needs you, like a GIC that's finished, a banner tells you.
 2. **Three ways to grow your money**
-   - Each one is a trade-off: getting your money back quickly, or giving it time to grow more.
+   - Each one has a good side and a catch: getting your money back quickly, or giving it time to grow more.
    - 🐷 **Savings** **?**: safe, and ready whenever you need it. It earns {savings_rate} a year in interest **?**, paid on the 1st of every month. New money always lands here first.
    - 🔒 **GICs** **?**: you promise to leave your money alone for a while, from 1 month to 2 years (the term **?**). In return you earn more: right now from {gic_lowest} to {gic_highest} a year. Your rate is locked in **?** the day you buy.
-   - 📈 **Stock funds** **?**: a tiny piece of lots of companies, in three funds: Dow Jones, Nasdaq-100 and TSX. Over many years they have grown the most, but they go up and down, and they can be worth less than you put in.
+   - 📈 **Stock funds** **?**: a tiny piece of lots of companies, in three funds: Dow Jones, Nasdaq-100 and TSX. Over many years they have usually grown the most, but they go up and down, and they can be worth less than you put in.
 3. **Graphs 📊**
    - Graphs show how your money has grown, and how each option did.
    - Tap any **?** to learn what a word means.
@@ -637,7 +637,7 @@ One card at a time. **Buttons:** Next · Back · Skip the tour. The last card sa
 - **Intro:** These are the house rules. Read them with Dad, and ask about anything that doesn't make sense. When you both agree, you each sign. A copy stays in your history.
 - **The rules:**
   1. 💵 **The money is real.** Dad keeps the cash, and Big Bucks keeps track of every cent he owes you.
-  2. 🐷 **New money goes into savings first.** You can put in up to {cap} in all, minus what you take out. That's your deposit cap **?**. Interest and growth don't count toward it, so your money can grow past it.
+  2. 🐷 **New money goes into savings first.** You can put in up to {cap} altogether. Taking money out gives you room again. Interest and growth don't count, so your money can grow past {cap}.
   3. 🎁 **Birthday money and allowance can go in too.** Ask for a deposit the usual way, and it has to fit under your deposit cap.
   4. 🙋 **Dad says yes first** when money goes in or out, because real cash changes hands. Dad has up to {expiry_days} days to answer. If he hasn't answered by then, the request is cancelled and you can ask again.
   5. 😴 **Sleep on it.** When you ask to take money out, Dad waits at least {withdraw_wait_hours} hours before he can say yes, so you have time to think it over.
@@ -646,12 +646,13 @@ One card at a time. **Buttons:** Next · Back · Skip the tour. The last card sa
   8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings.
   9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time.
   10. 📈 **One trade per fund each day.** You can buy or sell each fund once a day. Buys and sells happen at the next market close.
-  11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Dad tells you at least {cut_notice_days} days before. A GIC you already have keeps its rate.
+  11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Big Bucks tells you at least {cut_notice_days} days before. Good news, like a higher rate, can start right away. A GIC you already have keeps its rate.
   12. ⚖️ **Fair for both of you.** You and your sister get the same rates and the same rules.
   13. 🔍 **Ask any time.** If something ever looks wrong, tap "Something looks wrong?" and Dad will answer. If there's a mistake, Dad fixes it openly, with a note you can read, and rounding always goes your way.
-  14. 👀 Mom and Dad can look at your Big Bucks screens any time, just like they can see your wish list.
+  14. 🔑 **Your PIN is yours.** Don't share it, not even with your sister. If you think someone knows it, tell Dad.
+  15. 👀 **Mom and Dad can see your account.** They can look at your Big Bucks screens any time, just like your wish list.
      - If the Wish List is off for her, the sentence ends at "any time."
-- **Dad's promises:** Dad keeps your cash safe, answers your requests, tells you before anything goes down, and fixes any mistake in your favour.
+- **Dad's promises:** Dad keeps your cash safe, answers your requests, and fixes any mistake openly, with a note, rounding in your favour.
 - **Her signature:**
   - I've read these rules with Dad, and I agree. — {name}
   - **Button:** Sign my agreement
@@ -688,11 +689,12 @@ Starts once her first deposit is in her savings.
   - Ask Dad to put some money in: on Buy / Sell, choose Buy, then Cash ➜ Savings.
 - **Title:** 🎉 Your first {amount} is in your savings!
 - **Body:** Now for your first big decision: what should your money do? There's no wrong answer.
-- **The choices** (each opens Buy / Sell, ready to go):
-  - 🐷 **Keep it in savings.** Safe and ready any time, earning {savings_rate} a year. Waiting is a real choice too.
-  - 🔒 **Put some in a GIC.** Earn more ({gic_lowest} to {gic_highest} a year right now) by promising to leave it alone.
-  - 📈 **Try a stock fund.** It could grow the most over time, but it can also go down.
-  - Lots of people split their money between options. You can change your mind later (except that a GIC is a promise).
+- **The choices** (each opens Buy / Sell, ready to go). Only choices she can afford with her free savings are offered:
+  - 🐷 **Keep it in savings.** Safe and ready any time, earning {savings_rate} a year. Waiting is a real choice too. (Always offered.)
+  - 🔒 **Put some in a GIC.** Earn more ({gic_lowest} to {gic_highest} a year right now) by promising to leave it alone. (Only with at least {min_invest} free.)
+  - 📈 **Try a stock fund.** It could grow the most over time, but it can also go down. (Only with at least {min_invest} free.)
+  - With at least {min_invest} free: Lots of people split their money between options. You can change your mind later (except that a GIC is a promise).
+  - With less than {min_invest} free, instead of the GIC and fund choices: Once you have {min_invest}, you can try a GIC or a fund.
 - **When she's chosen** (or chosen to keep it in savings):
   - You made your first money decision. Nice thinking!
   - You're all set. Welcome to Big Bucks!
