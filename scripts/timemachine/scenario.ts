@@ -36,6 +36,29 @@ const sellWorthAll =
 
 export const STEPS: Step[] = [
   // July 2027 ---------------------------------------------------------------
+  // Stage 8 B4: each kid signs the account agreement before her first deposit.
+  {
+    at: '2027-07-01 08:30',
+    do: { kind: 'deposit', kid: 'A', cents: $(900), label: 'dA0' },
+    expect: 'refused',
+    why: 'a deposit before she has signed the agreement',
+  },
+  {
+    at: '2027-07-01 08:40',
+    do: { kind: 'sign_agreement', kid: 'A' },
+    why: 'kid A signs the agreement',
+  },
+  {
+    at: '2027-07-01 08:41',
+    do: { kind: 'sign_agreement', kid: 'B' },
+    why: 'kid B signs the agreement',
+  },
+  {
+    at: '2027-07-01 08:42',
+    do: { kind: 'sign_agreement', kid: 'B' },
+    expect: 'refused',
+    why: 'signing the same version twice',
+  },
   {
     at: '2027-07-01 09:00',
     do: { kind: 'deposit', kid: 'A', cents: $(900), label: 'dA1' },

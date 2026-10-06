@@ -103,6 +103,8 @@ async function main(): Promise<void> {
       kids: [
         { username: 'demo_robin', pin: pin(), displayName: 'Robin', isTest: false },
         { username: 'demo_sky', pin: pin(), displayName: 'Sky', isTest: true },
+        // Stage 8 B4: a new kid who hasn't started yet, so the welcome screens show.
+        { username: 'demo_wren', pin: pin(), displayName: 'Wren', isTest: false },
       ],
     };
     const parent = await createParent(admin, {
@@ -112,7 +114,12 @@ async function main(): Promise<void> {
       displayName: logins.parent.displayName,
     });
     const kidUser: string[] = [];
-    for (const k of logins.kids) kidUser.push((await createKid(admin, k)).userId);
+    const kidAccount: string[] = [];
+    for (const k of logins.kids) {
+      const made = await createKid(admin, k);
+      kidUser.push(made.userId);
+      kidAccount.push(made.accountId);
+    }
     const P: Who = { role: 'authenticated', sub: parent.userId, aal: 'aal2' };
     const A: Who = { role: 'authenticated', sub: kidUser[0], aal: 'aal1' };
     const B: Who = { role: 'authenticated', sub: kidUser[1], aal: 'aal1' };
@@ -208,6 +215,34 @@ async function main(): Promise<void> {
       `select public.set_setting('feature:wishlist', 'test')`,
       [],
     );
+    // Robin and Sky did their welcome screens on day 0: each signs the agreement, Dad
+    // countersigns, and each finishes onboarding. (Wren hasn't started.)
+    for (const [who, name, account] of [
+      [A, 'Robin', kidAccount[0]],
+      [B, 'Sky', kidAccount[1]],
+    ] as const) {
+      act(
+        on(0, '08:40'),
+        `${name} signs the agreement`,
+        who,
+        'select public.sign_agreement(1)',
+        [],
+      );
+      act(
+        on(0, '08:45'),
+        `Dad countersigns ${name}'s agreement`,
+        P,
+        'select public.countersign_agreement($1, 1)',
+        [account],
+      );
+      act(
+        on(0, '08:50'),
+        `${name} finishes onboarding`,
+        who,
+        'select public.finish_onboarding()',
+        [],
+      );
+    }
     act(
       on(0, '09:00'),
       'Robin asks to deposit $600',

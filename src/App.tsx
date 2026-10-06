@@ -28,6 +28,7 @@ import ParentShell from './parent/ParentShell';
 import Dashboard from './parent/dashboard/Dashboard';
 import Settings from './parent/settings/Settings';
 import FixMistake from './parent/fix/FixMistake';
+import Welcome from './kid/onboarding/Welcome';
 import ParentViewAs from './parent/viewas/ParentViewAs';
 import Approvals from './parent/approvals/Approvals';
 
@@ -145,6 +146,7 @@ export default function App() {
             <Route path="trade" element={<Trade />} />
             <Route path="wishlist" element={<KidWishList />} />
             <Route path="notices" element={<Notices />} />
+            <Route path="welcome" element={<Welcome />} />
           </Route>
           <Route
             path="/parent/login"
@@ -175,6 +177,7 @@ export default function App() {
               }
             />
             <Route path="notices" element={<Notices />} />
+            <Route path="welcome" element={<Welcome />} />
             <Route path="*" element={<ToHerHome />} />
           </Route>
           <Route

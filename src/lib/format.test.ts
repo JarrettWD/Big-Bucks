@@ -14,6 +14,12 @@ describe('formatRate (same as the database fmt_rate)', () => {
 });
 
 describe('formatPct', () => {
+  it('pads the daily change to 2 decimals when JSON dropped a zero, never rounding', () => {
+    expect(formatPct(0.9, 2)).toBe('0.90%');
+    expect(formatPct('1', 2)).toBe('1.00%');
+    expect(formatPct('-0.67', 2)).toBe('0.67%');
+    expect(() => formatPct('0.675', 2)).toThrow();
+  });
   it('drops the sign (the words say up or down)', () => {
     expect(formatPct('-0.67')).toBe('0.67%');
     expect(formatPct('2.50')).toBe('2.50%');

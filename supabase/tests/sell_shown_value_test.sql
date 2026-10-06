@@ -37,6 +37,9 @@ begin
   insert into public.accounts (name, is_test) values ('Test ' || p_username, false) returning id into v_acct;
   insert into public.profiles (user_id, role, account_id, username, display_name)
     values (v_user, 'investor', v_acct, p_username, p_username);
+  -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
+  insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
   perform tests.as_kid(p_username);
   v_req := public.request_deposit(10000);
   perform tests.as_user('00000000-0000-0000-0000-00000000000f', 'aal2');

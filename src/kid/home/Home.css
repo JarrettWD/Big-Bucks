@@ -33,8 +33,13 @@
   max-width: 760px;
 }
 
-.banner {
+.home__top {
   grid-area: banner;
+  display: grid;
+  gap: 1rem;
+}
+.home__top:empty {
+  display: none;
 }
 .hero {
   grid-area: hero;

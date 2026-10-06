@@ -8,8 +8,8 @@ select tables_are('public', array[
   'accounts', 'alerts', 'badges', 'fund_prices', 'fund_splits', 'funds', 'gic_holdings', 'glossary', 'goals',
   'interest_accruals', 'job_runs', 'login_attempts', 'market_holidays', 'notes', 'notifications',
   'cancellations', 'parent_actions', 'profiles', 'questions', 'rates', 'requests', 'settings', 'transactions', 'wishlist_items',
-  'wishlist_parent_marks'
-], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions and cancellations, stage 8)');
+  'wishlist_parent_marks', 'agreement_versions', 'agreement_signatures', 'whats_new_features', 'whats_new_seen'
+], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions, cancellations and the onboarding tables, stage 8)');
 
 select hasnt_column('public', 'wishlist_items', 'parent_got_it',
   'the "Got it" marker is not a wish-list column (it lives in wishlist_parent_marks)');
@@ -22,8 +22,8 @@ select enum_has_labels('public', 'request_status', array['pending', 'approved', 
   'request statuses');
 select enum_has_labels('public', 'notification_type', array[
   'rate_change', 'rate_live', 'request', 'gic_maturity', 'cap_change', 'request_expired', 'badge', 'whats_new',
-  'question', 'rule_change', 'correction'],
-  'notification types (question added in stage 2, rule_change and correction in stage 8)');
+  'question', 'rule_change', 'correction', 'agreement'],
+  'notification types (question added in stage 2, rule_change, correction and agreement in stage 8)');
 select enum_has_labels('public', 'vehicle', array['savings', 'gic', 'stock'], 'vehicles');
 
 -- Money is integer cents; units and accruals are exact decimals; no floats anywhere

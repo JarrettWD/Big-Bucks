@@ -6,6 +6,19 @@ import { expect, test, type Page } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
 import { kid, kidSignIn, parentSignIn } from './helpers';
 
+/** Wren's account id: the demo kid who hasn't started, for her welcome screens. */
+async function wrenAccount(): Promise<string> {
+  const db = await LocalDb.connect();
+  try {
+    const [r] = await db.q<{ id: string }>(
+      `select account_id::text as id from public.profiles where username = 'demo_wren'`,
+    );
+    return r.id;
+  } finally {
+    await db.close();
+  }
+}
+
 /** Robin's account id, for "View as Robin". */
 async function robinAccount(): Promise<string> {
   const db = await LocalDb.connect();
@@ -384,6 +397,25 @@ for (const size of SIZES) {
       await page.getByRole('button', { name: 'Next: check the amount' }).click();
       await expect(page.locator('.fix__big')).toBeVisible();
       await check(page, `parent-fix-check-${size.name}-${text.name}`, text.scale);
+
+      // Onboarding, as Wren sees it (through View as, so nothing is signed): the
+      // welcome, a tour card with the rates, and the whole agreement.
+      const wren = await wrenAccount();
+      await page.goto(`./parent/view/${wren}`);
+      await expect(page.getByText("Let's set up your Big Bucks with Dad.")).toBeVisible();
+      await check(page, `onboarding-home-banner-${size.name}-${text.name}`, text.scale);
+      await page.goto(`./parent/view/${wren}/welcome`);
+      await expect(page.locator('.welcome__steps')).toBeVisible();
+      await check(page, `onboarding-welcome-${size.name}-${text.name}`, text.scale);
+      await page.getByRole('button', { name: "Let's go!" }).click();
+      await page.getByRole('button', { name: 'Next' }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Three ways to grow your money' }),
+      ).toBeVisible();
+      await check(page, `onboarding-tour-${size.name}-${text.name}`, text.scale);
+      await page.goto(`./parent/view/${wren}/welcome?step=agreement`);
+      await expect(page.locator('.agree__rule')).toHaveCount(15);
+      await check(page, `onboarding-agreement-${size.name}-${text.name}`, text.scale);
 
       // View as Robin: her Home, her history with a line open, her notices, her graphs.
       const robin = await robinAccount();

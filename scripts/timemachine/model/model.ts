@@ -53,6 +53,8 @@ export interface RateInput {
 
 export type Action =
   | { kind: 'deposit'; kid: string; cents: bigint; label: string }
+  /** Stage 8 B4: she signs the account agreement (needed before her first deposit). */
+  | { kind: 'sign_agreement'; kid: string }
   | { kind: 'withdraw'; kid: string; cents: bigint; label: string }
   | { kind: 'approve'; label: string }
   | { kind: 'decline'; label: string; reason: string }
@@ -159,6 +161,8 @@ interface Kid {
   unitChanges: { at: Moment; fund: FundId; units: Q }[];
   accruals: Map<Day, Q>;
   tradeDays: Set<string>;
+  /** Has she signed the account agreement? */
+  signed: boolean;
 }
 
 /** What the screens should show, to the nearest cent. */
@@ -278,6 +282,7 @@ export class Model {
       unitChanges: [],
       accruals: new Map(),
       tradeDays: new Set(),
+      signed: false,
     });
   }
 
@@ -647,7 +652,15 @@ export class Model {
     const no = (reason: string): Outcome => ({ ok: false, reason });
 
     switch (a.kind) {
+      case 'sign_agreement': {
+        const k = this.kid(a.kid);
+        if (k.signed) return no('already signed');
+        k.signed = true;
+        return { ok: true };
+      }
       case 'deposit': {
+        // She signs the agreement before her first deposit (Dad, stage 8 B4).
+        if (!this.kid(a.kid).signed) return no('the agreement is not signed');
         if (a.cents < MIN_SAVINGS) return no('under the $5 minimum');
         const k = this.kid(a.kid);
         if (k.netDeposits + this.pendingDeposits(a.kid) + a.cents > this.capOn(today))

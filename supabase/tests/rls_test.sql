@@ -149,6 +149,10 @@ begin
     insert into public.alerts (kind, account_id, message) values ('test', acct, 'Test alert');
     insert into public.parent_actions (done_by, action, account_id, summary)
       values ('00000000-0000-0000-0000-00000000000f', 'approve_request', acct, 'Approved a test deposit.');
+    -- Stage 8 B4: her signed agreement and the What's new she has seen.
+    insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
+      values (acct, 1, 'kid', gen_random_uuid(), '{}'::jsonb);
+    insert into public.whats_new_seen (account_id, feature) values (acct, 'wishlist');
   end loop;
 end;
 $$;
@@ -229,8 +233,8 @@ select set_eq(
   $$select c.table_name::text from information_schema.columns c
       join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = 'account_id' and t.table_type = 'BASE TABLE'$$,
-  array['alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
-        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'wishlist_items'],
+  array['agreement_signatures', 'alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
+        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'whats_new_seen', 'wishlist_items'],
   'the account-scoped tables are the ones this test seeds (update both when adding a table)');
 
 -- 2. Kid A ------------------------------------------------------------------
@@ -241,8 +245,9 @@ set local role authenticated;
 select is(tests.tables_showing_account('bbbbbbbb-0000-0000-0000-000000000002'), '{}'::text[],
   'kid A sees none of kid B''s rows in any account-scoped table');
 select is(
-  array(select t from unnest(array['badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
-                                   'profiles', 'questions', 'requests', 'transactions', 'wishlist_items']) t
+  array(select t from unnest(array['agreement_signatures', 'badges', 'gic_holdings', 'goals', 'interest_accruals',
+                                   'notifications', 'profiles', 'questions', 'requests', 'transactions',
+                                   'whats_new_seen', 'wishlist_items']) t
          where t <> all (tests.tables_showing_account('aaaaaaaa-0000-0000-0000-000000000001'))),
   '{}'::text[],
   'kid A sees her own rows in every kid table');

@@ -255,3 +255,9 @@
 .dash__updated {
   font-size: 0.9rem;
 }
+.dash__agree p {
+  margin: 0.4rem 0 0;
+}
+.dash__agree a {
+  font-weight: 700;
+}

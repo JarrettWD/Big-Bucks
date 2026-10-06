@@ -16,6 +16,7 @@ import {
   type DashExpiring,
   type Dashboard as Dash,
 } from './dashboardText';
+import { AgreementsNeedYou } from '../approvals/Agreements';
 import './Dashboard.css';
 
 async function fetchDashboard(): Promise<{ data: Dash | null; error: string | null }> {
@@ -100,6 +101,7 @@ export default function Dashboard() {
               </Link>
             </>
           )}
+          <AgreementsNeedYou />
           {(dash.expiring.length > 0 || dash.expiring_test.length > 0) && (
             <div className="dash__expiring" aria-labelledby="dash-expiring">
               <h3 id="dash-expiring">⏳ {TEXT.expiring}</h3>

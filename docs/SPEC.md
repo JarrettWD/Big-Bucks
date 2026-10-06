@@ -536,4 +536,6 @@ These tables and fields add to the Data model section:
 | `requests.expires_at` | When a deposit or withdrawal runs out of time, fixed when she asks |
 | `cancellations` | A planned rate or setting change cancelled before it started (append-only; readers skip the cancelled row) |
 | `parent_actions` | Append-only log of every parent action: who, when and what (including rewording a note or a ? explanation, with the wording before and after, and every correction) |
+| `agreement_versions`, `agreement_signatures` | The house rules, one row per version, and who signed which (her row keeps a frozen copy, numbers included); both append-only (stage 8) |
+| `whats_new_features`, `whats_new_seen` | Each feature's one-screen What's new, and which ones each girl has seen or met in onboarding (stage 8) |
 | `transactions.corrects_id`, `.corrects_request_id`, `.question_id`, `.counts_as` | A correction's links to the history line or question it fixes, and whether the graphs count it as money in or out or as earned (stage 8) |

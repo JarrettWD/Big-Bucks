@@ -16,6 +16,7 @@ import { daysBetween, formatDate, formatPct, formatRate, termLabel } from '../..
 import { formatCents } from '../../lib/money';
 import { useKid } from '../KidShell';
 import { kidMarkRead, useKidView } from '../kidView';
+import { SetupBanner, WhatsNew } from '../onboarding/HomeOnboarding';
 import { ActivityList } from './ActivityList';
 import { Sparkline } from './Sparkline';
 import { isWaiting, useHome, type Cents, type Fund, type Gic, type HomeData } from './useHome';
@@ -57,7 +58,12 @@ export default function Home() {
         />
         <p className="hero__tag">Watch your bucks grow.</p>
       </section>
-      <Banner data={data} year={year} onChange={refreshAll} />
+      {/* Everything that needs her, stacked in the banner's place. */}
+      <div className="home__top">
+        <SetupBanner />
+        <WhatsNew />
+        <Banner data={data} year={year} onChange={refreshAll} />
+      </div>
       <SavingsCard data={data} year={year} />
       <GicCard data={data} year={year} />
       <FundsCard data={data} year={year} />
@@ -399,12 +405,12 @@ function FundRow({ f, updating }: { f: Fund; updating: boolean }) {
         <span className={`move move--${dir}`}>
           {dir === 'up' && (
             <>
-              <span aria-hidden="true">▲ </span>Up {formatPct(pct)}
+              <span aria-hidden="true">▲ </span>Up {formatPct(pct, 2)}
             </>
           )}
           {dir === 'down' && (
             <>
-              <span aria-hidden="true">▼ </span>Down {formatPct(pct)}
+              <span aria-hidden="true">▼ </span>Down {formatPct(pct, 2)}
             </>
           )}
           {dir === 'flat' && (

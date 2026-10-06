@@ -111,3 +111,27 @@ export const TEXT = {
   retry: 'Try again',
   updated: (now: string) => `Up to date as of ${now}.`,
 };
+
+/** Countersigning the girls' agreements (stage 8 B4). Dad's wording. */
+export const AGREE = {
+  title: 'Agreements to sign',
+  empty: 'Nothing to sign.',
+  signedBy: (k: { kid: string; signed_version: number | null }) =>
+    `${k.kid} signed her Big Bucks agreement${k.signed_version && k.signed_version > 1 ? ` (version ${k.signed_version})` : ''}`,
+  read: 'Read and sign',
+  heading: (kid: string) => `Sign ${kid}'s agreement?`,
+  explain: (kid: string) =>
+    `This is exactly what ${kid} signed, with the numbers of that day. Read it through, then sign it too.`,
+  checking: 'Checking…',
+  willRecord: 'This will be recorded:',
+  sheSees: (kid: string) => `${kid} will see:`,
+  yes: (kid: string) => `Yes, sign ${kid}'s agreement`,
+  back: 'Back',
+  saving: 'Saving…',
+  done: (summary: string, who: string, when: string) =>
+    `Done. ${summary} Recorded: ${who}, ${when}.`,
+  toSign: (kids: string[]) =>
+    `${kids.join(' and ')} signed ${kids.length === 1 ? 'her' : 'their'} agreement and ${kids.length === 1 ? 'is' : 'are'} waiting for you.`,
+  signNow: 'Sign it',
+  notStarted: (kid: string) => `${kid} hasn't started setting up Big Bucks yet.`,
+};

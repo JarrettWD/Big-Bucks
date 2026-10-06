@@ -17,7 +17,7 @@ export function logins(): Logins {
   return { demo, ...e2e };
 }
 
-export const kid = (name: 'Robin' | 'Sky') =>
+export const kid = (name: 'Robin' | 'Sky' | 'Wren') =>
   logins().demo.kids.find((k) => k.displayName === name)!;
 
 /**

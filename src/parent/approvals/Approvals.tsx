@@ -24,6 +24,7 @@ import {
   secondsLeft,
   waitLine,
 } from './approvalsText';
+import { AgreementsToSign } from './Agreements';
 import './Approvals.css';
 
 type Kind = 'approve' | 'decline' | 'answer';
@@ -145,6 +146,8 @@ export default function Approvals() {
           </ul>
         </section>
       </div>
+
+      <AgreementsToSign />
 
       <section className="appr__group appr__recent" aria-labelledby="appr-recent">
         <h2 id="appr-recent">{TEXT.recent}</h2>

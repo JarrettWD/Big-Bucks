@@ -1,0 +1,152 @@
+/* Onboarding: one card at a time, readable on a 360 px phone with large text. */
+.welcome__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.welcome__card p {
+  margin: 0;
+}
+.welcome__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.6rem;
+  color: var(--bb-purple);
+}
+.welcome__tag {
+  font-weight: 600;
+  color: var(--bb-ink-soft);
+}
+.welcome__count {
+  color: var(--bb-ink-soft);
+  font-size: 0.9rem;
+}
+.welcome__steps {
+  margin: 0;
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.welcome__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.welcome__sign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 2px dashed var(--bb-purple-soft);
+}
+.welcome__sign-line {
+  font-style: italic;
+}
+.welcome__signed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-purple-tint);
+}
+.welcome__signed-title {
+  font-weight: 700;
+}
+.welcome__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.welcome__choice {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 14px;
+  background: var(--bb-white);
+  color: var(--bb-ink);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.welcome__choice:disabled {
+  color: var(--bb-ink-soft);
+}
+
+/* The agreement (also opened from her history). */
+.agree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.agree p {
+  margin: 0;
+}
+.agree__rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding-left: 1.6rem;
+}
+.agree__rule {
+  padding-left: 0.2rem;
+}
+.agree__rule::marker {
+  font-weight: 700;
+  color: var(--bb-purple);
+}
+.agree__icon {
+  margin-right: 0.35rem;
+}
+.agree__text {
+  display: inline;
+  overflow-wrap: anywhere;
+}
+.agree__mark {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+}
+.agree__mark--changed {
+  background: var(--bb-purple-tint);
+}
+.agree__promises {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #fff8e6;
+}
+.agree__promises h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+}
+
+/* What's new, and the set-up banner on Home. */
+.whatsnew {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 3px solid var(--bb-gold);
+  border-radius: 16px;
+  background: var(--bb-white);
+}
+.whatsnew h2 {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-size: 1.3rem;
+}
+.whatsnew p {
+  margin: 0;
+}

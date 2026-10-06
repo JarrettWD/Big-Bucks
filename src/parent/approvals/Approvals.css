@@ -273,3 +273,22 @@
   text-align: center;
   text-decoration: none;
 }
+.appr__agreement {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 12px;
+  background: var(--bb-white);
+}
+.appr__agreement .card__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.appr__test {
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--bb-purple-tint);
+  font-size: 0.85rem;
+}

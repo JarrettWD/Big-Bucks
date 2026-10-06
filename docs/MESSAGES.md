@@ -141,6 +141,8 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 
 ### Deposits
 
+- **Before she has signed her agreement** (stage 8 B4): Before you can put money in, sign your Big Bucks agreement with Dad.
+
 - The smallest deposit is $5.00.
 - That's over your deposit limit. You can put in up to {room left} more.
 - You've reached the deposit limit of {cap} for now. Money your savings earns doesn't count toward it.
@@ -718,6 +720,20 @@ Shown once, the first time she opens the app after Dad switches a feature on for
   - You earn a badge for smart money choices, like keeping a GIC until it finishes or staying calm when a fund drops.
   - Each badge unlocks something fun for your animal to wear.
 - **Any later feature:** Title: New: {feature} · then its own two or three lines, drafted here before the feature is switched on.
+
+### Added while building the screens (B4, new: not in Dad's reviewed draft)
+
+- **Welcome, second button:** Look around first (back to Home; the banner below brings her back).
+- **Home banner, until onboarding is done:**
+  - Before she has signed: 👋 Let's set up your Big Bucks with Dad. · **Start**
+  - After signing, before her first decision: 👋 Let's finish setting up your Big Bucks. · **Keep going**
+  - Her very first visit opens the welcome screens by themselves, once per device.
+- **The tour's cards:** a count above each title, for example "2 / 5".
+- **After she signs, once Dad has signed too:** ✍️ Dad has signed it too.
+- **The first decision, after choosing a GIC or a fund:** the same "You made your first money decision. Nice thinking!" and "You're all set. Welcome to Big Bucks!", with **Go to Buy / Sell** instead of Go to Home (she makes the move there).
+- **History line before Dad signs:** Your Big Bucks agreement · signed {her date}, waiting for Dad to sign
+- **Her "See all" page:** a **Your Big Bucks agreement** section. With nothing signed: You haven't signed your Big Bucks agreement yet.
+- **What's new buttons:** **Show me** (only when the feature has a screen to open) · **Got it**
 
 ### Dad's answers (2026-10-05)
 

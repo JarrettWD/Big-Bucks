@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **B4: the kid wording is drafted in MESSAGES.md §11, waiting for Dad's review**; the screens come after.
+- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **B4 (onboarding, the agreement and What's new) is built and committed locally as work in progress (not pushed), awaiting Dad's review.**
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -672,6 +672,110 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **New rule 14:** "Your PIN is yours."
   - **First decision:** only choices she can afford with her free savings; under {min_invest}: "Once you have {min_invest}, you can try a GIC or a fund."
   - Committed and pushed (docs only). Next: the B4 screens plan, waiting for Dad's OK.
+- **B4 screens: plan approved by Dad (2026-10-05).** His answers:
+  1. She must sign before her first deposit, enforced by the database in `request_deposit`. She can look around before signing.
+  2. The demo kids are already onboarded, plus one new demo kid (Wren) who starts at the welcome screen.
+  3. A feature switched on after she onboarded reaches her through What's new; a girl who onboards after it's on gets its step in her onboarding instead.
+- **B4: built, awaiting Dad's review (2026-10-05).** Committed locally as work in progress, not pushed; Dad reviews it on 2026-10-06. Version 1 of the agreement is Dad's reviewed wording from MESSAGES §11, word for word (including "Your PIN is yours" and "Big Bucks tells you"); a test checks every rule.
+- **Migration `20261016000000_onboarding.sql`** (new):
+  - **`house_rules()`:** every number in the kid wording.
+    - From the settings in force: the cap, request expiry, and the savings rate and GIC range.
+    - From the engine's fixed rules: the 7-day notice for a cut, the 24-hour wait, the $5 and $10 minimums, the 7-day GIC choice and the 7-day wish wait.
+    - Tests prove the fixed values match the engine: a cut one day inside the notice is refused and one at the notice is allowed; a withdrawal is refused a minute before 24 hours and approved at 24 hours; the smallest deposit and GIC messages; and the GIC auto-move uses the same 7 days.
+  - **The agreement:**
+    - `agreement_versions`: the rules with placeholders, append-only. Version 1 is seeded.
+    - `agreement_signatures`: append-only. Her row keeps a frozen copy, exactly as she read it, numbers included. Dad's row is the countersignature.
+    - Kids read only their own signatures; parents read all; nobody writes directly.
+    - Rule 15 drops "just like your wish list" when her Wish List is off.
+    - **A new version** is added by its own migration, which calls `agreement_changed_notices()`. Each girl who signed an earlier version gets "Your Big Bucks agreement has changed" once. Rules are marked **New** or **Changed**. Her old versions stay in her history, and her signed older version still lets her make deposits until she signs the new one.
+  - **She signs before her first deposit:** `request_deposit` is wrapped like Part A's functions.
+    - The committed body is renamed `request_deposit_core`, byte for byte unchanged (fingerprint test). No role but the owner can call it.
+    - The refusal: "Before you can put money in, sign your Big Bucks agreement with Dad." Buy / Sell's preview shows it too.
+  - **Kid functions:**
+    - `onboarding_state(account)`: her steps, the agreement with today's numbers, whether she and Dad have signed, her first deposit, and her free savings.
+    - `sign_agreement(version)`: the latest version only, once.
+    - `finish_onboarding()`: only after signing. It marks every feature already on for her as met, so What's new skips it.
+    - `my_agreements(account)`.
+    - `whats_new()` and `mark_whats_new_seen(feature)`. Each pending feature also goes to the bell, once.
+  - **Dad's functions:**
+    - `countersign_agreement(account, version)`: logged ("Signed Wren's Big Bucks agreement."), and she gets "Your agreement is signed!".
+    - `agreement_preview(account, version)`: the real action with `in_preview()` on, rolled back, plus the copy she signed for Dad to read.
+    - `parent_agreements()`.
+  - **View as:** `parent_view` adds two reads, `onboarding_state` and `my_agreements`.
+  - **What's new:** the wording for the Wish List, Make it yours and Badges is in `whats_new_features`, from MESSAGES §11.
+- **Screens:**
+  - **Kid: `/kid/welcome`**:
+    - the welcome;
+    - the tour, which she can skip; its rates come from the database;
+    - the agreement (each rule with its icon, a **?** on "on hold", Dad's promises), her signature line, then "You signed it! Now it's Dad's turn.";
+    - her first decision. Before her first deposit it tells her how to make one. After, it offers only the choices her free savings can cover, then "You made your first money decision. Nice thinking!".
+    - "Make it yours" and "your first wish" are skipped until stages 9 and 10 build them.
+  - **Home:**
+    - the set-up banner, until onboarding is done: "Let's set up…" or "Let's finish setting up…". It becomes "Your Big Bucks agreement has changed" when there's a new version.
+    - Her first visit opens the welcome screens by themselves, once per device.
+    - What's new, with **Show me** and **Got it**.
+    - Everything that needs her now stacks in one place.
+  - **"See all":** a **Your Big Bucks agreement** section. Each signed version opens to the copy she signed.
+  - **View as:** the same screens. Signing and choosing are switched off.
+  - **Dad:**
+    - **Approvals → Agreements to sign:** read the copy she signed, see her notice and the log line, then **Yes, sign Wren's agreement**.
+    - **Dashboard → Needs you:** "Wren signed her agreement and is waiting for you. Sign it", and "Wren hasn't started setting up Big Bucks yet."
+- **Also fixed, found by the tests (not B4):** Home's daily change showed "Up 0.9%" when the database's 0.90 lost its zero on the way to the app (JSON drops it). It now always shows 2 decimals, padded as text without rounding. This only happens on days the change lands on a round number.
+- **Demo:** Robin and Sky signed, were countersigned and finished onboarding on day 0. **Wren** (a regular account, $0) hasn't started. Her login is in `.demo-logins.local`.
+- **Docs:**
+  - MESSAGES §2: the deposit refusal.
+  - MESSAGES §11: a list of the small bits the screens needed that weren't in Dad's reviewed draft, marked as new for his review.
+  - SPEC: the data model has the new tables.
+- **Tests (all run locally on 2026-10-05):**
+  - `npm run test:db` (pgTAP): **1251 of 1251**, from empty.
+    - New **`onboarding_test.sql` (84):**
+      - the house-rule numbers, and the fixed ones matching the engine;
+      - version 1 word for word;
+      - looking around before signing, and the deposit refusal (Buy / Sell's preview too, nothing left behind);
+      - signing (the latest version only, once, never by Dad);
+      - the frozen copy keeping the old cap and the old 7 days after both change, with no new signature needed;
+      - Dad's countersignature: preview, nothing left behind, the log, her notice word for word, once, with the code only, never by a kid, preview flag on;
+      - her history; Dad's list; View as matching her own reads;
+      - finishing onboarding;
+      - What's new: once each, in the bell once, numbers filled in, nothing before onboarding, a feature met in onboarding skipped;
+      - a version 2: notices once, the New mark, her old version still counting, both versions in her history, Dad's log line naming the version;
+      - who may call, append-only, no direct writes.
+    - **Mutation check:** I removed the signature check from `request_deposit` in the local database. The two gate tests failed. Then I rebuilt the database from empty.
+    - **Updated:**
+      - the 18 test files whose kids make deposits: their kids now sign the agreement in the test helper;
+      - `schema_test` (tables, the notice type);
+      - `rls_test` (the two new account tables, seeded and checked);
+      - Part A's "nothing skips the log" guard (allows `countersign_agreement`).
+  - `npm test` (Vitest): **202 of 202**. New: the onboarding wording (filling numbers, which steps, where she starts, the tour, the choices she can afford, the history line), the model's signing known answer, and the 2-decimal percent.
+  - `npm run timemachine`: **PASS, 14 of 14**. 103 of 103 actions agreed with the model and 31 of 31 planned outcomes.
+    - The model has its own signing rule.
+    - The scenario opens with a deposit refused before signing, both kids signing, and a second signature refused.
+  - `npm run test:e2e` (Playwright): **79 of 79**.
+    - New **`onboarding.spec.ts`** (6 tests, in its own project, which runs last), each step checked against the database:
+      - View as Wren is read-only;
+      - her first visit opens the welcome;
+      - "Look around first";
+      - a deposit refused on Buy / Sell before she signs;
+      - the tour with the day's rates;
+      - the agreement (15 rules, today's cap, expiry and notice numbers, "Your PIN is yours", Dad's promises) and her signature, with the copy saved exactly;
+      - Dad from the dashboard to Approvals, where **Back** changes nothing, then countersigning: the log, "Recorded: …", and her notice;
+      - her first deposit, then "Keep going" to her first decision, with 3 choices for $20, and onboarding done;
+      - her history line and the copy she signed;
+      - What's new for Badges, shown once.
+    - **`layout.spec.ts`:** Wren's Home with the set-up banner, the welcome, a tour card and the whole agreement, at all six sizes with normal and 130% text.
+    - **Updated:** `home.spec.ts` counts only her history list (the page now also has the agreement section).
+  - Lint is clean and the build succeeds.
+- **Things that happened during the run:**
+  - **A separate `npm run demo`, started from another PowerShell window at 8:11 pm,** reset the database while the time machine was running, twice. The run was simply repeated.
+  - **The local Edge Function container stopped** after those restarts, so every kid sign-in failed with "Something went wrong on our side". Restarting it fixed that. The local `vector` (logging) container keeps restarting; nothing uses it.
+- **Known issues and notes:**
+  - "Make it yours" and "your first wish" are skipped until stages 9 and 10 build those features. Their wording is ready.
+  - The welcome screens open by themselves once per device (the browser remembers). Another device opens them once more, until she has signed.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run dev`. The demo is loaded; Wren's PIN is in `.demo-logins.local`.
+  2. In a normal Chrome window, sign in as **Wren**: the welcome opens. Try the tour, then sign.
+  3. In an Incognito window, sign in as the parent: the **Dashboard** says Wren is waiting. Tap **Sign it**, read it, and sign.
+  4. For her first decision, approve a deposit for Wren on **Approvals** (ask for it as Wren on Buy / Sell first), then on Wren's Home tap **Keep going**.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

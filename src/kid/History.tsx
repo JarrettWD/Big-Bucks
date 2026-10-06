@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useKid } from './KidShell';
 import { kidRpc } from './kidView';
 import { ActivityList, QuestionList } from './home/ActivityList';
+import { AgreementHistory } from './onboarding/AgreementHistory';
 import { useQuestions } from './useQuestions';
 import type { ActivityRow } from './home/activityText';
 import './home/Home.css';
@@ -97,6 +98,8 @@ export default function History() {
           year > 0 && <QuestionList questions={questions} thisYear={year} />
         )}
       </section>
+
+      <AgreementHistory />
     </div>
   );
 }

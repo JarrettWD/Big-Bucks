@@ -102,7 +102,9 @@ test('"See all" shows her whole history', async ({ page }) => {
       `select count(*)::text from public.my_activity((select account_id from public.profiles where username = 'demo_robin'), 200)`,
     ),
   );
-  await expect(page.locator('.activity__row')).toHaveCount(Math.min(lines, 30));
+  await expect(page.locator('section[aria-labelledby="h-history"] .activity__row')).toHaveCount(
+    Math.min(lines, 30),
+  );
   await expect(page.getByText('Money in').last()).toBeVisible(); // her very first deposit
 });
 

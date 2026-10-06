@@ -22,6 +22,7 @@ const holidays: Holiday[] = [
 function funded(start: string, cents: bigint): Model {
   const m = new Model(start, holidays);
   m.openAccount('k');
+  expect(m.act(start, { kind: 'sign_agreement', kid: 'k' }).ok).toBe(true);
   expect(m.act(start, { kind: 'deposit', kid: 'k', cents, label: 'd1' }).ok).toBe(true);
   expect(m.act(start, { kind: 'approve', label: 'd1' }).ok).toBe(true);
   return m;
@@ -299,9 +300,19 @@ describe('selling by dollar amount (Dad, stage 3: units round down)', () => {
 });
 
 describe('requests', () => {
+  it('she signs the agreement before her first deposit (stage 8 B4)', () => {
+    const m = new Model('2027-03-01 09:00', holidays);
+    m.openAccount('k');
+    const deposit = { kind: 'deposit', kid: 'k', cents: 1000n, label: 'd' } as const;
+    expect(m.act('2027-03-01 09:00', deposit).ok).toBe(false);
+    expect(m.act('2027-03-01 09:01', { kind: 'sign_agreement', kid: 'k' }).ok).toBe(true);
+    expect(m.act('2027-03-01 09:02', { kind: 'sign_agreement', kid: 'k' }).ok).toBe(false);
+    expect(m.act('2027-03-01 09:03', deposit).ok).toBe(true);
+  });
   it('the cap counts pending deposits', () => {
     const m = new Model('2027-03-01 09:00', holidays);
     m.openAccount('k');
+    m.act('2027-03-01 09:00', { kind: 'sign_agreement', kid: 'k' });
     expect(
       m.act('2027-03-01 09:00', { kind: 'deposit', kid: 'k', cents: 60000n, label: 'a' }).ok,
     ).toBe(true);

@@ -16,10 +16,15 @@ export function formatRate(rate: string | number): string {
 }
 
 /** A percent for display, with its sign handled by the caller: "-0.67" → "0.67%". */
-export function formatPct(pct: string | number): string {
+export function formatPct(pct: string | number, places?: number): string {
   const s = String(pct).trim().replace(/^-/, '');
   if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`Not a percent: "${pct}"`);
-  return `${s}%`;
+  if (places === undefined) return `${s}%`;
+  // The database rounds to `places`; JSON drops trailing zeros (0.90 arrives as 0.9),
+  // so pad them back as text. Never rounds.
+  const [whole, frac = ''] = s.split('.');
+  if (frac.length > places) throw new Error(`More than ${places} decimals: "${pct}"`);
+  return `${whole}.${frac.padEnd(places, '0')}%`;
 }
 
 /** 1 → "1-month", 12 → "1-year", 24 → "2-year". */

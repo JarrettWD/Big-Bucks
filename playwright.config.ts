@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings|fix).spec.ts/,
+      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -50,6 +50,13 @@ export default defineConfig({
       name: 'parent-fix',
       testMatch: /fix.spec.ts/,
       dependencies: ['parent-settings'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Onboarding signs Wren up and switches a feature on (What's new for everyone).
+    {
+      name: 'onboarding',
+      testMatch: /onboarding.spec.ts/,
+      dependencies: ['parent-fix'],
       use: { ...devices['Pixel 7'] },
     },
   ],

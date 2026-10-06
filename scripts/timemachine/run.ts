@@ -225,6 +225,8 @@ async function main(): Promise<void> {
     const dbAction = async (a: Action): Promise<{ ok: true } | { ok: false; error: string }> => {
       const res = await (async () => {
         switch (a.kind) {
+          case 'sign_agreement':
+            return db.call(kidWho(a.kid), 'select public.sign_agreement(1)');
           case 'deposit':
             return db.call(kidWho(a.kid), 'select public.request_deposit($1)', [
               a.cents.toString(),
