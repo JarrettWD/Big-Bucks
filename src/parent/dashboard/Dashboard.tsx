@@ -16,7 +16,7 @@ import {
   type DashExpiring,
   type Dashboard as Dash,
 } from './dashboardText';
-import { AgreementsNeedYou } from '../approvals/Agreements';
+import { AgreementsNeedYou, AgreementsWaitingCard } from '../approvals/Agreements';
 import './Dashboard.css';
 
 async function fetchDashboard(): Promise<{ data: Dash | null; error: string | null }> {
@@ -86,6 +86,8 @@ export default function Dashboard() {
           {done}
         </p>
       )}
+
+      <AgreementsWaitingCard />
 
       <div className="dash__grid">
         <section className="dash__card dash__card--needs" aria-labelledby="dash-needs">

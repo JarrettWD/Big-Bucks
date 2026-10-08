@@ -39,6 +39,19 @@ export interface OnboardingState {
   free_cents: number;
   min_invest_cents: number;
   rules: HouseRules;
+  /** Where she left off (null once onboarding is done), and which tour card. */
+  resume_step: Step | null;
+  resume_card: number;
+  /** A deposit she has asked for that Dad hasn't answered yet. */
+  pending_deposit_cents: number | null;
+  /** Both signed and her first deposit in (or onboarding done): the app is hers. */
+  unlocked: boolean;
+  /** Her first deposit request, if Dad said no or it ran out of time. */
+  last_answer: {
+    status: 'declined' | 'expired';
+    amount_cents: number;
+    reason: string | null;
+  } | null;
 }
 
 export interface SignedAgreement {
@@ -70,11 +83,14 @@ export function ruleSentence(r: AgreementRule): { title: string; rest: string } 
   return { title: r.title, rest: r.text.startsWith(',') ? r.text : ` ${r.text}` };
 }
 
-/** Where she starts: the agreement if she still has to sign, then her first decision. */
+/**
+ * Where she starts: where she left off (saved by the database), her first decision
+ * once she has signed, or the new version of the agreement after onboarding.
+ */
 export function firstStep(state: OnboardingState): Step {
-  if (state.signed_version !== null && state.needs_signature) return 'agreement';
-  if (state.signed_version !== null && !state.done) return 'decision';
-  return 'welcome';
+  if (state.done) return state.needs_signature ? 'agreement' : 'welcome';
+  const step = state.resume_step ?? 'welcome';
+  return shownSteps(state).includes(step) ? step : 'welcome';
 }
 
 const STEP_NAMES: Record<Step, string> = {
@@ -238,11 +254,9 @@ export const TEXT = {
   welcomeBody:
     'This is your very own bank and investing account. The money is real: Dad keeps the cash, and Big Bucks keeps track of every cent.',
   together: "What we'll do together",
-  letsGo: "Let's go!",
-  lookAround: 'Look around first',
+  getStarted: "Let's get started",
   next: 'Next',
   back: 'Back',
-  skipTour: 'Skip the tour',
   done: 'Done',
   signButton: 'Sign my agreement',
   signing: 'Signing…',
@@ -253,7 +267,23 @@ export const TEXT = {
   newMark: 'New',
   changedMark: 'Changed',
   beforeDepositTitle: 'Your first decision starts with your first deposit.',
-  beforeDeposit: 'Ask Dad to put some money in: on Buy / Sell, choose Buy, then Cash ➜ Savings.',
+  beforeDeposit: 'Ask Dad to put some money in. It goes into your savings once he says yes.',
+  depositLabel: 'How much would you like to put in?',
+  depositEmpty: 'Type how much first.',
+  depositConfirm: (cents: number) => `You're asking Dad to put in ${formatCents(cents)}.`,
+  askDad: 'Ask Dad',
+  asking: 'Asking…',
+  waitingForDad: (cents: number) => `You asked to put in ${formatCents(cents)}. Waiting for Dad.`,
+  askedBody: 'When he says yes, your first decision is next.',
+  checkAgain: 'Check again',
+  declinedTitle: 'Dad said not this time.',
+  declinedReason: (reason: string) => `Dad says: “${reason}”`,
+  expiredTitle: 'Your request ran out of time.',
+  askAgain: 'You can ask again.',
+  waitingForDadSign:
+    "Dad hasn't signed your agreement yet. Once he does, your first decision is next.",
+  keepGoing: 'Keep going',
+  locked: 'Finish setting up first, then all of Big Bucks is yours!',
   goToTrade: 'Go to Buy / Sell',
   backHome: 'Back to Home',
   firstIn: (amount: number) => `🎉 Your first ${formatCents(amount)} is in your savings!`,
@@ -263,9 +293,7 @@ export const TEXT = {
   welcomeAboard: "You're all set. Welcome to Big Bucks!",
   goHome: 'Go to Home',
   setupBanner: "👋 Let's set up your Big Bucks with Dad.",
-  setupStart: 'Start',
   setupContinue: "👋 Let's finish setting up your Big Bucks.",
-  setupContinueButton: 'Keep going',
   changedBanner: 'Your Big Bucks agreement has changed.',
   readIt: 'Read it',
   historyTitle: 'Your Big Bucks agreement',

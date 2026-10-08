@@ -292,3 +292,16 @@
   background: var(--bb-purple-tint);
   font-size: 0.85rem;
 }
+.appr__sections,
+.appr__test-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.appr__test-accounts {
+  padding-top: 0.5rem;
+  border-top: 2px dashed var(--bb-purple-soft);
+}
+.appr__test-accounts > h2 {
+  margin: 0;
+}

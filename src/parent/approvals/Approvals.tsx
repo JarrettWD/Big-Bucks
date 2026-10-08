@@ -25,6 +25,7 @@ import {
   waitLine,
 } from './approvalsText';
 import { AgreementsToSign } from './Agreements';
+import { waitingForDad } from './useAgreements';
 import './Approvals.css';
 
 type Kind = 'approve' | 'decline' | 'answer';
@@ -106,48 +107,69 @@ export default function Approvals() {
         </p>
       )}
 
-      <div className="appr__cols">
-        <section className="appr__group" aria-labelledby="appr-money">
-          <h2 id="appr-money">
-            {TEXT.money} <span className="appr__count">{inbox.requests.length}</span>
-          </h2>
-          {inbox.requests.length === 0 && <p className="appr__muted">{TEXT.moneyEmpty}</p>}
-          <ul className="appr__list">
-            {inbox.requests.map((r) => (
-              <RequestCard
-                key={r.id}
-                r={r}
-                elapsed={elapsed}
-                open={open?.id === r.id && open.kind !== 'answer' ? open.kind : null}
-                onOpen={(k) => openFor(k, r.id)}
-                onClose={() => setOpen(null)}
-                onDone={async () => finished(await reload())}
-              />
-            ))}
-          </ul>
-        </section>
-
-        <section className="appr__group" aria-labelledby="appr-questions">
-          <h2 id="appr-questions">
-            {TEXT.questions} <span className="appr__count">{inbox.questions.length}</span>
-          </h2>
-          {inbox.questions.length === 0 && <p className="appr__muted">{TEXT.questionsEmpty}</p>}
-          <ul className="appr__list">
-            {inbox.questions.map((q) => (
-              <QuestionCard
-                key={q.id}
-                q={q}
-                open={open?.kind === 'answer' && open.id === q.id}
-                onOpen={() => openFor('answer', q.id)}
-                onClose={() => setOpen(null)}
-                onDone={async () => finished(await reload())}
-              />
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <AgreementsToSign />
+      {/* One order everywhere (Dad, B4 review): agreements to sign, then deposits and
+          withdrawals, then questions; oldest first within each (the database sorts
+          them), the girls mixed together by time. Test accounts get their own
+          section after the real kids, in the same order. */}
+      {[false, true].map((test) => {
+        const agreements = inbox.agreements.filter((k) => waitingForDad(k) && k.is_test === test);
+        const requests = inbox.requests.filter((r) => r.is_test === test);
+        const questions = inbox.questions.filter((q) => q.is_test === test);
+        if (test && agreements.length + requests.length + questions.length === 0) return null;
+        const H = test ? 'h3' : 'h2';
+        const sections = (
+          <>
+            <AgreementsToSign items={agreements} test={test} heading={H} />
+            <section className="appr__group" aria-labelledby={`appr-money-${test}`}>
+              <H id={`appr-money-${test}`}>
+                {TEXT.money} <span className="appr__count">{requests.length}</span>
+              </H>
+              {requests.length === 0 && <p className="appr__muted">{TEXT.moneyEmpty}</p>}
+              <ul className="appr__list">
+                {requests.map((r) => (
+                  <RequestCard
+                    key={r.id}
+                    r={r}
+                    elapsed={elapsed}
+                    open={open?.id === r.id && open.kind !== 'answer' ? open.kind : null}
+                    onOpen={(k) => openFor(k, r.id)}
+                    onClose={() => setOpen(null)}
+                    onDone={async () => finished(await reload())}
+                  />
+                ))}
+              </ul>
+            </section>
+            <section className="appr__group" aria-labelledby={`appr-questions-${test}`}>
+              <H id={`appr-questions-${test}`}>
+                {TEXT.questions} <span className="appr__count">{questions.length}</span>
+              </H>
+              {questions.length === 0 && <p className="appr__muted">{TEXT.questionsEmpty}</p>}
+              <ul className="appr__list">
+                {questions.map((q) => (
+                  <QuestionCard
+                    key={q.id}
+                    q={q}
+                    open={open?.kind === 'answer' && open.id === q.id}
+                    onOpen={() => openFor('answer', q.id)}
+                    onClose={() => setOpen(null)}
+                    onDone={async () => finished(await reload())}
+                  />
+                ))}
+              </ul>
+            </section>
+          </>
+        );
+        return test ? (
+          <section key="test" className="appr__test-accounts" aria-labelledby="appr-test">
+            <h2 id="appr-test">{TEXT.testSection}</h2>
+            {sections}
+          </section>
+        ) : (
+          <div key="real" className="appr__sections">
+            {sections}
+          </div>
+        );
+      })}
 
       <section className="appr__group appr__recent" aria-labelledby="appr-recent">
         <h2 id="appr-recent">{TEXT.recent}</h2>

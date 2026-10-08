@@ -150,3 +150,33 @@
 .whatsnew p {
   margin: 0;
 }
+
+/* Her first deposit, asked for inside her first decision. */
+.welcome__deposit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.welcome__deposit label {
+  font-weight: 600;
+}
+.welcome__amount {
+  width: 100%;
+  max-width: 16rem;
+  min-height: 48px;
+  padding: 0.4rem 0.7rem;
+  border: 2px solid var(--bb-outline);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1.25rem;
+}
+.welcome__answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 2px solid var(--bb-purple-soft);
+  background: var(--bb-white);
+}

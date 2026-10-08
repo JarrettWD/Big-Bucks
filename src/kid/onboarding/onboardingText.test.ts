@@ -46,6 +46,11 @@ const state = (s: Partial<OnboardingState>): OnboardingState => ({
   free_cents: 0,
   min_invest_cents: 1000,
   rules,
+  resume_step: 'welcome',
+  resume_card: 0,
+  pending_deposit_cents: null,
+  unlocked: false,
+  last_answer: null,
   ...s,
 });
 
@@ -65,9 +70,14 @@ describe('onboarding wording (stage 8 B4)', () => {
       'Your first decision',
     ]);
   });
-  it('starts at the welcome, the agreement to sign again, or her first decision', () => {
+  it('resumes where she left off, or at the agreement to sign again', () => {
     expect(firstStep(state({}))).toBe('welcome');
-    expect(firstStep(state({ signed_version: 1, needs_signature: false }))).toBe('decision');
+    expect(firstStep(state({ resume_step: 'tour', resume_card: 3 }))).toBe('tour');
+    expect(firstStep(state({ resume_step: 'agreement' }))).toBe('agreement');
+    expect(firstStep(state({ resume_step: 'wish' }))).toBe('welcome'); // not built yet
+    expect(
+      firstStep(state({ signed_version: 1, needs_signature: false, resume_step: 'decision' })),
+    ).toBe('decision');
     expect(firstStep(state({ signed_version: 1, needs_signature: true, done: true }))).toBe(
       'agreement',
     );

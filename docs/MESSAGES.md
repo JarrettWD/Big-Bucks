@@ -556,7 +556,13 @@ From the app's screens (`src/kid/graphs/graphText.ts`), so edits are a code chan
 
 ## 11. Onboarding, the account agreement and What's new (stage 8 B4, draft for Dad's review)
 
-**Status:** wording only; no screens are built yet. Onboarding happens once, with Dad beside her (about 30 minutes). Steps for a feature that's switched off for her are skipped: the Wish List step if `wishlist` is off, and "Make it yours" if `personalisation` is off.
+**Status:** built in B4. Onboarding happens once, with Dad beside her (about 30 minutes). Steps for a feature that's switched off for her are skipped: the Wish List step if `wishlist` is off, and "Make it yours" if `personalisation` is off.
+
+**Onboarding comes first** (Dad's B4 review, 2026-10-07): until it's finished, the rest of the app is locked. It unlocks as soon as she and Dad have both signed and her first deposit is in, so her first decision can open Buy / Sell. The bottom tabs and the bell stay visible but greyed out, and can't be opened. Tapping one shows, at the top of her step for a few seconds (in the page, so it never covers anything):
+
+- Finish setting up first, then all of Big Bucks is yours!
+
+Typing another app address brings her back to her step. If she leaves partway, she comes back to the step she was on (and the tour card), on any device. Dad's "View as" isn't locked.
 
 **Numbers are never typed into the wording.** Each `{placeholder}` below is filled in from the database at the moment the screen is shown, so a change Dad makes in Settings shows up here by itself.
 
@@ -588,11 +594,11 @@ A **?** after a word opens its explanation (GLOSSARY.md).
   3. Your first wish
   4. Your Big Bucks agreement
   5. Your first decision
-- **Button:** Let's go!
+- **Button** (the only one): Let's get started
 
 ### 1. A quick look around (the tour; she can skip it)
 
-One card at a time. **Buttons:** Next · Back · Skip the tour. The last card says **Done** instead of Next.
+One card at a time, and every card is part of onboarding (there is no skip). **Buttons:** Next · Back. The last card says **Done** instead of Next.
 
 1. **Home 🏠**
    - Home shows everything you have. Your total worth **?** is at the top.
@@ -686,9 +692,22 @@ Only when a rule itself changes: a new rule, or a rule reworded. A number changi
 
 Starts once her first deposit is in her savings.
 
-- **Before her first deposit:**
+- **Before her first deposit** (asked for right here, because Buy / Sell is locked until onboarding is done; it's a normal deposit request with the usual rules):
   - Your first decision starts with your first deposit.
-  - Ask Dad to put some money in: on Buy / Sell, choose Buy, then Cash ➜ Savings.
+  - Ask Dad to put some money in. It goes into your savings once he says yes.
+  - How much would you like to put in? (an amount box) · You're asking Dad to put in {amount}. · **Ask Dad**
+  - Nothing typed: Type how much first. Other problems are the amount box's own words (§8) or the database's (§2).
+- **While Dad hasn't said yes yet:**
+  - You asked to put in {amount}. Waiting for Dad.
+  - When he says yes, your first decision is next. · **Check again**
+- **If Dad said no** (above the amount box, so she asks again right there):
+  - Dad said not this time.
+  - Dad says: "{Dad's reason}"
+  - You can ask again.
+- **If it ran out of time:** Your request ran out of time. · You can ask again.
+- **Her deposit is in, but Dad hasn't signed yet:** 🎉 Your first {amount} is in your savings! · Dad hasn't signed your agreement yet. Once he does, your first decision is next. · **Check again**
+- **Choosing a GIC or a stock fund** goes straight to Buy / Sell to do it (the app is hers now). Keeping it in savings shows the "Nice thinking!" screen.
+- **If she leaves her first decision once the app is open,** Home shows: 👋 Let's finish setting up your Big Bucks. · **Keep going**
 - **Title:** 🎉 Your first {amount} is in your savings!
 - **Body:** Now for your first big decision: what should your money do? There's no wrong answer.
 - **The choices** (each opens Buy / Sell, ready to go). Only choices she can afford with her free savings are offered:
@@ -723,11 +742,7 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 
 ### Added while building the screens (B4, new: not in Dad's reviewed draft)
 
-- **Welcome, second button:** Look around first (back to Home; the banner below brings her back).
-- **Home banner, until onboarding is done:**
-  - Before she has signed: 👋 Let's set up your Big Bucks with Dad. · **Start**
-  - After signing, before her first decision: 👋 Let's finish setting up your Big Bucks. · **Keep going**
-  - Her very first visit opens the welcome screens by themselves, once per device.
+- **In Dad's "View as" only, on her Home until she's set up:** 👋 Let's set up your Big Bucks with Dad. (before she signs) · 👋 Let's finish setting up your Big Bucks. (after). She never sees these: she's on her welcome screens.
 - **The tour's cards:** a count above each title, for example "2 / 5".
 - **After she signs, once Dad has signed too:** ✍️ Dad has signed it too.
 - **The first decision, after choosing a GIC or a fund:** the same "You made your first money decision. Nice thinking!" and "You're all set. Welcome to Big Bucks!", with **Go to Buy / Sell** instead of Go to Home (she makes the move there).

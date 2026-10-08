@@ -261,3 +261,40 @@
 .dash__agree a {
   font-weight: 700;
 }
+/* B4 review: a girl waiting for Dad's signature, at the very top. */
+.dash__sign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.dash__sign-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 1rem;
+  border: 3px solid var(--bb-gold);
+  border-radius: 14px;
+  background: #fff4d6;
+  box-shadow: 0 2px 8px rgb(31 22 64 / 10%);
+}
+.dash__sign-text {
+  margin: 0;
+  flex: 1 1 14rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.dash__sign-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.4rem 1.2rem;
+  border-radius: 12px;
+  background: var(--bb-purple);
+  color: var(--bb-white);
+  font-weight: 700;
+  text-decoration: none;
+}

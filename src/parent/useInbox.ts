@@ -1,9 +1,12 @@
-// The Approvals screen's data: parent_inbox() in one call. The database works out
-// every amount, date and time; the screen only counts the seconds down.
+// The Approvals screen's data: parent_inbox(), plus each girl's agreement
+// (parent_agreements, stage 8 B4) so an agreement waiting for Dad counts in the
+// Approvals badge. The database works out every amount, date and time; the screen
+// only counts the seconds down.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { ActivityRow } from '../kid/home/activityText';
+import type { KidAgreement } from './approvals/useAgreements';
 
 type Cents = number | string;
 
@@ -55,6 +58,8 @@ export interface Inbox {
   requests: WaitingRequest[];
   questions: OpenQuestion[];
   recent: RecentAction[];
+  /** Stage 8 B4: each girl's onboarding and agreement. */
+  agreements: KidAgreement[];
 }
 
 export interface InboxState {
@@ -105,6 +110,17 @@ export function useInbox(): InboxState {
 }
 
 async function fetchInbox(): Promise<{ data: Inbox | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('parent_inbox');
-  return error ? { data: null, error: error.message } : { data: data as Inbox, error: null };
+  const [inbox, agreements] = await Promise.all([
+    supabase.rpc('parent_inbox'),
+    supabase.rpc('parent_agreements'),
+  ]);
+  const error = inbox.error ?? agreements.error;
+  if (error) return { data: null, error: error.message };
+  return {
+    data: {
+      ...(inbox.data as Omit<Inbox, 'agreements'>),
+      agreements: agreements.data as KidAgreement[],
+    },
+    error: null,
+  };
 }

@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 in progress**, local only. Part A is committed; Part B runs in four parts (B1–B4), each stopping for Dad's review. B1 and "View as <kid>" are committed. B2 (Settings, with the 7-day notice rule and Cancel) is committed. B3 (Fix a mistake) is committed. **B4 (onboarding, the agreement and What's new) is built and committed locally as work in progress (not pushed), awaiting Dad's review.**
+- Current stage: **stage 8 complete** (2026-10-07), local only. **Next: stage 4 (live setup)**, starting with Dad's independent pre-launch audit (see Stage 4 below).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -25,6 +25,71 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 ### Stage 4 — Live setup (not started; comes after stage 8)
 
 - **Dad's rule (2026-10-04):** "Before creating real accounts or any real deposit: run an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix findings, then proceed."
+
+### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
+
+The whole stage in one place. The details, Dad's decisions and each review are in the entries below.
+
+- **Built:**
+  - **Part A, Approvals:**
+    - deposits, withdrawals and "Something looks wrong?" questions, each previewed (the real action, rolled back, with `in_preview()` on) and confirmed;
+    - the append-only `parent_actions` log of every parent action;
+    - previews that can never reach outside the database.
+  - **B1:** request expiry as a parent setting (3–30 days, with a notice to the girls), and the Dashboard (the girls' figures, what you owe, what's waiting, the 48-hour warning, GICs coming due, automatic moves, notices read, the holiday warning).
+  - **"View as <kid>":** her real screens, read-only, through `parent_view`.
+  - **B2, Settings:**
+    - rates and specials, the cap, request expiry, inflation, dividend yields and feature switches, each with a preview of every notice and when it's sent;
+    - 7 days' notice for any cut (rates, yields, the cap), checked day by day;
+    - Cancel for a planned change;
+    - rewording market-move notes and **?** explanations;
+    - the Download backup button, placed and switched off until stage 5.
+  - **B3, Fix a mistake:**
+    - a new linked correction line, with a note, rounded in her favour;
+    - no single correction larger than the cap;
+    - a confirming tap to take money, and the amount typed again to add more than $100;
+    - a reduction never more than its line or her free savings;
+    - it counts in the graphs like the line it fixes;
+    - her history and notice name what it fixes.
+  - **B4, onboarding:**
+    - the welcome and a required tour;
+    - the account agreement (Dad's reviewed wording, numbers from the settings in force and the engine's own rules, a frozen signed copy, Dad's countersignature on his phone, new versions signed again);
+    - signing before her first deposit (enforced by the database);
+    - the app locked to onboarding until both have signed and her first deposit is in;
+    - resuming where she left off;
+    - her first deposit asked for, and asked again after a no, inside her first decision;
+    - What's new.
+- **Migrations added in stage 8:**
+  - `20261011000000_parent_audit_approvals`
+  - `20261012000000_request_expiry_dashboard`
+  - `20261013000000_parent_view`
+  - `20261014000000_settings_screen`
+  - `20261015000000_fix_a_mistake`
+  - `20261016000000_onboarding`
+  - `20261017000000_onboarding_resume`
+- **Final results (all run locally on 2026-10-07):**
+  - `npm run test:db` (pgTAP): **1278 of 1278**, from empty.
+  - `npm test` (Vitest): **202 of 202**.
+  - `npm run test:e2e` (Playwright): **82 of 82**, including every new screen at all six sizes with normal and large text.
+  - `npm run timemachine`: **PASS, 14 of 14** with 103 of 103 actions agreed, on the B4 code (2026-10-05). Rounds 2 and 3 changed no money logic: `request_deposit` and its rules are unchanged since that run. CI runs the time machine on the push.
+  - Lint is clean and the build succeeds.
+- **ACCEPTANCE.md:** nothing can be ticked yet: every Phase 1 box is proven live in the solo beta, and "Before any real money" needs stage 4.
+  - **Ready for the solo beta** (built and tested locally; to be proven live with test-kid accounts):
+    - **Accounts and logins:** each girl logs in with username and PIN; 5 wrong PINs lock for 15 minutes and alert Dad; Dad's login needs the second factor; **onboarding and the signed account agreement**.
+    - **Money in and out:** a deposit holds, Dad approves, it lands in savings; a declined request shows Dad's reason; an unanswered request expires (after the request-expiry setting, 7 days to start) and releases the hold; a deposit over the cap is blocked; a withdrawal waits 24 hours; cashing out of a GIC or fund goes through savings.
+    - **Savings and GICs:** interest on the 1st matching "How was this calculated?"; a 1-month GIC maturing on the right day, rounded up; the maturity banner and the 7-day move to savings; breaking a GIC early.
+    - **Stock funds:** settlement at the next close (Friday evening settles Monday); one trade per fund per day; 2:00 pm summer and 3:00 pm winter settlement times; a partial sell; the standard note on a day over 2%; the quarterly dividend (already proven in the time machine).
+    - **Rates and settings:** a savings rate change with its notice and 7-day default; existing GICs keeping their locked-in rate; a special ending on its end date; a cap change reaching both girls.
+    - **Safeguards:** "Something looks wrong?" with Dad's reply in her history; the nightly reconciliation; a skipped night caught up with no duplicates; trades waiting through a price outage (all proven in the time machine, to be proven live).
+  - **Waiting for later stages:**
+    - **Stage 4 (live setup):** `check_time_rules()` on production; each fund tracking its ETF to the cent (live prices); a test alert by email; "the project has never paused".
+    - **Stage 5 (backups):** the daily backup to GitHub and Dad's computer, a restore into the local copy, and the Download backup button.
+    - **Phase 2** boxes are stages 9–12.
+- **Known issues and notes:** see each part's entries below. The main ones:
+  - rates change one at a time;
+  - rewording in the app doesn't reach the repo files;
+  - "Make it yours" and "your first wish" join onboarding with stages 9 and 10;
+  - the local `vector` (logging) container keeps restarting, which nothing uses.
+- **Dad to do by hand:** nothing for stage 8. **Next: stage 4 (live setup).** Dad's rule from 2026-10-04 applies first: before creating real accounts or any real deposit, an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix the findings, then proceed.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only (started 2026-10-03)
 
@@ -776,6 +841,114 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   2. In a normal Chrome window, sign in as **Wren**: the welcome opens. Try the tour, then sign.
   3. In an Incognito window, sign in as the parent: the **Dashboard** says Wren is waiting. Tap **Sign it**, read it, and sign.
   4. For her first decision, approve a deposit for Wren on **Approvals** (ask for it as Wren on Buy / Sell first), then on Wren's Home tap **Keep going**.
+- **Dad's B4 review (2026-10-07): five changes.** These replace his earlier "she can explore before signing".
+  1. No "Look around first": the welcome has one button, **Let's get started**. Onboarding must be finished before she uses the rest of the app.
+  2. No "Skip the tour": the tour is required, with Back and Next.
+  3. During onboarding the tabs and the bell stay visible but greyed out and can't be opened. A tap shows a short friendly line. A typed app address brings her back to her step.
+  4. If she leaves partway, she resumes at the step she was on.
+  5. A girl waiting for Dad's countersignature shows as a highlighted card at the very top of the Dashboard, and counts in the Approvals badge, until he signs.
+- **Built, waiting for Dad's review (2026-10-07).** Not committed yet. The WIP commit `b0b8870` is still local only, and this round sits on top of it, uncommitted.
+  - **New migration `20261017000000_onboarding_resume.sql`.** The committed B4 migration isn't edited.
+    - `accounts.onboarding_step` and `onboarding_card` save her place.
+    - `save_onboarding_step(step, card)` is for kids only. It accepts only her own steps (one whose feature is off is refused), only real tour cards, and not her first decision before she signs. Once she has signed, her place is always her first decision. It does nothing after onboarding.
+    - `onboarding_state` adds `resume_step`, `resume_card` and `pending_deposit_cents`. Everything else is unchanged.
+  - **Her first deposit is asked for inside her first decision.** Dad's lock closes Buy / Sell, but her first decision needs a first deposit, so the step has its own amount box ("How much would you like to put in?" · **Ask Dad**). It goes through the same `request_deposit` and every rule it checks. While Dad hasn't said yes, it shows "You asked to put in $20.00. Waiting for Dad." with **Check again**, and it also looks again every 15 seconds. **Decision for Dad to confirm.**
+  - **The lock (kid shell):**
+    - The tabs and the bell are greyed-out buttons. A tap shows "Finish setting up first, then all of Big Bucks is yours!" just above the tabs for 4 seconds.
+    - Any other address (`/kid`, `/kid/trade`, `/kid/history`, `/kid/notices`, a GIC page…) goes back to `/kid/welcome`, at her saved place.
+    - **Sign out** still works. "View as" isn't locked.
+    - When she finishes, the shell unlocks before she leaves the last screen.
+  - **Welcome:** one button, **Let's get started**. The tour has Next and Back only. Back from the agreement returns to the last tour card. The Home set-up banner and the first-visit auto-open are gone: she's always on her welcome screens until she's done. "View as" still shows Dad whether she has set up yet.
+  - **Dad:**
+    - Approvals now loads `parent_agreements()` with `parent_inbox()`. The badge, the Approvals section and the Dashboard card come from the same data, so they always agree.
+    - The Dashboard opens with a gold card per waiting girl: "✍️ Wren signed her agreement — she's waiting for you · **Sign it now**". The button goes to Approvals, scrolled to the agreements.
+    - The old "Needs you" agreement line is gone; "Wren hasn't started setting up Big Bucks yet." stays.
+  - **Docs:** MESSAGES §11 (the lock and its line, one start button, the required tour, the deposit box wording, the "View as" banner) and SPEC Build decisions ("Onboarding comes first", "Dad's countersignature is prominent").
+- **Tests (all run locally on 2026-10-07):**
+  - `npm run test:db` (pgTAP): **1270 of 1270**, from empty.
+    - New **`onboarding_resume_test.sql` (19):**
+      - starting at the welcome, and saving the tour card and the agreement step;
+      - refusals: an unknown step, a step whose feature is off, a bad card, and her first decision before signing;
+      - after signing, always her first decision;
+      - a deposit she asked for shows as waiting;
+      - nothing to resume once she's done;
+      - Dad can't move her place; who may call.
+    - **Updated:** `onboarding_test.sql` sets aside the three new fields in its whole-state comparison.
+  - `npm test` (Vitest): **202 of 202**. The "where she starts" tests now resume from her saved place.
+  - `npm run test:e2e` (Playwright): **80 of 80**. `onboarding.spec.ts` now has 7 tests:
+    - **the lock, at all six sizes:**
+      - Home, Graphs, Buy / Sell and the bell are greyed out, and each tap shows the line without leaving;
+      - six typed addresses bring her back;
+      - layout checks with the line showing, normal and 130% text;
+      - nothing changed;
+    - **one start button** (no links) and **a required tour** (Next and Back only);
+    - **resuming:** she's on card 3 of 5; the database says `tour 2`; a reload, and signing out and back in with her PIN, both bring her back to card 3;
+    - **the agreement and her signature**, then her **$20 deposit asked inside her first decision** (the database has it waiting), and the lock still on;
+    - **Dad:**
+      - the gold card is above "Needs you", at all six sizes, normal and large text;
+      - the Approvals badge is one more than requests plus questions;
+      - **Sign it now**, **Back** changes nothing, then signing: the log, "Recorded: …", and her notice;
+      - the badge goes back down and the card is gone;
+    - **her first decision** after Dad approves, then the app unlocks (real tabs, Buy / Sell and history open), and her agreement in her history;
+    - **What's new**, once.
+    - The layout checker moved to `e2e/layoutCheck.ts`, shared by `layout.spec.ts` and the stage tests.
+  - `npm run timemachine`: **not run locally.** No money logic changed: `request_deposit` and its rules are untouched, and the deposit box calls it as Buy / Sell does. CI runs it on push.
+  - Lint is clean and the build succeeds.
+- **Known issues and questions for Dad:**
+  1. **The first deposit inside onboarding** (above): the lock closes Buy / Sell, so her first decision asks for it itself. OK, or should Buy / Sell open during her first decision instead?
+  2. **The "Finish setting up first" line floats over the page** just above the tabs for 4 seconds. On a small phone with large text it covers the bottom of the **Let's get started** button while it shows. The layout checker doesn't flag it, because it isn't part of the page. If you'd rather it never covered anything, it could appear in the page instead, at the top of her current step.
+- **Demo reloaded:** Wren hasn't started. Her PIN is in `.demo-logins.local`.
+- **Dad to do by hand:** nothing. To try it:
+  1. Run `npm run dev`.
+  2. Sign in as **Wren**. Try the greyed tabs and bell, and type `/Big-Bucks/kid/trade` in the address bar.
+  3. Leave partway through the tour, then come back: she's on the same card.
+  4. Sign, ask for a deposit in her first decision, then as the parent see the gold Dashboard card and the Approvals badge, approve the deposit, and sign.
+- **Dad's B4 round 2 review (2026-10-07): "Looks much better", plus three changes.**
+  1. Keep the first deposit inside onboarding, but unlock the app as soon as her first deposit is approved and both signatures are done, so the first decision's GIC and fund choices open a working Buy / Sell. If Dad declines her first deposit, she asks again from the same step, with his reason shown.
+  2. The "Finish setting up first" line goes at the top of her current step, so it never covers anything.
+  3. **Approvals order:**
+     - agreements to sign at the top, then deposits and withdrawals, then questions;
+     - within each, strictly by when she asked, oldest first, the girls mixed by time;
+     - test accounts in their own section after the real kids, in the same order;
+     - "Asked {date, time}" on every card.
+- **Built (2026-10-07), changing the still-uncommitted `20261017000000_onboarding_resume.sql`:**
+  - **`onboarding_state` adds two fields:**
+    - `unlocked`: done, or (she signed, Dad countersigned, and her first deposit is in);
+    - `last_answer`: her latest deposit request if Dad declined it or it ran out of time, with Dad's reason, and nothing newer asked.
+  - **`parent_agreements`** is ordered by when she signed: oldest first, real kids before test accounts, not signed yet last.
+  - **The kid shell** locks until `unlocked`.
+  - **The friendly line** is now in the page at the top of her step (the page scrolls to it), so it never covers anything.
+  - **The first decision:**
+    - **after a decline:** "Dad said not this time." · "Dad says: “{reason}”" · "You can ask again.", above the amount box;
+    - **her deposit is in but Dad hasn't signed yet:** "Dad hasn't signed your agreement yet. Once he does, your first decision is next.";
+    - **a GIC or a stock fund** goes straight to Buy / Sell; keeping it in savings shows "Nice thinking!";
+    - **if she leaves once it's unlocked,** Home shows "👋 Let's finish setting up your Big Bucks. · **Keep going**".
+  - **Approvals:**
+    - **real kids:** Agreements to sign (each card "Asked {time}"), then Deposits and withdrawals, then Questions;
+    - **then a "Test accounts" section** with the same three, in the same order;
+    - **order:** each list is in the database's order (oldest first, names mixed).
+  - **Docs:** MESSAGES §11 (unlocking, the line in the page, the decline and wait wordings, the Home banner) and SPEC Build decisions ("The app unlocks", "Approvals order").
+- **Tests (all run locally on 2026-10-07):**
+  - `npm run test:db`: **1278 of 1278**, from empty. `onboarding_resume_test.sql` now has 27 tests:
+    - still locked while her deposit waits;
+    - a declined first deposit comes back with Dad's reason, and is gone once she asks again;
+    - still locked with her deposit in but before Dad signs;
+    - unlocked once both have signed and the deposit is in, before she has chosen;
+    - stays unlocked once done;
+    - Dad's agreements oldest signature first, real kids before the test account (who signed first).
+  - `npm test`: **202 of 202**.
+  - `npm run test:e2e`: **82 of 82**. `onboarding.spec.ts` now has 9 tests:
+    - **new:** Dad declines her $20 first deposit, and she sees "Dad says: “Let's start with $10”" and asks for $10 from the same step;
+    - **new:** once both have signed and her $10 is in, signing in lands on Home (unlocked, no greyed tabs) with "Keep going"; all three choices; **Put some in a GIC** opens a working Buy / Sell (From and To), and onboarding is done;
+    - **new, the Approvals order:**
+      - four requests at known times (Robin 5 h ago, Wren 4 h, Robin 3 h; Sky, a test account, 6 h);
+      - the headings come in order, and the test-account section starts below every real-kid section;
+      - each list's "Asked …" times match the database's oldest-first order;
+      - Robin, Wren, Robin are interleaved by time, and Sky is in her own section;
+      - every card says "Asked".
+    - **updated:** `approvals.spec.ts` counts real and test-account requests in their own sections.
+  - `npm run timemachine`: not run locally for this round (no money logic changed). CI runs it on the push.
+- **B4 approved by Dad and committed (2026-10-07):** the WIP commit plus rounds 2 and 3, pushed together. CI is confirmed in the commit that follows.
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 

@@ -107,20 +107,26 @@ test('no app sign-in can call the originals directly, so nothing skips the log',
 test('the screen matches the database: what is waiting, the counts and the 24-hour lock', async ({
   page,
 }) => {
-  const [counts] = await rows<{ money: string; questions: string }>(
-    `select (select count(*) from public.requests where status = 'pending' and type in ('deposit', 'withdraw'))::text as money,
-            (select count(*) from public.questions where status = 'open')::text as questions`,
+  // Real kids first; test accounts in their own section after them (B4 review).
+  const [counts] = await rows<Record<string, string>>(
+    `select count(*) filter (where not a.is_test)::text as money_real, count(*) filter (where a.is_test)::text as money_test,
+            (select count(*) from public.questions q join public.accounts x on x.id = q.account_id
+              where q.status = 'open' and not x.is_test)::text as q_real,
+            (select count(*) from public.questions where status = 'open')::text as q_all
+       from public.requests r join public.accounts a on a.id = r.account_id
+      where r.status = 'pending' and r.type in ('deposit', 'withdraw')`,
   );
   await open(page);
-  const money = page.locator('#appr-money');
-  await expect(money).toContainText(counts.money);
-  await expect(page.locator('#appr-questions')).toContainText(counts.questions);
+  await expect(page.locator('#appr-money-false')).toContainText(counts.money_real);
+  await expect(page.locator('#appr-money-true')).toContainText(counts.money_test);
+  await expect(page.locator('#appr-questions-false')).toContainText(counts.q_real);
+  const all = Number(counts.money_real) + Number(counts.money_test) + Number(counts.q_all);
   await expect(
     page.getByRole('navigation', { name: 'Parent' }).getByRole('link', { name: /^Approvals/ }),
-  ).toHaveAccessibleName(`Approvals, ${Number(counts.money) + Number(counts.questions)} waiting`);
-  await expect(page.locator('.appr__list').first().locator('> li')).toHaveCount(
-    Number(counts.money),
-  );
+  ).toHaveAccessibleName(`Approvals, ${all} waiting`);
+  await expect(
+    page.locator('section[aria-labelledby="appr-money-false"] .appr__list > li'),
+  ).toHaveCount(Number(counts.money_real));
 
   // The withdrawal the demo asked for just now: locked, with the database's own time.
   const [locked] = await rows<{ amount: string; from: string }>(

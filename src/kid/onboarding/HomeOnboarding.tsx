@@ -1,6 +1,6 @@
-// On Home: the set-up banner until onboarding is done (and when the house rules
-// change), and "What's new" once for each feature switched on after she onboarded.
-// Her very first visit opens the welcome screens; after that she chooses.
+// On Home: a banner when the house rules change (and, in Dad's "View as", whether
+// she has set up yet), and "What's new" once for each feature switched on after
+// she onboarded.
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,58 +9,58 @@ import { kidRpc, useKidView } from '../kidView';
 import { TEXT, type OnboardingState } from './onboardingText';
 import './Welcome.css';
 
-/** Remembered on this device only, so the welcome screens open by themselves once. */
-const openedKey = (account: string) => `bb-welcome-opened:${account}`;
-
+/**
+ * In her own app, Home is reachable only once onboarding is done, so the banner
+ * there is for a new version of the house rules to sign. In Dad's "View as" it
+ * also shows whether she has set up yet (no button: he can't sign for her).
+ */
 export function SetupBanner() {
   const view = useKidView();
-  const navigate = useNavigate();
   const [state, setState] = useState<OnboardingState | null>(null);
 
   useEffect(() => {
     let live = true;
     void kidRpc<OnboardingState>(view, 'onboarding_state', { p_account_id: view.accountId }).then(
       ({ data }) => {
-        if (!live || !data) return;
-        setState(data);
-        if (view.viewing || data.done || data.signed_version !== null) return;
-        let opened = true;
-        try {
-          opened = window.localStorage.getItem(openedKey(view.accountId)) === 'yes';
-          window.localStorage.setItem(openedKey(view.accountId), 'yes');
-        } catch {
-          // No storage (a private window): don't keep opening it.
-        }
-        if (!opened) navigate(`${view.base}/welcome`);
+        if (live && data) setState(data);
       },
     );
     return () => {
       live = false;
     };
-  }, [view, navigate]);
+  }, [view]);
 
   if (!state) return null;
-  let words: string;
-  let button: string;
-  let to = `${view.base}/welcome`;
-  if (!state.done && state.signed_version === null) {
-    words = TEXT.setupBanner;
-    button = TEXT.setupStart;
-  } else if (!state.done) {
-    words = TEXT.setupContinue;
-    button = TEXT.setupContinueButton;
-  } else if (state.needs_signature) {
-    words = TEXT.changedBanner;
-    button = TEXT.readIt;
-    to = `${view.base}/welcome?step=agreement`;
-  } else return null;
-
+  if (!state.done && !view.viewing && state.unlocked)
+    return (
+      <section className="banner" aria-label="Setting up">
+        <div className="banner__card banner__card--celebrate">
+          <p className="banner__title">{TEXT.setupContinue}</p>
+          <Link className="btn btn--small" to={`${view.base}/welcome`}>
+            {TEXT.keepGoing}
+          </Link>
+        </div>
+      </section>
+    );
+  if (!state.done) {
+    if (!view.viewing) return null; // she's locked to her welcome screens anyway
+    return (
+      <section className="banner" aria-label="Setting up">
+        <div className="banner__card banner__card--celebrate">
+          <p className="banner__title">
+            {state.signed_version === null ? TEXT.setupBanner : TEXT.setupContinue}
+          </p>
+        </div>
+      </section>
+    );
+  }
+  if (!state.needs_signature) return null;
   return (
     <section className="banner" aria-label="Setting up">
       <div className="banner__card banner__card--celebrate">
-        <p className="banner__title">{words}</p>
-        <Link className="btn btn--small" to={to}>
-          {button}
+        <p className="banner__title">{TEXT.changedBanner}</p>
+        <Link className="btn btn--small" to={`${view.base}/welcome?step=agreement`}>
+          {TEXT.readIt}
         </Link>
       </div>
     </section>

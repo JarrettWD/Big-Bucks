@@ -4,12 +4,13 @@
 // signs. The database checks everything again and logs it.
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useOutletContext } from 'react-router-dom';
 import { AgreementView } from '../../kid/onboarding/AgreementView';
 import type { AgreementDoc } from '../../kid/onboarding/onboardingText';
 import { supabase } from '../../lib/supabase';
 import { AGREE } from './approvalsText';
-import { useAgreements, waitingForDad, type KidAgreement } from './useAgreements';
+import type { InboxState } from '../useInbox';
+import { waitingForDad, type KidAgreement } from './useAgreements';
 import { useAuth } from '../../auth/AuthProvider';
 
 interface Preview {
@@ -20,17 +21,34 @@ interface Preview {
 }
 
 /** The Approvals section. */
-export function AgreementsToSign() {
-  const { list, reload } = useAgreements();
+export function AgreementsToSign({
+  items,
+  test,
+  heading: H,
+}: {
+  /** Agreements waiting for Dad, oldest signature first (parent_agreements). */
+  items: KidAgreement[];
+  test: boolean;
+  heading: 'h2' | 'h3';
+}) {
+  const { reload } = useOutletContext<InboxState>();
   const [open, setOpen] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  if (!list) return null;
-  const waiting = list.filter(waitingForDad);
+  const { hash } = useLocation();
+  // From the Dashboard's "Sign it now": straight to this section.
+  useEffect(() => {
+    if (hash === '#agreements' && !test) document.getElementById('agreements')?.scrollIntoView();
+  }, [hash, test]);
+  const waiting = items;
   return (
-    <section className="appr__group" id="agreements" aria-labelledby="appr-agree">
-      <h2 id="appr-agree">
+    <section
+      className="appr__group"
+      id={test ? 'agreements-test' : 'agreements'}
+      aria-labelledby={`appr-agree-${test}`}
+    >
+      <H id={`appr-agree-${test}`}>
         {AGREE.title} <span className="appr__count">{waiting.length}</span>
-      </h2>
+      </H>
       {done && (
         <p className="appr__done" role="status">
           {done}
@@ -47,7 +65,7 @@ export function AgreementsToSign() {
               <h3 className="appr__what">
                 {AGREE.signedBy(k)}
                 {k.is_test && <span className="appr__test">Test</span>}
-                <span className="appr__kid">{k.signed_at}</span>
+                <span className="appr__kid">{AGREE.asked(k.signed_at ?? '')}</span>
               </h3>
             </div>
             {open === k.account_id ? (
@@ -187,23 +205,41 @@ function Countersign({
   );
 }
 
-/** The dashboard's "Needs you" lines: agreements to sign, and who hasn't set up yet. */
+/**
+ * The top of the Dashboard (Dad, B4 review): a girl who has signed and is waiting
+ * for his signature, in a highlight colour with one clear button. It goes away
+ * once he has signed.
+ */
+export function AgreementsWaitingCard() {
+  const { inbox } = useOutletContext<InboxState>();
+  const waiting = (inbox?.agreements ?? []).filter(waitingForDad);
+  if (waiting.length === 0) return null;
+  return (
+    <section className="dash__sign" aria-label={AGREE.title}>
+      {waiting.map((k) => (
+        <div key={k.account_id} className="dash__sign-card">
+          <p className="dash__sign-text">
+            ✍️ {AGREE.waitingCard(k.kid)}
+            {k.is_test && <span className="appr__test">Test</span>}
+          </p>
+          <Link className="dash__sign-btn" to="/parent/approvals#agreements">
+            {AGREE.signNow}
+          </Link>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** The dashboard's "Needs you" line for a girl who hasn't started setting up. */
 export function AgreementsNeedYou() {
-  const { list } = useAgreements();
-  if (!list) return null;
-  const waiting = list.filter((k) => waitingForDad(k) && !k.is_test);
-  const notStarted = list.filter(
+  const { inbox } = useOutletContext<InboxState>();
+  const notStarted = (inbox?.agreements ?? []).filter(
     (k) => !k.is_test && !k.onboarding_done && k.signed_version === null,
   );
-  if (waiting.length === 0 && notStarted.length === 0) return null;
+  if (notStarted.length === 0) return null;
   return (
     <div className="dash__agree">
-      {waiting.length > 0 && (
-        <p>
-          ✍️ {AGREE.toSign(waiting.map((k) => k.kid))}{' '}
-          <Link to="/parent/approvals#agreements">{AGREE.signNow}</Link>
-        </p>
-      )}
       {notStarted.map((k) => (
         <p key={k.account_id} className="dash__muted">
           👋 {AGREE.notStarted(k.kid)}

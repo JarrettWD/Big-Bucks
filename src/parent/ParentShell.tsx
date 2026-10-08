@@ -2,17 +2,24 @@
 // who has passed the authenticator step (the route guard in App.tsx); the
 // database requires the same (aal2) for every parent read and action.
 // Tabs: bottom of the screen on phones (Dad's main device), top from 720px.
-// The Approvals count comes from parent_inbox(), shared with the Approvals screen.
+// The Approvals count comes from parent_inbox() and parent_agreements(), shared with
+// the Approvals screen and the Dashboard.
 
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { waitingForDad } from './approvals/useAgreements';
 import { useInbox } from './useInbox';
 import './Parent.css';
 
 export default function ParentShell() {
   const { profile, signOut } = useAuth();
   const inbox = useInbox();
-  const waiting = inbox.inbox ? inbox.inbox.requests.length + inbox.inbox.questions.length : 0;
+  // Deposits, withdrawals, questions, and (B4) agreements waiting for his signature.
+  const waiting = inbox.inbox
+    ? inbox.inbox.requests.length +
+      inbox.inbox.questions.length +
+      inbox.inbox.agreements.filter(waitingForDad).length
+    : 0;
   return (
     <div className="parent">
       <header className="parent__top">

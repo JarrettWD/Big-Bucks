@@ -133,7 +133,9 @@ select is((select r ->> 'glossary' from jsonb_array_elements(public.agreement_re
 -- 4. She can look around before signing, but can't put money in -------------------------------
 
 select tests.as_kid('kid_a');
-select is((select s - 'agreement' - 'rules' from (select public.onboarding_state(tests.acct('kid_a')) s) x),
+-- resume_step, resume_card, pending_deposit_cents, unlocked and last_answer: see onboarding_resume_test.sql.
+select is((select s - 'agreement' - 'rules' - 'resume_step' - 'resume_card' - 'pending_deposit_cents' - 'unlocked' - 'last_answer'
+             from (select public.onboarding_state(tests.acct('kid_a')) s) x),
   jsonb_build_object('name', 'Kid A', 'done', false, 'current_version', 1, 'signed_version', null,
     'countersigned', false, 'needs_signature', true, 'steps', '["welcome", "tour", "agreement", "decision"]'::jsonb,
     'first_deposit_cents', null, 'free_cents', 0, 'min_invest_cents', 1000),

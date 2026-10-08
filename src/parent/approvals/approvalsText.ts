@@ -83,6 +83,7 @@ export const TEXT = {
   questions: 'Questions',
   questionsEmpty: 'No open questions.',
   recent: 'Recent decisions',
+  testSection: 'Test accounts',
   recentEmpty: 'Nothing yet.',
   test: 'Test',
   asked: (when: string) => `Asked ${when}`,
@@ -119,6 +120,7 @@ export const AGREE = {
   signedBy: (k: { kid: string; signed_version: number | null }) =>
     `${k.kid} signed her Big Bucks agreement${k.signed_version && k.signed_version > 1 ? ` (version ${k.signed_version})` : ''}`,
   read: 'Read and sign',
+  asked: (when: string) => `Asked ${when}`,
   heading: (kid: string) => `Sign ${kid}'s agreement?`,
   explain: (kid: string) =>
     `This is exactly what ${kid} signed, with the numbers of that day. Read it through, then sign it too.`,
@@ -130,8 +132,7 @@ export const AGREE = {
   saving: 'Saving…',
   done: (summary: string, who: string, when: string) =>
     `Done. ${summary} Recorded: ${who}, ${when}.`,
-  toSign: (kids: string[]) =>
-    `${kids.join(' and ')} signed ${kids.length === 1 ? 'her' : 'their'} agreement and ${kids.length === 1 ? 'is' : 'are'} waiting for you.`,
-  signNow: 'Sign it',
+  waitingCard: (kid: string) => `${kid} signed her agreement — she's waiting for you`,
+  signNow: 'Sign it now',
   notStarted: (kid: string) => `${kid} hasn't started setting up Big Bucks yet.`,
 };
