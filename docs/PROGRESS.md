@@ -70,7 +70,7 @@ The whole stage in one place. The details, Dad's decisions and each review are i
   - `npm run test:db` (pgTAP): **1278 of 1278**, from empty.
   - `npm test` (Vitest): **202 of 202**.
   - `npm run test:e2e` (Playwright): **82 of 82**, including every new screen at all six sizes with normal and large text.
-  - `npm run timemachine`: **PASS, 14 of 14** with 103 of 103 actions agreed, on the B4 code (2026-10-05). Rounds 2 and 3 changed no money logic: `request_deposit` and its rules are unchanged since that run. CI runs the time machine on the push.
+  - `npm run timemachine`: **PASS, 14 of 14** with 103 of 103 actions agreed, on the B4 code (2026-10-05). Rounds 2 and 3 changed no money logic: `request_deposit` and its rules are unchanged since that run. CI ran the time machine on the push: passed.
   - Lint is clean and the build succeeds.
 - **ACCEPTANCE.md:** nothing can be ticked yet: every Phase 1 box is proven live in the solo beta, and "Before any real money" needs stage 4.
   - **Ready for the solo beta** (built and tested locally; to be proven live with test-kid accounts):
@@ -948,7 +948,7 @@ The whole stage in one place. The details, Dad's decisions and each review are i
       - every card says "Asked".
     - **updated:** `approvals.spec.ts` counts real and test-account requests in their own sections.
   - `npm run timemachine`: not run locally for this round (no money logic changed). CI runs it on the push.
-- **B4 approved by Dad and committed (2026-10-07):** the WIP commit plus rounds 2 and 3, pushed together. CI is confirmed in the commit that follows.
+- **B4 approved by Dad and committed (2026-10-07):** the WIP commit plus rounds 2 and 3, pushed together. Committed as `b0b8870` and `967862c`; CI passed (test and timemachine, run 37715963005).
 
 ### Stage 7 — Kid screens: Home, Graphs, Buy / Sell, local only (finished 2026-10-03)
 
