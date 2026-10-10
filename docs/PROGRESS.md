@@ -140,6 +140,17 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - whether the session pooler accepts `backup_reader` (if not: stop and ask);
   - the auth table columns matching between hosted and local (the drill on a real backup checks this).
 
+#### Part B: production setup (started 2026-10-10)
+
+- Part A pushed as `ac81ab7`; CI run 38091270581 green (test and timemachine).
+- **Step 1** (Dad): `big-bucks-backups` created, private, empty.
+- **Step 2** (Claude, with Dad's OK): `db push` of `20261023000000_backups.sql` only (dry run first), then `functions deploy download-backup health`. `download-backup` refuses an unsigned caller (401).
+- **Step 3** (Dad): `set_backup_login()`; password in his password manager.
+- **Step 4** (Dad): `SUPABASE_DB_URL` built in his password manager (backup_reader, session pooler, port 5432).
+- **Step 4.5** (Dad): Supabase's CA certificate downloaded. Checked by Claude: **Supabase Root 2021 CA**, SHA-256 80:70:25:AD:…:CA:FA. **It expires on April 26, 2031**: before then, download the new one (RUNBOOK backup setup step 4.5) and replace `supabase-ca.crt` in both repos, or every backup will fail.
+- **Step 5** (Dad): the backup repo's secrets (`SUPABASE_DB_URL`, `HEALTH_CHECK_KEY`) and variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
+- **Step 6** (Claude, with Dad's OK): cloned to `C:BigBucksBackupig-bucks-backups`; 11 files from `ops/backup-repo/` (not the two test files, which run in Big-Bucks' CI), plus the certificate as `supabase-ca.crt` (also in Big-Bucks); a secrets scan was clean; committed as Dad (`9ef92b1`) and pushed.
+
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 
 **Dad to do by hand:** Part B, one step at a time: RUNBOOK "Backup setup (Stage 5)", steps 1–11.
