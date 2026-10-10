@@ -9,6 +9,20 @@ select plan(46);
 -- Test helpers --------------------------------------------------------------
 
 create schema tests;
+
+-- Test closes are stored ahead of the test clock. They count as fetched just after their
+-- close, as the real price fetcher only stores a close once the market has closed
+-- (settlement uses only final closes: pre-launch audit, 2026-10-08).
+create function tests.fetched_after_close() returns trigger language plpgsql as $t$
+begin
+  new.fetched_at := greatest(new.fetched_at,
+    public.close_time((select f.market from public.funds f where f.id = new.fund_id), new.price_date)
+      + interval '30 minutes');
+  return new;
+end;
+$t$;
+create trigger tests_fetched_after_close before insert on public.fund_prices
+  for each row execute function tests.fetched_after_close();
 grant usage on schema tests to anon, authenticated, service_role;
 
 -- Pretend to be a signed-in user. Call it, then `set local role authenticated`.
@@ -151,7 +165,8 @@ begin
       values ('00000000-0000-0000-0000-00000000000f', 'approve_request', acct, 'Approved a test deposit.');
     -- Stage 8 B4: her signed agreement and the What's new she has seen.
     insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-      values (acct, 1, 'kid', gen_random_uuid(), '{}'::jsonb);
+      values (acct, 1, 'kid', gen_random_uuid(), '{}'::jsonb),
+             (acct, 1, 'parent', gen_random_uuid(), null);
     insert into public.whats_new_seen (account_id, feature) values (acct, 'wishlist');
   end loop;
 end;

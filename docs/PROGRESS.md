@@ -22,9 +22,124 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Dad to do by hand:
 -->
 
-### Stage 4 — Live setup (not started; comes after stage 8)
+### Stage 4 — Live setup (in progress; step 1, the pre-launch audit, 2026-10-08)
 
 - **Dad's rule (2026-10-04):** "Before creating real accounts or any real deposit: run an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix findings, then proceed."
+- **Step 1: first audit (2026-10-08).** A fresh read-only agent audited every migration and function, RLS and grants, the money rules, notice rules, corrections, the parent log, previews, the demo's safeguards, and secrets. Findings:
+  - **Must fix:** 1 (the PIN lockout could be bypassed by signing in to Supabase Auth directly);
+  - **Should fix:** 8;
+  - **Minor:** 7.
+- **Dad's answers (2026-10-08):**
+  - **Dividends:** pro-rata by the days held.
+  - **Closures:** yes, as a logged MFA parent action.
+  - **Prices:** savings interest and GICs never wait for fund prices.
+  - **GIC choice:** if anything stalls, her GIC choice window stretches by the stall.
+  - **Notice:** the 11:59 pm notice stays as the spec says.
+  - **Email:** the repo is already public, so history isn't rewritten. Future commits must use his GitHub noreply address, with a check.
+- **Fixed (local only, not committed, awaiting Dad's review). New migrations:**
+  - `20261018000000_audit_logins`:
+    - her Supabase Auth password is a keyed hash of her login id and PIN (`kid_auth_password`, key in Supabase Vault), never the PIN;
+    - the lockout works per device (5 in a row) and per username (20 in a row from any devices);
+    - devices are told apart by a hashed IP;
+    - one open alert per username, and usernames that aren't a kid's share one quiet alert;
+    - attempts are trimmed after 30 days;
+    - a trigger refuses any change to a kid's password or email.
+  - `20261018010000_audit_prices`:
+    - `final_close()`;
+    - `fund_prices` and `fund_splits` are append-only;
+    - `correct_fund_price` and `fund_price_corrections`;
+    - `record_market_closure`.
+  - `20261018020000_audit_jobs`:
+    - two job chains: fund work waits for prices, the rest doesn't;
+    - late money counts from the next Alberta midnight and gets the interest it missed, as its own line;
+    - `gic_holdings.choice_ends` stretches her choice window;
+    - pro-rata dividends;
+    - reconciliation updated for all of these.
+  - `20261018030000_audit_clock`: `mark_production()`, `app_now()` ignores the clock override on a marked database, and `check_time_rules()` gets a production-mark row.
+  - `20261018040000_audit_outside_calls`: `outbox` and `queue_outside()`, the only door out of the database (does nothing in a preview).
+  - `20261018050000_audit_agreement_gate`: the agreement is enforced by the database (see SPEC "Pre-launch audit decisions").
+  - `20261018060000_audit_minor`:
+    - Dad's screens can read more than 200 history lines;
+    - the notice for a rate change hidden by a running special;
+    - TRUNCATE is refused on the What's new tables.
+- **Also changed:**
+  - **kid-login:** server-made password, device-aware lockout, every failure answered in 1.5 s.
+  - **The scripts that create kids:** a random hidden email, and the password comes from the server.
+  - **The seed** refuses a marked production database.
+  - **The time-machine and demo guards** refuse a marked database.
+  - **The time machine** countersigns after she signs. Its reference model now has pro-rata dividends and the stretched GIC window.
+  - **`supabase/config.toml`:** `max_rows` 20000 (growth_by_option already passed 1,000 rows for a 1-year range with 3 options), and `secure_password_change` on.
+  - **Commit emails:**
+    - the repo's git email is set to Dad's noreply address;
+    - `npm run check:emails` runs in CI, and as a pre-commit hook (`.githooks`, `core.hooksPath` set on this computer);
+    - commit `3d52ac7` is the one allowed exception.
+  - **Docs:** `docs/RUNBOOK.md` (first part: never-do list, marking production, two production settings, commit emails). SPEC, with the dividend rule and a new "Pre-launch audit decisions" section, and MESSAGES updated.
+- **Changes to stage-8 behaviour Dad should confirm** (they follow from the approved fix plan):
+  - Once a new agreement version exists, her older signed version no longer allows deposits until she signs the new one.
+  - Dad must countersign before approving her first deposit. MESSAGES §11's "Her deposit is in, but Dad hasn't signed yet" screen state can no longer happen; its text is still in the app, harmless.
+- **Results (all local, 2026-10-08):**
+  - `npm run test:db` (pgTAP): **1403 of 1403**, including the new `audit_fixes_test.sql` (81 known answers over a simulated Oct 2026 – Jan 2027).
+  - `npm test` (Vitest): **210 of 210**.
+  - `npm run timemachine`: **PASS, 14 of 14**, 103 of 103 actions agreed.
+  - `npm run test:e2e` (Playwright): **83 of 83**, including the new test that guessing her PIN straight against Supabase Auth gets nowhere. The first run failed because the local functions container had stopped before this session began; after `docker start supabase_edge_runtime_big-bucks`, everything passed.
+  - Lint and build: clean.
+- **Not built yet (comes later in stage 4):**
+  - the screens for "record a market closure" and "fix a close";
+  - the outbox sender;
+  - the production settings themselves.
+- **Second audit (2026-10-08):** a fresh read-only agent reviewed the uncommitted fixes. Every first-audit finding is fixed, and no CREATE OR REPLACE lost a check, grant or log. It found:
+  - **Must fix:** none.
+  - **Should fix 1:** the per-device lockout trusts the first `X-Forwarded-For` entry, which a caller can fake, so only the 20-per-username lock really applies.
+  - **Should fix 2:** a stored close that isn't "final" (an unexpected early close, or an early fetch of the right value) can't be confirmed by Dad, so the fund work stays stuck.
+  - **Should fix 3:** approving needs Dad's signature on every version she signed, but Approvals only offers her latest, which can leave Dad stuck.
+  - **Should fix 4:** the time machine never exercises the new late-money rule.
+  - **Minor:** 11 items.
+- **Dad's review of the second audit (2026-10-08):** fix all four should-fix items and all minor items, with three changes:
+  1. **New agreement version:** only new deposits wait until she has signed it and Dad has countersigned. Everything else keeps working under the version they both signed before, with a Home banner asking her to sign. Dad still countersigns before approving her first deposit.
+  2. **PIN reset:** a parent action in the app ("Reset Robin's PIN"), needing the authenticator code, logged, with a notice to her. She sets a new PIN at her next sign-in. Also available in the setup script.
+  3. **RUNBOOK:** the 20,000-row setting goes in the Stage 4 production setup checklist.
+- **Done so far (WIP, 2026-10-09):** `20261018050000_audit_agreement_gate` rewritten to decision 1 (it wasn't committed yet):
+  - only new deposits wait on a new version;
+  - approving needs Dad's signature on the latest version she signed, which is the one Approvals shows (no dead end);
+  - nothing money-related works if there is no agreement version.
+
+  `onboarding_test.sql` is updated for the new message. **Nothing has been re-run since this change.**
+- **WIP commit, not pushed (2026-10-09):** Dad asked for a local work-in-progress commit of everything so far. From here on, CLAUDE.md's rule applies: the committed audit migrations are never edited again. The fixes below go in new migrations.
+- **Still to do, in order:**
+  1. **Agreement:**
+     - known-answer tests for the new-version rule;
+     - the Home banner reworded, plus a "waiting for Dad to sign the new version" banner.
+  2. **Login:**
+     - the device address comes from the one Supabase's proxy sets, not one the caller can fake (check on production);
+     - longer lockouts when they repeat (15 minutes, then 1 hour, then 24 hours);
+     - pad kid-login's remaining failure replies to 1.5 seconds.
+  3. **PIN reset:**
+     - database: a one-time code shown to Dad, and her new PIN chosen at her next sign-in;
+     - kid-login change;
+     - her "choose a new PIN" screen and Dad's "Reset Robin's PIN" screen (authenticator code, logged, a notice to her);
+     - the setup-script option;
+     - a RUNBOOK section for a lost login key;
+     - tests, including end-to-end at every screen size.
+  4. **Prices:**
+     - Dad can confirm a stored close as final;
+     - Dad can record an unexpected early close;
+     - a closure is refused once that day's dividends are paid;
+     - the holiday-dates warning ignores Dad's closure rows;
+     - an advisory lock so a price fix and settlement can't run at the same moment.
+  5. **Time machine:** a close arriving 2 or more nights late, with a sale and a dividend waiting on it, and the late-money rule written independently into the reference model.
+  6. **Minor items:**
+     - a stronger commit-email hook (the author and committer identities, and a check before pushing);
+     - the model refusing a GIC choice during the missed week;
+     - tests for the seed's production guard and the time machine's production refusal;
+     - negative tests that reconcile catches late money without its interest;
+     - placeholders instead of Dad's GitHub address in the repo.
+  7. **Docs:**
+     - the Stage 4 production checklist in RUNBOOK.md, including the 20,000-row setting;
+     - SPEC, MESSAGES and PROGRESS updates.
+  8. **Then:**
+     - all tests (`test:db`, `npm test`, `test:e2e`) and the time machine;
+     - a third fresh read-only audit of everything changed since the first audit;
+     - stop for Dad's review. No further commits until he has reviewed.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 

@@ -142,6 +142,7 @@ async function main(): Promise<void> {
     for (const k of KIDS) model.openAccount(k);
     for (const c of closes) model.addClose(c.fund, c.day, c.close, c.publishedAt);
     model.addSplit(SPLIT.fund, SPLIT.day, SPLIT.from, SPLIT.to);
+    model.skipNights(daysFrom(MISSED.from, MISSED.to));
 
     const reqId = new Map<string, number>(); // label -> request id
     const gicId = new Map<string, number>(); // label -> gic id
@@ -225,8 +226,13 @@ async function main(): Promise<void> {
     const dbAction = async (a: Action): Promise<{ ok: true } | { ok: false; error: string }> => {
       const res = await (async () => {
         switch (a.kind) {
-          case 'sign_agreement':
-            return db.call(kidWho(a.kid), 'select public.sign_agreement(1)');
+          case 'sign_agreement': {
+            // She signs, then Dad countersigns: no money moves before both have
+            // (pre-launch audit, 2026-10-08).
+            const signed = await db.call(kidWho(a.kid), 'select public.sign_agreement(1)');
+            if (!signed.ok) return signed;
+            return db.call(PARENT, 'select public.countersign_agreement($1, 1)', [accounts[a.kid]]);
+          }
           case 'deposit':
             return db.call(kidWho(a.kid), 'select public.request_deposit($1)', [
               a.cents.toString(),

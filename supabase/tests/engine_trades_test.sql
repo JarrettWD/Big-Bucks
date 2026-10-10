@@ -6,6 +6,20 @@ select plan(76);
 -- Test helpers ----------------------------------------------------------------
 
 create schema tests;
+
+-- Test closes are stored ahead of the test clock. They count as fetched just after their
+-- close, as the real price fetcher only stores a close once the market has closed
+-- (settlement uses only final closes: pre-launch audit, 2026-10-08).
+create function tests.fetched_after_close() returns trigger language plpgsql as $t$
+begin
+  new.fetched_at := greatest(new.fetched_at,
+    public.close_time((select f.market from public.funds f where f.id = new.fund_id), new.price_date)
+      + interval '30 minutes');
+  return new;
+end;
+$t$;
+create trigger tests_fetched_after_close before insert on public.fund_prices
+  for each row execute function tests.fetched_after_close();
 grant usage on schema tests to authenticated, service_role;
 
 -- Freeze the app clock at an Edmonton date and time (works only in local dev).
@@ -41,7 +55,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
+           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   return v_acct;
 end;
 $$;
@@ -275,16 +290,18 @@ select is(tests.run('pay_quarterly_dividends', '2027-01-04'), 'ok', 'Jan 4 is th
 select results_eq(
   $$select amount_cents, vehicle::text, fund_id, effective_at from public.transactions
      where posting_key = 'dividend:2027Q1:dow:' || tests.acct('kid_t1')$$,
-  $$values (47::bigint, 'savings', 'dow', tests.edm('2027-01-04 00:00'))$$,
-  'dividend: 0.23809524 units × $430 (Dec 31 close) × 1.8% ÷ 4 = $0.4607, rounded up to $0.47, into savings');
+  $$values (38::bigint, 'savings', 'dow', tests.edm('2027-01-04 00:00'))$$,
+  'pro-rata dividend (Dad, 2026-10-08): 0.23809524 units held from the Oct 19 close, 74 of Q4''s 92 days: '
+    || '× $430 (Dec 31 close) × 1.8% ÷ 4 × 74/92 = $0.3706, rounded up to $0.38, into savings');
 select is(
   (select note from public.transactions where posting_key = 'dividend:2027Q1:dow:' || tests.acct('kid_t1')),
-  '0.23809524 units × $430.00 × 1.8% ÷ 4 = $0.4607, rounded up to $0.47', 'the dividend line shows its working');
+  'You owned 0.23809524 units for 74 of the quarter''s 92 days: 0.23809524 × $430.00 × 1.8% ÷ 4 × 74/92 = $0.3706, rounded up to $0.38',
+  'the dividend line shows its working');
 select is(
   (select amount_cents from public.transactions where posting_key = 'dividend:2027Q1:tsx:' || tests.acct('kid_t3')),
-  8::bigint, 'TSX dividend: 0.24390244 units × $42 × 2.8% ÷ 4 = $0.0717, rounded up to $0.08');
+  1::bigint, 'TSX dividend: 0.24390244 units held from the Dec 29 close, 3 of 92 days: × $42 × 2.8% ÷ 4 × 3/92 = $0.0023, rounded up to $0.01');
 select is((select count(*) from public.transactions where type = 'dividend'), 6::bigint,
-  'one dividend per fund held at the Dec 31 close: kid_t1 Dow; kid_t2 Dow, Nasdaq-100, TSX; kid_t3 TSX; kid_t4 Dow');
+  'one dividend per fund held in the quarter: kid_t1 Dow; kid_t2 Dow, Nasdaq-100, TSX; kid_t3 TSX; kid_t4 Dow');
 
 -- 6. A split keeps her holding's value; then she sells everything (kid_t1) ------------
 

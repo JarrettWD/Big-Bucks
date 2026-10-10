@@ -5,6 +5,20 @@ select plan(56);
 -- Test helpers ----------------------------------------------------------------
 
 create schema tests;
+
+-- Test closes are stored ahead of the test clock. They count as fetched just after their
+-- close, as the real price fetcher only stores a close once the market has closed
+-- (settlement uses only final closes: pre-launch audit, 2026-10-08).
+create function tests.fetched_after_close() returns trigger language plpgsql as $t$
+begin
+  new.fetched_at := greatest(new.fetched_at,
+    public.close_time((select f.market from public.funds f where f.id = new.fund_id), new.price_date)
+      + interval '30 minutes');
+  return new;
+end;
+$t$;
+create trigger tests_fetched_after_close before insert on public.fund_prices
+  for each row execute function tests.fetched_after_close();
 grant usage on schema tests to authenticated, service_role;
 
 create function tests.clock(p_at text) returns void language sql as $$
@@ -38,7 +52,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
+           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   return v_acct;
 end;
 $$;

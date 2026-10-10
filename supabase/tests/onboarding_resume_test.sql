@@ -2,7 +2,7 @@
 -- and tour card, on any device), and a deposit asked for during her first decision
 -- shows as waiting. Known answers.
 begin;
-select plan(27);
+select plan(28);
 
 create schema tests;
 grant usage on schema tests to anon, authenticated, service_role;
@@ -104,12 +104,15 @@ select is(public.onboarding_state(tests.acct('kid_a')) ->> 'last_answer', null,
 
 -- Unlocking needs both signatures AND her first deposit in.
 select tests.as_parent();
-select public.approve_request((select id from dep));
+select is(tests.err('select public.approve_request((select id from dep))'),
+  'Kid A signed her agreement and is waiting for you to sign it too. Sign it first (it''s at the top of Approvals), then approve this.',
+  'Dad can''t approve her first deposit before he signs her agreement (pre-launch audit)');
 select tests.as_kid('kid_a');
 select is(public.onboarding_state(tests.acct('kid_a')) ->> 'unlocked', 'false',
-  'her deposit is in, but Dad hasn''t signed yet: still locked');
+  'Dad hasn''t signed yet: still locked');
 select tests.as_parent();
 select public.countersign_agreement(tests.acct('kid_a'), 1);
+select public.approve_request((select id from dep));
 select tests.as_kid('kid_a');
 select is((select (s ->> 'unlocked') || ' ' || (s ->> 'done') from (select public.onboarding_state(tests.acct('kid_a')) s) x),
   'true false', 'both signed and her first deposit in: unlocked, before she has even chosen');

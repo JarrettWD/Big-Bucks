@@ -1,7 +1,7 @@
 -- Stage 8 part A: the parent action log, previews that stay inside the database,
 -- and the Approvals screen's reads (parent_inbox, parent_decision_preview).
 begin;
-select plan(62);
+select plan(70);
 
 -- Test helpers ----------------------------------------------------------------
 
@@ -39,7 +39,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
+           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   return v_acct;
 end;
 $$;
@@ -87,11 +88,11 @@ select is(
       and p.proname in ('approve_request_unlogged', 'decline_request_unlogged', 'answer_question_unlogged',
                         'acknowledge_alert_unlogged', 'add_rate_unlogged', 'set_setting_unlogged',
                         'move_preview_unflagged')),
-  'acknowledge_alert_unlogged f799cbab72b3f4c8c5ba9a4d0f906055, add_rate_unlogged 4adfee822242f3116f5c5b9e0fff973e, '
+  'acknowledge_alert_unlogged f799cbab72b3f4c8c5ba9a4d0f906055, add_rate_unlogged 0625ee023bd0b7325f099caec21c512c, '
   || 'answer_question_unlogged fca9682d14eb34d86275dde11a6fe1f0, approve_request_unlogged 8bc03e82aa00f8f603d0c3c7d0f3725f, '
   || 'decline_request_unlogged cb21305de809debe9d85f1fd8980a7f3, move_preview_unflagged 405fbd6fc29c261492392b625ce8f66e, '
   || 'set_setting_unlogged 0f97833200dcaef970a9115b4563c47e',
-  'the originals are byte for byte as committed (approve_request_unlogged and set_setting_unlogged as changed on purpose in stage 8 B1; request_expiry_test proves only those lines changed)');
+  'the originals are byte for byte as committed (approve_request_unlogged and set_setting_unlogged as changed on purpose in stage 8 B1; request_expiry_test proves only those lines changed; add_rate_unlogged as changed on purpose in the pre-launch audit, for the notice when a special hides a change: audit_fixes_test checks it)');
 
 select is(
   array(select w.proname::text
@@ -188,7 +189,9 @@ select is(
                                                                  -- B3: Fix a mistake, logged by itself.
                                                                  'correct_savings',
                                                                  -- B4: Dad countersigning, logged by itself.
-                                                                 'countersign_agreement'))))
+                                                                 'countersign_agreement',
+                                                                 -- Pre-launch audit: fixing a close, recording a closure.
+                                                                 'correct_fund_price', 'record_market_closure'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');
@@ -461,23 +464,77 @@ drop trigger t_preview_requests on public.requests;
 drop trigger t_preview_notifications on public.notifications;
 drop trigger t_preview_actions on public.parent_actions;
 
--- The rule for future code: every function that makes an HTTP call (pg_net, the http
--- extension, a database webhook) must check in_preview() and do nothing in a preview.
+-- The rule for future code (pre-launch audit, 2026-10-08): nothing in the database calls
+-- out directly. Anything for the outside world goes through queue_outside(), which does
+-- nothing in a preview; only the named sender (stage 4, run by pg_cron, never inside a
+-- preview) may call pg_net, the http extension, dblink or an Edge Function, and it must
+-- check in_preview() too. Checked over every function we own, in any schema, so a helper
+-- hidden in another schema is caught as well.
+create temp table outside_pattern (re text);
+insert into outside_pattern values
+  ('(net\.http_|net\._http|http_request|http_post|http_get|http_put|http_delete|http_patch|extensions\.http'
+   || '|dblink|/functions/v1|supabase_functions\.)');
+create temp table outside_senders (fn text);
+insert into outside_senders values ('public.send_outbox()');
 select is(
-  array(select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         where n.nspname not in ('pg_catalog', 'information_schema', 'net', 'extensions', 'supabase_functions',
-                                 'auth', 'storage', 'realtime', 'graphql', 'graphql_public', 'vault', 'pgbouncer',
-                                 'tests')
-           and p.prosrc ~* '(net\.http_|http_request|http_post|http_get|extensions\.http|/functions/v1)'
-           and p.prosrc !~ 'in_preview\(\)'),
+  array(select p.oid::regprocedure::text from pg_proc p
+         where pg_get_userbyid(p.proowner) = current_user
+           and p.pronamespace <> 'tests'::regnamespace
+           and p.prosrc ~* (select re from outside_pattern)
+           and p.oid::regprocedure::text not in (select fn from outside_senders)),
   '{}'::text[],
-  'every function that reaches outside the database checks in_preview() (CLAUDE.md, "Previews")');
+  'no function calls outside the database except the named sender (CLAUDE.md, "Previews")');
+select is(
+  array(select p.oid::regprocedure::text from pg_proc p
+         where p.oid::regprocedure::text in (select fn from outside_senders)
+           and p.prosrc !~ 'if public\.in_preview\(\) then\s+return'),
+  '{}'::text[],
+  'the sender, once it exists, stops at once in a preview');
+select is(
+  array(select p.oid::regprocedure::text from pg_proc p
+         where pg_get_userbyid(p.proowner) = current_user
+           and p.pronamespace <> 'tests'::regnamespace
+           and p.prolang = (select oid from pg_language where lanname = 'plpgsql')
+           and p.prosrc ~* '\mexecute\M'
+           and p.prosrc ~* '(\mnet\M|http|dblink|functions)'
+           and p.oid::regprocedure::text not in (select fn from outside_senders)),
+  '{}'::text[],
+  'no dynamic SQL that could build a call to the outside');
 select is(
   array(select t.tgrelid::regclass::text || ': ' || t.tgname::text from pg_trigger t
           join pg_proc p on p.oid = t.tgfoid join pg_namespace n on n.oid = p.pronamespace
-         where not t.tgisinternal and n.nspname in ('supabase_functions', 'net', 'extensions')),
+         where not t.tgisinternal
+           and (n.nspname in ('supabase_functions', 'net', 'extensions') or p.prosrc ~* (select re from outside_pattern))),
   '{}'::text[],
   'no table has a database webhook (it would call out without checking in_preview())');
+-- pg_cron jobs, once pg_cron is installed (stage 4).
+do $$
+begin
+  if to_regclass('cron.job') is not null then
+    execute $q$
+      create temp table cron_out as
+      select jobname from cron.job
+       where command ~* (select re from outside_pattern) and command !~ 'send_outbox\(\)'$q$;
+  else
+    create temp table cron_out (jobname text);
+  end if;
+end;
+$$;
+select is(array(select jobname from cron_out), '{}'::text[],
+  'no pg_cron job calls outside the database except through the sender');
+
+-- queue_outside() by what it does: nothing in a preview, one queued message otherwise.
+select tests.nobody();
+select set_config('bigbucks.preview', 'on', true);
+select is(public.queue_outside('email', '{"to": "parent"}'), null::bigint, 'in a preview, nothing is queued');
+select is((select count(*)::int from public.outbox), 0, '...and the outbox stays empty');
+select set_config('bigbucks.preview', '', true);
+select isnt(public.queue_outside('email', '{"to": "parent"}'), null::bigint, 'outside a preview, it is queued');
+select is((select count(*)::int from public.outbox where sent_at is null), 1, '...once');
+select is(
+  array(select r from unnest(array['anon', 'authenticated', 'service_role']) r
+         where has_function_privilege(r, 'public.queue_outside(text, jsonb)', 'execute')),
+  '{}'::text[], 'no app sign-in can queue anything itself');
 
 -- 7. Nothing can skip the log: calling the originals directly ---------------------------------------
 --

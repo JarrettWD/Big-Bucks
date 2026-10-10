@@ -38,15 +38,18 @@ Each notice has a title and a body.
 - **Sale done**
   - Title: Your {fund} sale is done
   - Body: You sold {units} units at {price} each, and {proceeds} went into your savings.
+- **The market was closed** (Dad recorded an unscheduled closure; pre-launch audit)
+  - Title: The market was closed
+  - Body: The {New York / Toronto} Stock Exchange was closed on {date}, so your {fund} {buy / sale} will happen at the next close, on {date}.
 
 ### GICs
 
 - **GIC matured**
   - Title: Your GIC is ready!
   - Body: Your {term} GIC finished and earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}: renew it, pick a new term, or move it to savings. Until you choose, it earns the savings rate.
-- **No choice after 7 days**
+- **No choice in her 7 days** (her last day to choose is later if the nightly run was late: pre-launch audit)
   - Title: Your GIC money is in savings
-  - Body: You didn't choose within 7 days, so your {amount} moved to savings, where it's safe and still earning interest.
+  - Body: You didn't choose by {last day to choose}, so your {amount} moved to savings, where it's safe and still earning interest.
 
 ### Rates
 
@@ -57,6 +60,9 @@ Each notice has a title and a body.
     - Savings rate dropping later: Tip: GICs bought before then keep today's rates.
     - GIC rate dropping later: Tip: a GIC bought before then keeps today's rate.
     - Any other GIC rate change: GICs you already have keep their locked-in rate.
+- **Rate change hidden behind a running special** (pre-launch audit: nothing changes for her until the special ends)
+  - Title: {Savings rate / {term} GIC rate} after the special: {new}
+  - Body: {Dad's note} The special at {special rate} keeps going until {end date}. After that, the rate will be {new}. (GICs: plus "GICs you already have keep their locked-in rate.")
 - **Special, when Dad saves it**
   - Title: Special: {savings / {term} GICs} at {rate} from {start date} to {end date}
     - Example: Special: 1-year GICs at 6.0% from Nov 1 to Nov 7
@@ -138,6 +144,11 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 ### Any action
 
 - Only a kid's account can do this.
+- **The agreement isn't fully signed** (pre-launch audit, 2026-10-08; withdrawals, fund trades, buying or breaking a GIC, finishing onboarding):
+  - Not signed yet: Sign your Big Bucks agreement with Dad first.
+  - A new version she hasn't signed (deposits too): Dad changed the house rules. Read your new agreement with Dad and sign it, then try again.
+  - Dad hasn't countersigned: Dad hasn't signed your agreement yet. As soon as he does, this will work.
+- **Dad, approving before he has countersigned:** {name} signed her agreement and is waiting for you to sign it too. Sign it first (it's at the top of Approvals), then approve this.
 
 ### Deposits
 
@@ -210,8 +221,14 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 - **GIC interest, at maturity:** {principal} × {rate} × {term months}/12 = {exact interest}, rounded up to {amount}
   - Example: $100.00 × 2.5% × 1/12 = $0.2083, rounded up to $0.21
   - When no rounding is needed: $100.00 × 5.0% × 12/12 = $5.00
-- **Dividend:** {units} units × {last close of the quarter} × {yield} ÷ 4 = {exact}, rounded up to {amount}
-  - Example: 0.23809524 units × $430.00 × 1.8% ÷ 4 = $0.4607, rounded up to $0.47
+- **Dividend** (pro-rata from 2026-10-08: only for the days she held the units; the yield is the one on the payment day):
+  - The same units all quarter: {units} units × {last close of the quarter} × {yield} ÷ 4 = {exact}, rounded up to {amount}
+    - Example: 0.23809524 units × $430.00 × 1.8% ÷ 4 = $0.4607, rounded up to $0.47
+  - The same units on every day she had any: You owned {units} units for {days} of the quarter's {quarter days} days: {units} × {close} × {yield} ÷ 4 × {days}/{quarter days} = {exact}, rounded up to {amount}
+    - Example: You owned 0.23809524 units for 74 of the quarter's 92 days: 0.23809524 × $430.00 × 1.8% ÷ 4 × 74/92 = $0.3706, rounded up to $0.38
+  - Her units changed during the quarter: Your units changed during the quarter: on average about {average units} over its {quarter days} days. {average units} × {close} × {yield} ÷ 4 = {exact}, rounded up to {amount}
+- **Interest for money that reached savings late** (a close or dividend that came after that day's interest was worked out; pre-launch audit): Interest for the {n} days your {sale's money / dividend} waited to reach your savings ({from} to {to}): {amount waited} at the savings rate = {exact}, rounded up to {amount}
+  - Example: Interest for the 2 days your sale's money waited to reach your savings (Nov 17 to Nov 18): $510.00 at the savings rate = $0.0559, rounded up to $0.06.
 - **Fund sale:** {units} units × {price} = {exact}, rounded up to {proceeds}
   - Example: 0.47619048 units × $215.00 = $102.3810, rounded up to $102.39
   - Added when the price fell before the close: The price fell, so {amount} needed more units than you had: you sold all of them.
@@ -226,7 +243,7 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 - **Renewing or a new term:**
   - On the old GIC: Moved into a new {term} GIC at {rate}.
   - On the new GIC: A new {term} GIC at {rate}, from your matured GIC ({principal} + {interest} interest).
-- **Moved automatically after 7 days:** Moved to savings automatically: no choice was made within 7 days.
+- **Moved automatically after her 7 days:** Moved to savings automatically: no choice was made by {last day to choose}.
 - **Fund buy:** Bought {units} units of {fund} at {price} each.
 - **Split:** {new}-for-{old} split: your {units before} units became {units after}. Each unit is worth less, so your holding is worth the same.
 

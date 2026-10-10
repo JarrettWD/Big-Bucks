@@ -699,7 +699,8 @@ export const STEPS: Step[] = [
     do: { kind: 'choose', gic: 'gA1m_inv', choice: 'to_savings' },
     why: 'GIC that matured in the missed week, moved to savings',
   },
-  // gA3m_n matured Apr 4 during the missed week and moves on its own on day 7 (Apr 11).
+  // gA3m_n matured Apr 4 during the missed week. The catch-up on Apr 8 told her 4 days late,
+  // so her 7 days run from then: it moves on its own on Apr 15, not Apr 11 (Dad, 2026-10-08).
   {
     at: '2028-04-13 16:00',
     do: { kind: 'sell', kid: 'B', fund: 'dow', cents: $(15), label: 'tB10' },

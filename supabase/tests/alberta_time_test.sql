@@ -2,7 +2,7 @@
 -- market closes set in Toronto time, and Alberta dates across both Nov 1, 2026
 -- and the US/Canada clock changes.
 begin;
-select plan(45);
+select plan(51);
 
 -- Test helpers ----------------------------------------------------------------
 
@@ -40,7 +40,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
+           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   return v_acct;
 end;
 $$;
@@ -69,10 +70,29 @@ insert into public.profiles (user_id, role, username, display_name)
 -- 1. The production check passes here (run before any clock override) ----------------
 
 select tests.clock('');
-select is((select count(*) from public.check_time_rules() where ok is false), 0::bigint,
-  'check_time_rules(): no check fails');
+-- On this computer (not production) exactly one row fails: the production mark.
+select is(array(select check_name from public.check_time_rules() where ok is false),
+  array['Marked as production (select public.mark_production();), time machine off for good'],
+  'check_time_rules(): on a local copy, only the production-mark row fails');
 select is((select count(*) from public.check_time_rules() where ok), 20::bigint,
   'check_time_rules(): 20 checks pass');
+-- Marked as production (rolled back with the test): every row passes, and the
+-- clock override is ignored for good, whatever is_local_dev says (pre-launch audit).
+savepoint before_mark;
+select is(public.mark_production(), 'Marked as production: the time machine is off for good.',
+  'mark_production() marks the database');
+select is(public.mark_production(), 'Already marked as production.', '...and is safe to run again');
+select is((select count(*) from public.check_time_rules() where ok is false), 0::bigint,
+  'check_time_rules(): on marked production, no check fails');
+insert into public.settings (key, value, effective_date) values ('is_local_dev', 'true', '2026-10-02');
+select tests.clock('2027-01-01 12:00');
+select is(public.app_now(), now(), 'on marked production, app_now() ignores a clock override even if is_local_dev says true');
+select is((select ok from public.check_time_rules() where check_name like 'Marked as production%'), false,
+  '...and check_time_rules() flags is_local_dev = true');
+rollback to savepoint before_mark;
+select ok(not has_function_privilege('authenticated', 'public.mark_production()', 'execute')
+          and not has_function_privilege('service_role', 'public.mark_production()', 'execute'),
+  'only the database owner can mark production');
 select is((select count(*) from public.check_time_rules() where ok is null), 1::bigint,
   'check_time_rules(): one information-only row (the server''s own time-zone data)');
 select ok(not has_function_privilege('authenticated', 'public.check_time_rules()', 'execute'),

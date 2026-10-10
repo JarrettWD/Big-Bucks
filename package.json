@@ -21,7 +21,8 @@
     "demo:code": "node scripts/local/demo-code.ts",
     "jobs:local": "node scripts/local/jobs.ts",
     "setup-account": "node scripts/local/setup-account.ts",
-    "env:local": "node scripts/local/env.ts"
+    "env:local": "node scripts/local/env.ts",
+    "check:emails": "node scripts/ci/check-commit-emails.ts"
   },
   "dependencies": {
     "@fontsource/fredoka": "^5.3.0",

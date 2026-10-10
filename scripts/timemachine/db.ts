@@ -39,6 +39,12 @@ export class LocalDb {
       await client.end();
       throw new Error('Refusing to run: this database does not say is_local_dev = true.');
     }
+    // Production marks itself for good (mark_production, pre-launch audit 2026-10-08).
+    const prod = await client.query(`select 1 from public.settings where key = 'is_production'`);
+    if (prod.rows.length > 0) {
+      await client.end();
+      throw new Error('Refusing to run: this database is marked as production.');
+    }
     return db;
   }
 

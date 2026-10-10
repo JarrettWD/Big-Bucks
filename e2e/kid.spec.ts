@@ -1,5 +1,7 @@
 // Kid logins and the kid shell, against the LOCAL Supabase (demo data).
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { LocalDb } from '../scripts/timemachine/db.ts';
 import { kid, kidSignIn, logins, typePin } from './helpers';
 
 test('a kid signs in with her username and PIN and sees her Home', async ({ page }) => {
@@ -85,6 +87,39 @@ test('5 wrong PINs in a row lock the login for 15 minutes, even for the right PI
   await typePin(page, lockoutKid.pin);
   await expect(page.getByRole('alert')).toContainText('taking a short break');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test("her PIN alone never signs in to Supabase Auth, so the lockout can't be skipped", async ({
+  page,
+}) => {
+  // Pre-launch audit (2026-10-08): guessing PINs straight against Supabase Auth,
+  // without kid-login, must get nowhere. Her Auth password is worked out from her
+  // PIN on the server, and her hidden email is random.
+  const robin = kid('Robin');
+  const db = await LocalDb.connect();
+  let email: string;
+  try {
+    [{ email }] = await db.q<{ email: string }>(
+      `select u.email from auth.users u join public.profiles p on p.user_id = u.id
+        where p.username = $1`,
+      [robin.username],
+    );
+  } finally {
+    await db.close();
+  }
+  expect(email).not.toContain(robin.username);
+  const anon = readFileSync('.env.local', 'utf8')
+    .match(/^VITE_SUPABASE_ANON_KEY=(.*)$/m)![1]
+    .trim();
+  const r = await fetch('http://127.0.0.1:54321/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    headers: { apikey: anon, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: robin.pin }),
+  });
+  expect(r.status).toBe(400);
+  // The PIN door still lets her in.
+  await kidSignIn(page, robin.username, robin.pin);
+  await expect(page).toHaveURL(/\/kid$/);
 });
 
 test('a kid can never reach the parent screens', async ({ page }) => {

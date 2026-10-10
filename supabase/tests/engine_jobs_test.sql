@@ -1,11 +1,25 @@
 -- Daily jobs: run_daily, catch-up after missed days, never posting twice, and
 -- waiting for a missing price (stage 2).
 begin;
-select plan(26);
+select plan(30);
 
 -- Test helpers ----------------------------------------------------------------
 
 create schema tests;
+
+-- Test closes are stored ahead of the test clock. They count as fetched just after their
+-- close, as the real price fetcher only stores a close once the market has closed
+-- (settlement uses only final closes: pre-launch audit, 2026-10-08).
+create function tests.fetched_after_close() returns trigger language plpgsql as $t$
+begin
+  new.fetched_at := greatest(new.fetched_at,
+    public.close_time((select f.market from public.funds f where f.id = new.fund_id), new.price_date)
+      + interval '30 minutes');
+  return new;
+end;
+$t$;
+create trigger tests_fetched_after_close before insert on public.fund_prices
+  for each row execute function tests.fetched_after_close();
 grant usage on schema tests to authenticated, service_role;
 
 -- Freeze the app clock at an Edmonton date and time (works only in local dev).
@@ -41,7 +55,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
+           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   return v_acct;
 end;
 $$;
@@ -191,9 +206,16 @@ select is(
   'retrying', 'settlement is recorded as retrying');
 insert into public.fund_prices (fund_id, price_date, close) values ('dow', '2026-12-04', 103), ('nasdaq100', '2026-12-04', 100), ('tsx', '2026-12-04', 100);
 select tests.clock('2026-12-04 16:30');
-select is(public.run_daily('2026-12-04') ->> 'status', 'waiting', 'the next day it still waits for Dec 3...');
-select is(tests.ok_jobs('2026-12-04'), 0::bigint, '...and does not skip ahead to Dec 4');
-select is((select status::text from public.requests where fund_id = 'dow' and status = 'pending'), 'pending',
+select is(public.run_daily('2026-12-04') ->> 'status', 'waiting', 'the next day the fund work still waits for Dec 3...');
+select is((select count(distinct job) from public.job_runs
+            where run_for_date = '2026-12-04' and status = 'ok' and job in ('splits', 'settle', 'dividends', 'notes')),
+  0::bigint, '...and does not skip ahead to Dec 4''s fund work');
+-- Dad's decision (2026-10-08): savings interest and GICs never wait for fund prices.
+select is(tests.ok_jobs('2026-12-03'), 7::bigint,
+  'Dec 3: splits, and every job that doesn''t need a price (interest included), finished anyway');
+select is(tests.ok_jobs('2026-12-04'), 5::bigint,
+  'Dec 4: the jobs that don''t need a price finished too (all but tonight''s accrual)');
+select is((select r.status::text from public.requests r where r.fund_id = 'dow' and r.status = 'pending'), 'pending',
   'the trade is not settled on Dec 4''s price');
 insert into public.fund_prices (fund_id, price_date, close) values ('dow', '2026-12-03', 102);
 select is(public.run_daily('2026-12-04') ->> 'status', 'ok', 'once the close arrives, the run carries on');
@@ -201,6 +223,15 @@ select results_eq(
   $$select r.status::text, t.unit_price from public.requests r join public.transactions t on t.request_id = r.id and t.vehicle = 'stock'
      where r.account_id = tests.acct('kid_j') and public.edmonton_local(r.created_at)::date = '2026-12-03'$$,
   $$values ('settled', 102::numeric(20,8))$$, 'the trade settled at Dec 3''s real close');
+select results_eq(
+  $$select t.vehicle::text, t.effective_at from public.transactions t
+     where t.request_id = (select r.id from public.requests r
+                            where r.account_id = tests.acct('kid_j') and public.edmonton_local(r.created_at)::date = '2026-12-03')
+     order by t.vehicle$$,
+  $$values ('savings', public.edmonton_start('2026-12-04')), ('stock', public.close_time('nyse', '2026-12-03'))$$,
+  'Dec 3''s interest was already worked out, so the $10 leaves savings from the start of Dec 4; the units count from the close');
+select is((select count(*)::int from public.transactions where posting_key like 'late\_interest:%'), 0,
+  'a late buy needs no catch-up interest (her money simply earned a day longer)');
 select is(tests.ok_jobs('2026-12-03'), 10::bigint, 'every job finished for Dec 3');
 select is(tests.ok_jobs('2026-12-04'), 9::bigint, 'and for Dec 4 (all but tonight''s accrual)');
 

@@ -4,7 +4,7 @@
 -- first deposit, the frozen copy, Dad's countersignature, a new version, finishing
 -- onboarding, and What's new.
 begin;
-select plan(84);
+select plan(85);
 
 -- Test helpers ----------------------------------------------------------------
 
@@ -86,8 +86,8 @@ select is(public.house_rules(),
 -- 2. The fixed rules are the engine's own --------------------------------------------------------
 
 select is(position((public.house_rules() ->> 'gic_choice_days') || '' in
-                   (select substring(p.prosrc from 'maturity_date \+ ([0-9]+) <= p_date')
-                      from pg_proc p where p.proname = 'auto_move_unclaimed_maturities')), 1,
+                   (select substring(p.prosrc from 'maturity_date \+ ([0-9]+) \+ greatest')
+                      from pg_proc p where p.proname = 'mature_gics')), 1,
   'a matured GIC moves to savings after the same number of days the agreement says');
 select tests.as_parent();
 select is((select public.parent_change_preview('add_rate', jsonb_build_object('vehicle', 'savings', 'rate', '1.0',
@@ -283,6 +283,11 @@ select lives_ok('select public.finish_onboarding()', 'she finishes onboarding af
 select is((select onboarding_done_at from public.accounts where id = tests.acct('kid_a')), public.app_now(), '...now');
 select lives_ok('select public.finish_onboarding()', 'finishing again changes nothing');
 select tests.as_kid('kid_b');
+select is(tests.err('select public.finish_onboarding()'), 'Dad hasn''t signed your agreement yet. As soon as he does, this will work.',
+  'kid B can''t finish before Dad signs her agreement too (pre-launch audit)');
+select tests.as_parent();
+select public.countersign_agreement(tests.acct('kid_b'), 1);
+select tests.as_kid('kid_b');
 select lives_ok('select public.finish_onboarding()', 'kid B finishes too (her Wish List was on during onboarding)');
 select is((select array_agg(feature) from public.whats_new_seen where account_id = tests.acct('kid_b')), array['wishlist'],
   '...so the Wish List counts as met');
@@ -344,7 +349,9 @@ select is((select s ->> 'needs_signature' || ' ' || (s ->> 'signed_version') || 
 select is((select r ->> 'mark' || ' ' || (r ->> 'text')
              from jsonb_array_elements(public.onboarding_state(tests.acct('kid_a')) -> 'agreement' -> 'rules') r where r ->> 'icon' = '🧪'),
   'new Up to $1,250.00.', 'a new rule is marked new, with today''s numbers');
-select isnt(public.request_deposit(1000), null, 'until she signs version 2, her signed version 1 still counts');
+select is(tests.err('select public.request_deposit(1000)'),
+  'Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed.',
+  'until she has signed version 2 (and Dad too), new deposits wait (Dad, 2026-10-08)');
 select isnt(public.sign_agreement(2), null, 'she signs version 2');
 select is((select jsonb_agg(jsonb_build_object('version', a -> 'version', 'title', a -> 'copy' -> 'title', 'dad', a -> 'dad_signed_on'))
              from jsonb_array_elements(public.my_agreements(tests.acct('kid_a'))) a),
@@ -402,6 +409,8 @@ reset role;
 
 select tests.clock('2026-10-05 11:00');
 select tests.as_parent();
+-- Dad signs version 2 too, so money can move again (pre-launch audit).
+select public.countersign_agreement(tests.acct('kid_a'), 2);
 select public.approve_request((select id from public.requests where account_id = tests.acct('kid_a') and status = 'pending'
                                 order by id limit 1));
 select tests.as_kid('kid_a');

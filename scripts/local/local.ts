@@ -5,6 +5,7 @@
 // is_local_dev = true (the time machine's guard). Production comes after stage 4.
 
 import { execSync } from 'node:child_process';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { LocalDb } from '../timemachine/db.ts';
@@ -104,8 +105,11 @@ export function writeAppEnv(keys: LocalKeys): void {
   );
 }
 
-/** The hidden email behind a kid's username (Build decisions: username + PIN). */
-export const kidEmail = (username: string): string => `${username}@kids.local`;
+/**
+ * A kid's hidden email: random, never worked out from her username, so knowing
+ * her username doesn't give away her Auth login (pre-launch audit, 2026-10-08).
+ */
+export const newKidEmail = (): string => `kid-${randomBytes(12).toString('hex')}@kids.local`;
 
 export interface NewKid {
   username: string;
@@ -114,17 +118,25 @@ export interface NewKid {
   isTest: boolean;
 }
 
-/** A kid: an Auth login (hidden email, PIN as password), her account and profile. */
+/**
+ * A kid: an Auth login (a random hidden email, and a password the server works
+ * out from her PIN: never the PIN itself), her account and profile.
+ */
 export async function createKid(
   admin: SupabaseClient,
   kid: NewKid,
-): Promise<{ userId: string; accountId: string }> {
+): Promise<{ userId: string; accountId: string; email: string }> {
   if (!/^\d{6}$/.test(kid.pin)) throw new Error('A PIN is exactly 6 digits.');
   if (!/^[a-z0-9_]{3,30}$/.test(kid.username))
     throw new Error('A username is 3 to 30 lowercase letters, numbers or _.');
+  const id = randomUUID();
+  const pw = await admin.rpc('kid_auth_password', { p_user_id: id, p_pin: kid.pin });
+  if (pw.error || typeof pw.data !== 'string')
+    throw new Error(`Couldn't work out her password: ${pw.error?.message}`);
   const { data, error } = await admin.auth.admin.createUser({
-    email: kidEmail(kid.username),
-    password: kid.pin,
+    id,
+    email: newKidEmail(),
+    password: pw.data,
     email_confirm: true,
   });
   if (error || !data.user) throw new Error(`Couldn't create the login: ${error?.message}`);
@@ -138,7 +150,7 @@ export async function createKid(
     await admin.auth.admin.deleteUser(data.user.id);
     throw new Error(r.error.message);
   }
-  return { userId: data.user.id, accountId: r.data as string };
+  return { userId: data.user.id, accountId: r.data as string, email: data.user.email! };
 }
 
 export interface NewParent {

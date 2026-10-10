@@ -17,11 +17,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, for the commit email check.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
+
+      # The repo is public: every commit must use a GitHub noreply email.
+      - name: Commit emails are GitHub noreply addresses
+        run: npm run check:emails
 
       - name: Install dependencies
         run: npm ci

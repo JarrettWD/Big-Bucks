@@ -15,6 +15,7 @@ import {
   addHours,
   addMonths,
   at,
+  diffDays,
   dayOf,
   daysInYear,
   parts,
@@ -135,6 +136,11 @@ interface Gic {
   term: number;
   start: Day;
   maturity: Day;
+  /**
+   * Matured: the day it moves to savings if she hasn't chosen. Maturity + 7, plus the days
+   * the nightly run was late processing the maturity (Dad's decision, 2026-10-08).
+   */
+  choiceEnds?: Day;
   status: 'active' | 'matured' | 'broken' | 'closed';
   balance: bigint;
 }
@@ -217,6 +223,8 @@ export class Model {
   private splits: { fund: FundId; day: Day; from: bigint; to: bigint }[] = [];
   private holidays = new Map<string, Holiday>(); // `${market}|${day}`
   private seq = 0;
+  /** Days whose nightly run didn't happen (the time machine's missed week). */
+  private skipped = new Set<Day>();
   /** Fix a mistake: cents already taken from each line by earlier fixes. */
   private takenFromLine = new Map<string, bigint>();
   readonly postings: Posting[] = [];
@@ -271,6 +279,11 @@ export class Model {
 
   addSplit(fund: FundId, day: Day, from: bigint, to: bigint): void {
     this.splits.push({ fund, day, from, to });
+  }
+
+  /** The nightly run doesn't happen on these days; the next one catches up. */
+  skipNights(days: Iterable<Day>): void {
+    for (const d of days) this.skipped.add(d);
   }
 
   openAccount(id: string): void {
@@ -505,6 +518,11 @@ export class Model {
       const interest = Q.of(g.principal).mul(g.rate).mul(Q.of(g.term)).div(Q.of(1200)).ceil();
       g.balance += interest;
       g.status = 'matured';
+      // She hears about it at the first nightly run on or after its maturity: if that's
+      // late, her 7 days start then.
+      let told = d;
+      while (this.skipped.has(told)) told = addDays(told, 1);
+      g.choiceEnds = addDays(d, 7 + diffDays(told, d));
       if (interest > 0n)
         this.postings.push({
           kid: g.kid,
@@ -515,9 +533,9 @@ export class Model {
         });
     }
 
-    // Not chosen within 7 days: moves to savings at the start of day 7.
+    // Not chosen within her 7 days: moves to savings at the start of the day they end.
     for (const g of this.gics.values()) {
-      if (g.status !== 'matured' || addDays(g.maturity, 7) !== d) continue;
+      if (g.status !== 'matured' || g.choiceEnds !== d) continue;
       this.gicToSavings(g, d);
     }
 
@@ -531,14 +549,24 @@ export class Model {
         if (first !== d) continue;
         let last = addDays(qStart, -1);
         while (!this.isTradingDay(market, last)) last = addDays(last, -1);
-        const closeAt = this.closeMoment(market, last);
         const yld = this.yieldOn(f, d);
+        // Pro-rata (Dad, 2026-10-08): the units she held at the end of each day of the
+        // quarter, counted in units as of the quarter's last close (a later split in the
+        // quarter multiplies earlier days), added up and divided by the quarter's days.
+        const qFrom = addMonths(qStart, -3);
+        const qDays = diffDays(qStart, qFrom);
+        const splitsIn = this.splits.filter((s) => s.fund === f && s.day > qFrom && s.day <= last);
         for (const k of this.kids.values()) {
-          const units = this.unitsAt(k.id, f, closeAt);
-          if (units.sign() <= 0) continue;
+          let unitDays = Q.ZERO;
+          for (let x = qFrom; x < qStart; x = addDays(x, 1)) {
+            let u = this.unitsAt(k.id, f, at(x, '23:59'));
+            for (const s of splitsIn) if (s.day > x) u = u.mul(Q.of(s.to, s.from));
+            unitDays = unitDays.add(u);
+          }
+          if (unitDays.sign() <= 0) continue;
           const close = this.closeOf(f, last);
-          // units × close (dollars) × 100 (cents) × yield% ÷ 100 ÷ 4
-          const cents = units.mul(close).mul(yld).div(Q.of(4)).ceil();
+          // average units × close (dollars) × 100 (cents) × yield% ÷ 100 ÷ 4
+          const cents = unitDays.div(Q.of(qDays)).mul(close).mul(yld).div(Q.of(4)).ceil();
           if (cents <= 0n) continue;
           k.savings += cents;
           this.postings.push({ kid: k.id, day: d, kind: 'dividend', cents, fund: f });

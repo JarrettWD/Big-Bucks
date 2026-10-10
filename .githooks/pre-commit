@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuses a commit that would publish a personal email (the repo is public).
+# Turned on with: git config core.hooksPath .githooks
+exec node scripts/ci/check-commit-emails.ts --staged
