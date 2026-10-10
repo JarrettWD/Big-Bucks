@@ -4,7 +4,10 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 4 in progress**. Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09). Next: the rest of stage 4.
+- Current stage: **stage 4 in progress**.
+  - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
+  - The plan for the rest of stage 4 is approved (Stage 4 entry below).
+  - Next: Part A, built and tested locally.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -32,6 +35,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - `private.kid_pin_resets`: clear it;
   - `outbox`: clear it;
   - `fund_price_corrections`: keep it, like fund prices.
+- **Move the scheduled workflows** (the daily health check and the backup) to the private backup repo (Dad, 2026-10-09). It gets a commit every day, so GitHub never turns their schedules off for 60 days without commits. The health check is the keep-alive for the Free plan.
 - The backup must include the `private` schema.
 - The login key in Supabase Vault won't decrypt in a new project. A restore into a new project therefore means `select public.new_kid_login_key();` and a PIN reset for each girl (docs/RUNBOOK.md, "The login key was lost").
 
@@ -256,7 +260,117 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **CI on GitHub:** run 38019899477 passed on 2026-10-09 for commit `60dbd20`, both jobs green: https://github.com/JarrettWD/Big-Bucks/actions/runs/38019899477
   - **test:** commit-email check, lint, unit tests, type-check and build, database tests (pgTAP).
   - **timemachine:** the simulated year against the reference model.
-- **Next:** the rest of stage 4. Stage 12: a fresh read-only audit of changes since the third pre-launch audit before the girls' real accounts.
+- **Next:** Stage 4 Part A, below. Stage 12: a fresh read-only audit of changes since the third pre-launch audit before the girls' real accounts.
+
+#### Stage 4 plan, approved by Dad (2026-10-09)
+
+Facts checked on 2026-10-09:
+- **Supabase Free:** projects pause after 1 week of inactivity; 2 active free projects; 500 MB database; no backups; 1 day of logs.
+- **Supabase Pro:** from US$25/month, never pauses, daily backups kept 7 days.
+- **Alpha Vantage free key:** 25 requests a day.
+
+**Dad's answers:**
+1. **Supabase plan:** Free, permanently, with the daily keep-alive. No Pro. Two triggers become **alerts only**, so Dad hears straight away:
+   - **The project paused:** the daily health check can't reach it, so the workflow fails and GitHub emails Dad.
+   - **The database passes about 400 MB:** a `database_size` alert from the health check.
+
+   **Stage 5 must move the scheduled workflows (health check, backup) to the private backup repo.** That repo gets a commit every day, so GitHub never turns its schedules off for inactivity (it does after 60 days without commits).
+2. **Price provider:** Alpha Vantage free key. The key exists; Dad stores it himself as a Supabase secret and never pastes it anywhere.
+3. **Backfill:** option A.
+   - The last 100 days come from the free daily series.
+   - Older history comes from the free weekly series, marked as weekly.
+   - No trade ever settles on a backfilled price.
+4. **Region:** Canada (Central).
+
+**Part A: build and test locally (no production).**
+- **A1. Migrations:**
+  - **Price source:** `fund_prices.source` (`daily` or `weekly_backfill`).
+  - **`store_close()`:** server only, and the only way a close is saved. It refuses:
+    - a close before that market's close time;
+    - a non-trading day.
+
+    It raises a quiet alert when a close moves more than 25% with no split recorded.
+  - **`record_split()`:** future dates only, or today before the nightly run.
+  - **`nightly_kick()`:** pg_cron calls it every 30 minutes from 22:00 to 04:30 UTC. It does nothing:
+    - before 4:30 pm Alberta time (worked out with `edmonton_local()`);
+    - when tonight's work is already finished;
+    - when the function's address and key aren't in Vault.
+
+    Otherwise it queues one call to the `nightly` Edge Function through the outbox.
+  - **`send_outbox()`:** the one named sender, through pg_net. It stops at once in a preview.
+  - **`missing_price` alert:** at 9:00 pm Alberta time, one per fund per day.
+  - **Size alert:** a `database_size` alert past about 400 MB (from the health check).
+  - **Extensions:** turn on pg_cron and pg_net, and schedule the job.
+- **A2. Edge Function `nightly`** (server only, secret key). In order:
+  1. **Prices:** one `TIME_SERIES_DAILY` call per fund covers every missing trading day. Retries, never a guess, and a budget of 20 calls a day.
+  2. **Splits:** `SPLITS` once a week per fund.
+  3. **Jobs:** `run_daily` through today, or through yesterday before 4:30 pm.
+  4. **Check:** `reconcile` for every date not yet checked.
+
+  On Dad's computer it uses a made-up price source, so no key is needed to test it.
+- **A3. Edge Function `health`** (secret key):
+  - returns `health_check()`, and an error status when anything is open (database size included);
+  - a "send test alert" mode;
+  - the GitHub workflow never holds the service role key.
+- **A4. GitHub workflows:**
+  - `health-check.yml`: daily, plus a manual **Send test alert** option. It's also the keep-alive.
+  - `backfill-prices.yml`: manual run only.
+- **A5. `scripts/prod/setup-account.ts`:** accounts and PIN resets on production. It needs all of these:
+  - `--production`;
+  - the project ref, typed to confirm;
+  - the service role key only from Dad's own terminal for that session, never saved.
+- **A6. `deploy.yml`:** builds the app with the production address and anon key from GitHub repository variables.
+- **A7. Tests:**
+  - **pgTAP:**
+    - `store_close` refusals;
+    - `nightly_kick` timing (4:29 pm vs 4:30 pm Alberta) and never repeating finished work;
+    - `send_outbox` in a preview;
+    - the 9:00 pm missing-price alert;
+    - recording splits;
+    - the size alert.
+  - **End-to-end:** the local nightly function, with the made-up price source, **catches up after a skipped day**.
+  - **Also:** the time machine (the nightly jobs count as money logic) and every other suite.
+- **A8. Docs:** RUNBOOK gets the full production setup, plus "a close is missing", "the project paused" and "the database is getting big". SPEC, PROGRESS and ACCEPTANCE are updated.
+
+**Part B: production setup.** ✋ = Dad by hand. Claude runs nothing on production without Dad's OK on that step.
+- **B1. ✋ Create the project.** Supabase Dashboard → **New project**:
+  - Name `big-bucks`;
+  - a strong database password, kept in Dad's password manager;
+  - Region **Canada (Central)**;
+  - Plan **Free**.
+- **B2. ✋ Sign-in settings.** Under **Authentication**:
+  - **Sign In / Providers**: **Allow new users to sign up** off; **Email** on; **Secure password change** on.
+  - **Multi-Factor**: **TOTP** on.
+  - **URL Configuration**: Site URL `https://jarrettwd.github.io/Big-Bucks/`.
+- **B3. ✋ Data API.** **Project Settings** → **Data API** → **Max rows** `20000` → **Save**.
+- **B4. ✋ Edge Function secrets.** **Edge Functions** → **Secrets** → **Add new secret**:
+  - `ALPHAVANTAGE_API_KEY`;
+  - `NIGHTLY_KEY` (a long random string);
+  - `HEALTH_CHECK_KEY` (another).
+- **B5. Link, push, deploy.**
+  - ✋ Dad runs `npx supabase login` once.
+  - Then, with Dad's OK, Claude runs `npx supabase link`, `npx supabase db push` and `npx supabase functions deploy` (kid-login, nightly, health), and shows the output of each.
+- **B6. ✋ SQL Editor:**
+  - RUNBOOK checklist steps 1–3: `mark_production()`, `check_time_rules()`, the login key and the login trigger;
+  - two Vault entries: the nightly function's address and its key.
+- **B7. ✋ GitHub:**
+  - Repo **Settings** → **Secrets and variables** → **Actions**: secret `HEALTH_CHECK_KEY`; variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+  - Your picture → **Settings** → **Notifications** → **Actions**: **Email** on, failed workflows only.
+- **B8. ✋ Backfill:** **Actions** → **Backfill prices** → **Run workflow**. About 6 Alpha Vantage calls; the first checks that `XIC.TRT` works.
+- **B9. Deploy, accounts and phone:**
+  1. ✋ **Actions** → **Deploy to GitHub Pages** → **Run workflow**.
+  2. Dad's parent account and one **test** kid, with the production setup script. The girls' real accounts wait for the Stage 12 audit.
+  3. ✋ Install the app on Dad's phone from Chrome.
+  4. ✋ RUNBOOK steps 6–7: the device-address check and the forged-header test.
+
+**Part C: done when:**
+- [ ] Locally, the nightly run catches up after a skipped day.
+- [ ] `check_time_rules()` passes on production.
+- [ ] Production has a few nights of real closes for DIA, QQQ and XIC.
+- [ ] ✋ **Send test alert** reaches Dad's email.
+- [ ] Every test suite and the time machine pass, CI is green, and PROGRESS is updated.
+
+**Order of work:** Part A in a fresh session (Dad clears the chat first), then stop for review before B1.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 
