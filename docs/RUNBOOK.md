@@ -112,7 +112,7 @@ Running it again is harmless: it only fills gaps and never changes a stored clos
 npm run setup-account:prod -- --production
 ```
 
-   It asks for the project ref twice, then the service role key (**Project Settings** → **API Keys** → **service_role** or **secret**; paste it, it stays hidden and is never saved), then the same questions as the local script. Run it once for `parent`, once for a test `kid`. The girls' real accounts wait for the Stage 12 audit; the script asks you to type "real" before making a real kid.
+   It asks for the project ref twice, then the service role key (**Project Settings** → **API Keys** → **service_role** or **secret**: **copy it, then just press Enter** at the prompt and the script reads it from the clipboard, never shows it, and clears the clipboard; pasting also works), then the same questions as the local script. For your password, the same works: copy it from your password manager and press Enter (then it isn't asked twice). Run it once for `parent`, once for a test `kid`. The girls' real accounts wait for the Stage 12 audit; the script asks you to type "real" before making a real kid.
 3. ✋ On your phone, open `https://jarrettwd.github.io/Big-Bucks/` in Chrome → menu (⋮) → **Add to Home screen** → **Install**.
 4. ✋ Sign in as yourself: the first sign-in sets up the authenticator app.
 
@@ -132,10 +132,10 @@ After the kid-login function is deployed, sign in as the test kid once, then in 
 The forged-header test (third audit). On your computer, in a terminal in the project folder, run this twice, with your project's address and its anon key (**Project Settings** → **API Keys**) in place of the two placeholders, and a username that isn't a kid's:
 
 ```bash
-curl -s -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/kid-login" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY" -H "Content-Type: application/json" -H "cf-connecting-ip: 203.0.113.77" -H "x-real-ip: 203.0.113.78" -H "X-Forwarded-For: 203.0.113.79" -d '{"username":"nobody_here","pin":"000000"}'
+curl -s -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/kid-login" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY" -H "Content-Type: application/json" -H "x-real-ip: 203.0.113.78" -H "X-Forwarded-For: 203.0.113.79" -d '{"username":"nobody_here","pin":"000000"}'
 ```
 
-Then change the three numbers ending `.77`, `.78` and `.79` to `.87`, `.88` and `.89` and run it once more. In the SQL Editor: `select client from public.login_attempts where username = 'nobody_here' order by id;`. All three rows must show the **same** `client` (your computer's real address). If the last one differs, the platform passes a made-up address through, and a stranger could dodge the per-device lock (the 20-a-day lock still holds): stop and ask before going further. Then clean up with `delete from public.login_attempts where username = 'nobody_here';`.
+Then change the two numbers ending `.78` and `.79` to `.88` and `.89` and run it once more. Each answer should be `{"error":"wrong",…}`, with `tries_left` going down by one each time. (Don't add a `cf-connecting-ip` header: Supabase's front door, Cloudflare, refuses any request that fakes it, with "error code: 1000", which is good, but then the call never reaches the login. Checked on production 2026-10-10.) In PowerShell, type `curl.exe`, not `curl`. In the SQL Editor: `select client from public.login_attempts where username = 'nobody_here' order by id;`. All three rows must show the **same** `client` (your computer's real address). If the last one differs, the platform passes a made-up address through, and a stranger could dodge the per-device lock (the 20-a-day lock still holds): stop and ask before going further. Then clean up with `delete from public.login_attempts where username = 'nobody_here';`.
 
 ### 14. ✋ The first few nights
 

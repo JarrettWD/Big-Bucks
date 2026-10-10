@@ -456,6 +456,45 @@ Nothing touched production.
   - **timemachine:** the simulated year against the reference model.
 - **Next:** Part B, step B1 (RUNBOOK "Production setup", step 1).
 
+#### Stage 4 Part B: production setup (started 2026-10-10)
+
+- **Done so far (RUNBOOK "Production setup"):**
+  - steps 1–4 by Dad: project `qcjplrvbpqdvmoundipw`, Canada (Central), Free plan; sign-in settings; Max rows 20,000; two function secrets;
+  - step 5: Dad linked the folder; with his OK, Claude ran `db push` (all 42 migrations, no seed) and deployed `kid-login`, `nightly` and `health`;
+  - step 6: marked production; `check_time_rules()`, the login key and guard, and the timer all checked;
+  - step 7: `set_nightly_vault()`, and `NIGHTLY_KEY` set;
+  - step 8: GitHub secrets, variables and notifications;
+  - step 9: backfill. Each fund has 100 daily closes to Oct 9, 2026 and 84–85 weekly closes back to Oct 11, 2024. No alerts;
+  - step 10: app deployed, parent account and one test kid made with `setup-account:prod`, parent signed in on Dad's phone (authenticator set up);
+  - step 11: **the test alert reached Dad's email** and showed on the Dashboard, where he acknowledged it. The second run was red, as expected before the first nightly run.
+  - step 12: device addresses. Two Wi-Fi sign-ins gave the same `client` code, and mobile data gave a different one: the device lockout tells devices apart.
+  - step 13: forged headers, run by Claude with Dad's OK, using the public anon key read from the live app.
+    - With a faked `cf-connecting-ip`, Cloudflare refused all three calls at the door (403, "error code: 1000").
+    - With only `x-real-ip` and `X-Forwarded-For` faked, all three reached the login (401, about 1.75 s each), and `tries_left` went 4 → 3 → 2 across different fake addresses. The `client` code was the same on all three rows: **pass**.
+    - Test rows deleted. RUNBOOK step 13 corrected (no `cf-connecting-ip`; `curl.exe` in PowerShell).
+- **Must fix before Stage 4 is done (Dad, 2026-10-10):**
+  1. **Installing on Dad's Samsung fails** ("could not open app"; App info shows no version, so Chrome's WebAPK never finished). The live manifest, scope, start_url, icons and service worker check out. Fix: give the manifest an explicit `id` (`/Big-Bucks/`) and drop the portrait lock (CLAUDE.md requires landscape, tablets and foldables). Then retry. Samsung's Auto Blocker can also block WebAPKs; that setting is Dad's call. Using a Chrome shortcut meanwhile.
+  2. **Health check in plain words:** when it fails only because jobs are behind (no open alert), the workflow message and the Dashboard say so ("Nightly jobs haven't finished since …"), not "open the Dashboard". A brand-new account isn't "behind" before its first nights could have run (today the first morning after setup is a false red for interest).
+- **Must fix before the girls' accounts (Dad, 2026-10-10):**
+  - `setup-account:prod`: pasting into the hidden prompts was unreliable in PowerShell. Add a clipboard option (read the key from the clipboard, never shown or saved).
+- **The three fixes, built and tested locally (2026-10-10; not committed, nothing redeployed, awaiting Dad's OK):**
+  1. **Phone install:** the manifest has `id: "/Big-Bucks/"` and no orientation lock (`vite.config.ts`). `e2e/app.spec.ts` checks id, start_url, scope and no lock. Landscape layouts were already covered by `e2e/layout.spec.ts`. Needs the app redeployed, then Dad retries the install (Auto Blocker left as it is, to learn which cause it was).
+  2. **Health check in plain words:** migration `20261022000000_health_words`:
+     - `jobs_behind()` counts a job only once it could have run since the first account opened (no false red the morning after);
+     - `health_check()` gains a `summary` ("Nightly jobs haven't finished since Feb 1 (…). They catch up by themselves at the next evening run; …", or "1 open alert: open the parent Dashboard to see it.", or "All well."), with job names, dates and counts only;
+     - `parent_nightly_status()` (parent with MFA) gives the Dashboard the same words, shown in the Alerts card.
+     - The health function passes the summary on, and `health-check.yml` prints it as the error line.
+     - Tests: `health_words_test.sql` (16).
+     - Needs `db push`, the health function redeployed, and the app redeployed.
+  3. **Clipboard option:** in `setup-account:prod` (and the local script), pressing Enter at the key or password prompt reads the clipboard (`scripts/shared/clipboard.ts`: PowerShell `Get-Clipboard` on Windows). It's never shown, it's checked, and the clipboard is cleared straight after; a password from the clipboard isn't asked twice. Tests: `scripts/shared/prompt.test.ts` (8). Checked for real on Dad's Windows computer with a marker value (read, cleared, empty after). No redeploy needed; RUNBOOK step 10 updated.
+- **Results (local, 2026-10-10):**
+  - pgTAP **1619 of 1619** (fresh database);
+  - Vitest **253 of 253**;
+  - time machine **PASS, 14 of 14** (31 of 31 planned outcomes, health checks included);
+  - Playwright **90 of 90**;
+  - lint and build clean.
+  - Not checked by eye: the Dashboard's "jobs behind" line (the demo is never behind); its wording is tested in pgTAP.
+
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 
 The whole stage in one place. The details, Dad's decisions and each review are in the entries below.

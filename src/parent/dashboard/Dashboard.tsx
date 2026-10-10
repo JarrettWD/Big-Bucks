@@ -20,8 +20,16 @@ import { AgreementsNeedYou, AgreementsWaitingCard } from '../approvals/Agreement
 import './Dashboard.css';
 
 async function fetchDashboard(): Promise<{ data: Dash | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('parent_dashboard');
-  return error ? { data: null, error: error.message } : { data: data as Dash, error: null };
+  const [dash, nightly] = await Promise.all([
+    supabase.rpc('parent_dashboard'),
+    supabase.rpc('parent_nightly_status'),
+  ]);
+  if (dash.error) return { data: null, error: dash.error.message };
+  // The nightly line is extra: if it can't load, the rest of the dashboard still shows.
+  return {
+    data: { ...(dash.data as Dash), nightly: nightly.error ? undefined : nightly.data },
+    error: null,
+  };
 }
 
 export default function Dashboard() {
@@ -125,6 +133,11 @@ export default function Dashboard() {
 
         <section className="dash__card" aria-labelledby="dash-alerts">
           <h2 id="dash-alerts">{TEXT.alerts}</h2>
+          {dash.nightly?.behind && dash.nightly.text && (
+            <p className="dash__warn" role="status">
+              ⏳ {dash.nightly.text}
+            </p>
+          )}
           {dash.alerts.length === 0 && <p className="dash__muted">{TEXT.noAlerts}</p>}
           <AlertList
             items={dash.alerts}

@@ -42,7 +42,10 @@ export default defineConfig({
         theme_color: '#5B3FD1',
         background_color: '#5B3FD1',
         display: 'standalone',
-        orientation: 'portrait',
+        // No orientation lock: every screen works in portrait and landscape, on phones,
+        // tablets and foldables (CLAUDE.md). An explicit id keeps the installed app the
+        // same app if start_url ever changes (Stage 4 Part B: the Samsung install).
+        id: base,
         start_url: base,
         scope: base,
         icons: [

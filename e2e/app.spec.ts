@@ -29,4 +29,8 @@ test('the manifest makes it installable as Big Bucks', async ({ request }) => {
   const m = await res.json();
   expect(m).toMatchObject({ name: 'Big Bucks', theme_color: '#5B3FD1', display: 'standalone' });
   expect(m.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true);
+  // Stage 4 Part B (the Samsung install): an explicit id, start and scope on the app's own
+  // path, and no orientation lock (landscape, tablets and foldables must work).
+  expect(m).toMatchObject({ id: '/Big-Bucks/', start_url: '/Big-Bucks/', scope: '/Big-Bucks/' });
+  expect(m.orientation).toBeUndefined();
 });

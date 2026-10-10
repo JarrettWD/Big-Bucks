@@ -63,7 +63,12 @@ Deno.serve(async (req) => {
     const health = await db.rpc('health_check');
     if (health.error) throw new Error(`health_check: ${health.error.message}`);
 
-    const h = health.data as { ok: boolean; checked_at: string; problems: Problem[] };
+    const h = health.data as {
+      ok: boolean;
+      checked_at: string;
+      summary: string;
+      problems: Problem[];
+    };
     const problems = h.problems.map((p) => ({
       kind: p.kind,
       ...(p.alert_kind ? { alert_kind: p.alert_kind } : {}),
@@ -72,6 +77,8 @@ Deno.serve(async (req) => {
     const body = {
       ok: h.ok,
       checked_at: h.checked_at,
+      // Plain words with job names, dates and counts only, never anyone's name.
+      summary: h.summary,
       database_mb: (size.data as { megabytes: number }).megabytes,
       problems,
       ...(mode === 'test_alert'

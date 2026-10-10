@@ -71,7 +71,11 @@ jobs:
           fi
           case "$code" in
             200) echo "All well." ;;
-            503) echo "::error::Big Bucks has an open problem. Open the app's parent Dashboard to see it."; exit 1 ;;
+            503)
+              # The health function's own plain words: an open alert, or jobs behind.
+              summary=$(jq -r '.summary // empty' reply.json 2>/dev/null || true)
+              echo "::error::${summary:-Big Bucks has an open problem. Open the app's parent Dashboard to see it.}"
+              exit 1 ;;
             401) echo "::error::The health key was refused. The HEALTH_CHECK_KEY secrets in GitHub and Supabase must match."; exit 1 ;;
             000) echo "::error::Production didn't answer. It may be paused: see RUNBOOK, 'The project paused'."; exit 1 ;;
             *) echo "::error::Unexpected answer ($code). See RUNBOOK, 'The project paused'."; exit 1 ;;

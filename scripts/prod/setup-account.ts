@@ -5,8 +5,9 @@
 // these guards first:
 //   1. it must be started with --production;
 //   2. Dad types the project ref, then types it again to confirm;
-//   3. the service role key is pasted into this terminal, hidden, for this run only.
-//      It is never saved, printed or written to any file;
+//   3. the service role key is read from the clipboard (press Enter) or pasted,
+//      hidden, for this run only; the clipboard is cleared straight after.
+//      The key is never saved, printed or written to any file;
 //   4. the key must be that project's service role key, and the database must
 //      already be marked as production (RUNBOOK, production checklist step 1).
 // Nothing personal is written to the repo: the answers go straight into production.
@@ -16,7 +17,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { createKid, createParent } from '../shared/accounts.ts';
-import { ask, askPassword, askPin, askUntil, email, notEmpty, username } from '../shared/prompt.ts';
+import {
+  ask,
+  askPassword,
+  askPin,
+  askSecret,
+  askUntil,
+  email,
+  notEmpty,
+  username,
+} from '../shared/prompt.ts';
 import {
   argsProblem,
   confirmProblem,
@@ -34,11 +44,11 @@ async function main(): Promise<void> {
   const again = await ask('Type the project ref again to confirm: ');
   const mismatch = confirmProblem(ref, again);
   if (mismatch) throw new Error(mismatch);
-  const key = await askUntil(
-    'Service role key (Project Settings → API Keys; paste it, it stays hidden and is never saved): ',
-    (k) => serviceKeyProblem(k, ref),
-    true,
+  console.log(
+    '\nService role key: Project Settings → API Keys. Copy it, then press Enter below\n' +
+      '(or paste it). It stays hidden, is never saved, and the clipboard is cleared after.',
   );
+  const { value: key } = await askSecret('Service role key', (k) => serviceKeyProblem(k, ref));
 
   const url = productionUrl(ref);
   const admin = createClient(url, key.trim(), {

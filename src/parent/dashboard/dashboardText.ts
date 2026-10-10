@@ -81,6 +81,8 @@ export interface Dashboard {
   alerts_quiet: DashAlert[];
   notices: DashNotice[];
   holidays: DashHoliday[];
+  /** From parent_nightly_status(): the nightly jobs falling behind, in the database's words. */
+  nightly?: { behind: boolean; text: string | null };
 }
 
 const fund = (id: string | null) => (id ? (FUND_NAMES[id] ?? id) : 'a fund');
