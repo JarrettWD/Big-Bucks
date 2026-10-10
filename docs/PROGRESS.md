@@ -150,6 +150,8 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Step 4.5** (Dad): Supabase's CA certificate downloaded. Checked by Claude: **Supabase Root 2021 CA**, SHA-256 80:70:25:AD:…:CA:FA. **It expires on April 26, 2031**: before then, download the new one (RUNBOOK backup setup step 4.5) and replace `supabase-ca.crt` in both repos, or every backup will fail.
 - **Step 5** (Dad): the backup repo's secrets (`SUPABASE_DB_URL`, `HEALTH_CHECK_KEY`) and variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
 - **Step 6** (Claude, with Dad's OK): cloned to `C:BigBucksBackupig-bucks-backups`; 11 files from `ops/backup-repo/` (not the two test files, which run in Big-Bucks' CI), plus the certificate as `supabase-ca.crt` (also in Big-Bucks); a secrets scan was clean; committed as Dad (`9ef92b1`) and pushed.
+- **Step 7** (Dad): the first backup ran green: "Backup 2026-10-10: 34 tables, 743 rows, 3 ledger rows", committed by github-actions[bot] (`2021e37`). This proves the session pooler accepts `backup_reader` with `verify-full` against the CA certificate. The repo is still private.
+- **Runner pinned** (Dad, 2026-10-10): GitHub moves `ubuntu-latest` to Ubuntu 26 from Oct 19, 2026, so `backup.yml` and `health-check.yml` (both copies) now say `runs-on: ubuntu-24.04`. **To revisit:** before GitHub retires the 24.04 image (watch for its deprecation notice in the run logs), try Ubuntu 26 with a manual Backup run and a restore drill, then move both. Big-Bucks' own workflows (CI, deploy, backfill) still use `ubuntu-latest`.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 

@@ -28,7 +28,9 @@ concurrency:
 
 jobs:
   backup:
-    runs-on: ubuntu-latest
+    # Pinned (Dad, 2026-10-10): ubuntu-latest moves to Ubuntu 26 from Oct 19, 2026. Revisit before
+    # GitHub retires 24.04 (docs/PROGRESS.md, Stage 5).
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
