@@ -119,7 +119,7 @@ npm run setup-account:prod -- --production
 
 ### 11. ✋ Check the alerts reach you
 
-1. Repo → **Actions** → **Health check** → **Run workflow** → tick **Send test alert** → **Run workflow**.
+1. The **big-bucks-backups** repo (since Stage 5; it was the Big-Bucks repo before) → **Actions** → **Health check** → **Run workflow** → tick **Send test alert** → **Run workflow**.
 2. It fails on purpose ("Test alert from Big Bucks…"). Within a few minutes GitHub emails you about the failed run. If no email comes, check step 8.4.
 3. In the app, the parent **Dashboard** shows "Test alert from the daily health check…". Tap **Acknowledge**.
 4. Run the workflow once more without the tick: it must be green. (If it's red, the message says why. Right after setup, "the … job has only finished through …" is normal until the first nightly run; check again the next morning.)
@@ -157,7 +157,7 @@ Stage 4 is done when production has a few nights of real closes for DIA, QQQ and
   4. reconciles every day not yet checked.
 - A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on.
 - At 9:00 pm, a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
-- Every morning at 8:00 am Alberta time, **Health check** asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
+- Every morning at 8:00 am Alberta time, **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
 
 ## A close is missing
 
@@ -177,7 +177,7 @@ The Dashboard shows "There's still no Dow Jones close for …", and the morning'
 GitHub emails you that **Health check** failed with "Production didn't answer. It may be paused". The app doesn't load data either.
 
 1. Supabase Dashboard → open the project. A paused project shows **Restore project**: click it and wait until it's ready (a few minutes).
-2. Repo → **Actions** → **Health check** → **Run workflow**: it must be green (or list only jobs catching up).
+2. The **big-bucks-backups** repo → **Actions** → **Health check** → **Run workflow**: it must be green (or list only jobs catching up).
 3. Nothing is lost: the next evening's run catches up every missed day in order, with interest for each day. Missed closes come in too, as long as the pause was shorter than about 4 months.
 
 Restore it soon: Supabase may not let a Free project be restored after a long pause (90 days, as of 2026-10). If it happens again without a reason, stop and ask: the health check is the keep-alive, so it may have stopped running (it runs in the private big-bucks-backups repo, whose daily backup commit keeps its schedule switched on: check that repo's **Actions** tab).
@@ -292,7 +292,7 @@ With your OK, Claude clones the empty repo to `C:\BigBucksBackup\big-bucks-backu
 
 1. The `big-bucks-backups` repo → **Actions** → **Health check** → **Run workflow** → tick **Send test alert** → **Run workflow**. It fails on purpose, GitHub emails you, and the Dashboard shows the test alert: **Acknowledge** it.
 2. Run it again without the tick: it must be green.
-3. With your OK, Claude then removes `health-check.yml` from the Big-Bucks repo, so it runs in one place only.
+3. With your OK, Claude then removes `health-check.yml` from the Big-Bucks repo, so it runs in one place only. (Done 2026-10-10.)
 
 ### 9. ✋ The copy on your computer (OneDrive)
 

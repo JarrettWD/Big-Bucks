@@ -159,6 +159,8 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **Fixed** in all three copies (big-bucks-backups, `ops/backup-repo`, and Big-Bucks' own until it's removed). The default is set on its own line, then `echo "::error::$summary"`. Checked by running the script with faked answers: 200 → green "All well."; 503 with words → those words; 503 without → the fallback; test alert; 401; no answer. Each gives the right message and exit code.
   - `backup.yml` had no such problem (actionlint clean).
   - **New CI check:** `npm run check:workflows` (`scripts/ci/check-workflows.ts`) runs actionlint 1.7.7 (Docker, pinned), with shellcheck on every `run:` script, over Big-Bucks' workflows and the `ops/backup-repo` copies. It's a CI step after the commit email check. Proven on two broken copies (the old health check, and `backup.yml` with a quote removed): both caught, exit 1.
+- **Step 8 re-run** (Dad): part 1 red with the test-alert words (exit 1), the email arrived, the alert was acknowledged; part 2 green, "All well.". Big-Bucks CI on `6e50647` green, including the new "Workflows and their scripts check out" step.
+- **Old health check removed** from Big-Bucks (Dad's OK, 2026-10-10): `.github/workflows/health-check.yml` is gone. The check runs only from big-bucks-backups. RUNBOOK's three "Repo → Actions → Health check" steps now point there.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 
