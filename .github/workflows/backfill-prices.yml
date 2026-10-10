@@ -1,0 +1,54 @@
+name: Backfill prices
+
+# Run once by hand, after production is set up (docs/RUNBOOK.md): Actions > Backfill
+# prices > Run workflow. It asks production's nightly function to load about two
+# years of closes, so graphs and what-ifs work from day one:
+#   - the last 100 trading days from the free daily series;
+#   - older weeks from the free weekly series, marked as weekly (never used for a
+#     trade, a dividend or a market-move note).
+# About 6 calls to the price provider. The TSX fund goes first, so if its symbol
+# (XIC.TRT) doesn't work, it stops after one call. Running it again only fills gaps;
+# it never changes a stored close.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backfill-prices
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Load the price history
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          NIGHTLY_KEY: ${{ secrets.NIGHTLY_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$NIGHTLY_KEY" ]; then
+            echo "::error::Set the VITE_SUPABASE_URL variable and the NIGHTLY_KEY secret (docs/RUNBOOK.md)."
+            exit 1
+          fi
+          case "$SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::VITE_SUPABASE_URL must be the production address, https://<project>.supabase.co"; exit 1 ;;
+          esac
+          code=$(curl -sS -o reply.json -w '%{http_code}' --max-time 300 -X POST \
+            "$SUPABASE_URL/functions/v1/nightly" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "x-nightly-key: $NIGHTLY_KEY" \
+            -d '{"mode":"backfill"}') || code=000
+          echo "Answer ($code):"
+          cat reply.json 2>/dev/null || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::The backfill didn't finish (code $code). The answer above says which fund and why."
+            exit 1
+          fi

@@ -7,7 +7,9 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Current stage: **stage 4 in progress**.
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
-  - Next: Part A, built and tested locally.
+  - Part A is built and tested locally (2026-10-09).
+  - Dad approved Part A (2026-10-09), after a mutation check of the safety guards. Committed and pushed.
+  - Next: Part B (production setup) step B1.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -28,6 +30,8 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 ### Stage 12 — Launch prep (not started)
 
 - **Dad's rule (2026-10-09):** "Before creating the girls' real accounts: a fresh read-only audit scoped to changes since the third pre-launch audit."
+- **To finish before Stage 12** (Dad, 2026-10-09):
+  - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`, including confirming a non-final close). The database functions exist and are tested; until the screens exist, RUNBOOK says "stop and ask".
 
 ### Stage 5 — Backups and data protection (not started; notes from stage 4)
 
@@ -371,6 +375,82 @@ Facts checked on 2026-10-09:
 - [ ] Every test suite and the time machine pass, CI is green, and PROGRESS is updated.
 
 **Order of work:** Part A in a fresh session (Dad clears the chat first), then stop for review before B1.
+
+#### Stage 4 Part A: built and tested locally (2026-10-09; approved by Dad)
+
+Nothing touched production.
+
+- **A1. Migration `20261021000000_stage4_nightly`:**
+  - `fund_prices.source` (`daily` / `weekly_backfill`). `final_close()` now returns only daily closes, so a weekly one can never settle a trade, pay a dividend or write a market-move note.
+  - `store_close()` (server only, the only way a close is saved) and `store_closes()` (several at once; refusals reported, not fatal). Refuses before the close time, a non-trading day, and a weekly close on or after the first account's day. Never overwrites ("already" / "differs"). A move over 25% with no split in between raises a quiet `price_jump` alert. Storing a close settles its missing-close alert. Takes the same per-fund, per-day lock as settlement.
+  - `record_split()`: future days, or today before tonight's split job. Too late, or a different ratio for a recorded split, changes nothing and raises a `late_split` alert for Dad. Splits from before any account are ignored ("history").
+  - The price-call budget: `price_calls` (new table, parent read only), `claim_price_call()` (20 a day), `finish_price_call()`.
+  - `nightly_target()`, `missing_closes()`, `nightly_status()`, `nightly_plan()`, `reconcile_through()`.
+  - `nightly_kick()`: does nothing without its Vault entries, before 4:30 pm Alberta time, or once tonight's work is done; at most one call per 25 minutes; from 9:00 pm, `raise_missing_price_alerts()` (one per fund and day).
+  - `send_outbox()`: the one named sender, through pg_net, address and key read from Vault at send time (never stored in a table). Stops at once in a preview.
+  - `database_size_alert()` / `check_database_size()` (over 400 MB, one open at a time) and `raise_test_alert()` (the health check's "Send test alert").
+  - `set_nightly_vault()` (owner only, SQL Editor): saves the address and **makes the key in Vault**, answering it once.
+  - pg_cron and pg_net turned on; the job `big-bucks-nightly` runs `select public.nightly_kick(); select public.send_outbox();` at `0,30 22,23,0,1,2,3,4 * * *` UTC.
+- **A2. Edge Function `nightly`** (`supabase/functions/nightly`, logic in `supabase/functions/_shared/lib.ts`): prices (one daily-series call per fund with missing days, one retry, about 5 calls a minute, stops making calls after 95 s so it never hits the 150 s platform limit), splits weekly, `run_daily`, `reconcile_through`. Mode `backfill`: daily series (100 days) plus weekly series back 2 years, TSX first. Prices stay strings from provider to database (no floating point). Locally it uses the made-up price source (`PRICE_SOURCE=fake` in `supabase/config.toml`), refused on hosted Supabase, as is any key starting `local-`.
+- **A3. Edge Function `health`:** `check_database_size()`, then `health_check()`; 200 when clear, 503 when anything is open. Its answer holds only kinds of problems and job names (the workflow log is public), never alert wording or names.
+- **A4. Workflows:** `health-check.yml` (daily 14:00 UTC = 8:00 am Alberta, plus the manual **Send test alert** tick; also a plain API request as the keep-alive) and `backfill-prices.yml` (manual only).
+- **A5. `scripts/prod/setup-account.ts`** (`npm run setup-account:prod -- --production`): the ref typed twice, the service role key pasted hidden for that run only, refuses a key of the wrong role or project, and refuses a database not marked as production. Asks you to type "real" before a non-test kid. Account creation and the prompts moved to `scripts/shared/` (the local script uses the same code).
+- **A6. `deploy.yml`:** builds with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from repo variables; refuses if missing, not `https://*.supabase.co`, or a service role / secret key.
+- **A7. Tests:**
+  - `supabase/tests/stage4_nightly_test.sql`: **90 known answers** over Feb–Mar 2027: store_close refusals (2:59 vs 3:00 pm, weekend, holiday, bad prices), never overwriting, weekly closes never final, the 25% alert with and without a split, splits (future, today before and after the split job, late, history, different ratio), the budget (20, then refused, fresh next day), the kick at 4:29 vs 4:30 pm, waiting, "done" never repeated, the 9:00 pm alert (8:59 none, one per fund, not repeated, fails the health check), the sender in a preview and out of one (to the Vault address and key, key never in the outbox), the size and test alerts, set_nightly_vault, grants, and the schedule.
+  - `parent_approvals_test.sql`: its "only the named sender may call out" check compared names as `public.send_outbox()`, while Postgres prints `send_outbox()`, so until now **its "the sender stops in a preview" check never matched anything**. It now compares by identity, and does check the real sender. `schema_test.sql` lists `price_calls`.
+  - `supabase/functions/_shared/lib.test.ts` (16) and `scripts/prod/guards.test.ts` (3), in `npm test`.
+  - `e2e/nightly.spec.ts` (3, its own project, last): a wrong key gets nothing; **the local nightly function catches up after a skipped trading day** (every close final, every job done for the skipped day and the next, both reconciled with no problems, a second call fetches nothing); and the database kicks the run itself (`nightly_kick` + `send_outbox` → pg_net → the function → done; the next kick says "done").
+- **A8. Docs:** RUNBOOK rewritten with the full production setup (14 steps, the old checklist folded in), "How the nightly run works", "A close is missing", "The project paused", "The database is getting big", and the production PIN option. SPEC has "The nightly run, prices and alerts" in Build decisions and four data-model rows. ACCEPTANCE has three new boxes.
+- **Results (all local, 2026-10-09):**
+  - `npm run test:db` (pgTAP), on a fresh database as CI has it: **1600 of 1600** (33 files); **1603 of 1603** after the mutation-check fixes.
+  - `npm test` (Vitest): **245 of 245**.
+  - `npm run timemachine`: **PASS, 14 of 14**, 105 of 105 actions agreed.
+  - `npm run test:e2e` (Playwright): **90 of 90** (87 before, plus the 3 nightly tests).
+  - Lint, type-check and build: clean.
+- **Differences from the approved plan, for Dad to confirm:**
+  1. **`NIGHTLY_KEY` is made by the database, not by you** (`set_nightly_vault()`, RUNBOOK step 7), because the SQL Editor keeps a history of queries and a pasted key would stay in it. So B4 has two secrets, and the nightly key is added after the SQL Editor step.
+  2. **The backfill workflow needs `NIGHTLY_KEY` as a GitHub secret too** (RUNBOOK step 8). The plan's B7 listed only `HEALTH_CHECK_KEY`.
+  3. **"Send test alert" also puts a test alert on the Dashboard** (ACCEPTANCE says dashboard and email). Until you tap Acknowledge, the morning health check keeps failing.
+  4. **A split reported too late raises a loud alert** (`late_split`); the plan only said "future dates only". The 25% move is a quiet alert, as planned.
+  5. Deploy and accounts (RUNBOOK step 10) come before the test alert (step 11), so you can see it on the Dashboard.
+- **Known issues and limits:**
+  - Not tested against the real Alpha Vantage: parsing follows its documented replies (unit tests), and the first backfill call checks `XIC.TRT` (B8).
+  - Whether an Alpha Vantage close fetched at 4:30 pm Alberta could still be preliminary isn't known; the 25% alert and Dad's fix-a-close are the guard.
+  - The screens for "record a market closure" and "fix a close" are still not built (RUNBOOK says "stop and ask" for now).
+  - The Edge Functions aren't type-checked by `tsc` or ESLint (Deno code); they ran in the local edge runtime and the end-to-end tests.
+  - `cron.job_run_details` (about 14 rows a night) isn't trimmed automatically; RUNBOOK's "getting big" section covers it.
+- **Notes for Stage 5:** `prelaunch_reset()` should keep `price_calls` (like prices) or clear it; Vault's nightly entries don't move to a new project (redo RUNBOOK step 7 after a restore).
+- **Dad to do by hand:** review Part A. Then Part B starts at B1 (RUNBOOK "Production setup").
+- **Dad's review (2026-10-09):** Part A approved, with all five changes above. Two follow-ups before committing:
+  1. A mutation check of the key safety guards (below).
+  2. The closure and fix-a-close screens go on the list to finish before Stage 12 (Stage 12 entry).
+- **Mutation check (2026-10-09, local only).** Each guard was broken on purpose in the local database (one precise change to the live function, trigger or policy), the tests that should catch it were run, and the original was put back exactly by a script, followed by a fresh reset. For the kid-login function, the edge runtime was restarted after each change, and a direct call confirmed the break was live.
+  - **35 breaks in all. After the fix below, every one is caught, each by the assertion you'd expect:**
+    - Preview sender: `send_outbox` and `queue_outside` without their `in_preview()` check.
+    - PIN lockout:
+      - 5 → 500 per device, 20 → 2000 per username;
+      - locks recorded but never enforced;
+      - kid-login's own lock checks removed (caught by `e2e/kid.spec.ts`).
+    - Direct sign-in bypass: her Auth password = her PIN; a kid allowed to change her own password.
+    - Kid-to-kid isolation: the `transactions` and `accounts` read policies opened to all; `can_read_account` saying yes to anyone.
+    - Append-only:
+      - UPDATE/DELETE on transactions, rates, settings, fund_splits and parent_actions;
+      - `fund_prices` made editable;
+      - TRUNCATE on transactions, parent_actions and fund_prices.
+    - Parent action log: `log_parent_action` writing nothing.
+    - 7-day cut rule: rate cuts, and cap and yield cuts.
+    - Correction limits: over the deposit cap, over her free savings, more than the line it fixes.
+    - Agreement gate: a deposit without signing, before signing a new version, or before Dad countersigns a new version; a second first deposit before Dad signs; trades and withdrawals before Dad signs.
+  - **Missed, and fixed:**
+    1. **TRUNCATE on `settings`, `rates` and `fund_splits` passed every test.** `clock_test.sql` accepted *any* error for `truncate settings` (a foreign-key error satisfied it), and `truncate rates cascade` was refused by a *neighbouring* table's guard, so the rates guard itself was never tested. `fund_splits` had no TRUNCATE test. `append_only_test.sql` now checks all 13 append-only tables:
+       - each one's UPDATE/DELETE and TRUNCATE guards exist, are switched on and fire on the right operations (this also covers tables that are empty in a test);
+       - each one refuses TRUNCATE **by its own guard**, with every other table's TRUNCATE guard switched off for that moment.
+
+       Re-run: all six TRUNCATE breaks are now caught, plus a code-level break (the guard function letting only `rates` be emptied), which only the second check can see.
+    2. **The "sender stops in a preview" check matched nothing** (found in Part A, fixed then; confirmed caught above).
+  - **Not a gap:** removing only kid-login's early lock check still refused a locked device with the right PIN (423), because `record_login_attempt` checks the lock again. That's defence in depth.
+  - **Noticed (older, not a guard):** `npm run test:db` only passes on a freshly reset database (`npx supabase db reset`). With the demo loaded, about 70 tests fail: they count the seed's own rows, for example "every rate row is still there" expects exactly 7 rates. That's how CI runs it (fresh), and it has been true since the demo existed. On this computer, run `npx supabase db reset` before `npm run test:db`. It's not caused by the nightly test: a fresh demo shows the same failures.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 

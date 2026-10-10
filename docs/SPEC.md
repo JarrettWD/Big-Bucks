@@ -546,6 +546,20 @@ These settle details the sections above leave open. Where they differ from an ea
 - **One door to the outside world:** nothing in the database calls out directly (pg_net, http, Edge Functions, webhooks). Anything for the outside is queued with `queue_outside()`, which does nothing in a preview; a sender delivers the queue (`outbox`) after the transaction commits. Tests enforce it.
 - **Commit emails:** the repo is public, so every commit must use a GitHub noreply address: a CI check, a pre-commit hook (the identity git will really use) and a pre-push hook (every commit about to be published). The one older commit with a personal address stays; history isn't rewritten (Dad).
 
+### The nightly run, prices and alerts (Stage 4, plan approved by Dad 2026-10-09)
+
+- **Supabase Free plan, for good,** with a daily keep-alive (the health check). Two things are alerts, so Dad hears at once: the project pausing (the health check can't reach it, so the run fails and GitHub emails him) and the database passing about 400 MB of the 500 MB (a `database_size` alert).
+- **Price provider:** Alpha Vantage with a free key (25 calls a day). The app makes **at most 20 calls a day** (`price_calls` logs each one). The TSX fund's symbol there is `XIC.TRT`.
+- **The timer:** pg_cron wakes every 30 minutes from 22:00 to 04:30 UTC (4:00 to 10:30 pm Alberta time). `nightly_kick()` does nothing before 4:30 pm Alberta time (worked out with `edmonton_local()`), nothing once tonight's work is finished (`nightly_status`: every fund's final close, every job, the day before's interest, and the check), and nothing until the nightly function's address and key are in Vault. Otherwise it queues one call through the outbox, and `send_outbox()` sends it through pg_net. One call at a time (25 minutes apart at least).
+- **The nightly Edge Function,** in order: one daily-series call per fund with missing closes covers every missing trading day (retried once, never guessed); the provider's split list once a week per fund; `run_daily` through today (or yesterday before 4:30 pm); `reconcile` for every day not yet checked. "Missing" means a trading day whose close time has passed, from the day the first account opened (before any account, from the day after the last stored close), at most 140 days back.
+- **Saving a close** goes only through `store_close()` (server only). It refuses a close before its market's close time and a day its market doesn't trade, never overwrites a stored close, and raises a quiet `price_jump` alert when a close moves more than 25% from the one before with no split recorded in between. Storing a close settles its "missing close" alert.
+- **Splits** (`record_split()`, server only) are recorded for a future day, or today before tonight's split job. Later than that would leave units wrong, so it raises a `late_split` alert for Dad instead and changes nothing. Splits from before any account opened are ignored.
+- **A close still missing at 9:00 pm Alberta time** raises a `missing_price` alert, one per fund and day.
+- **History backfill** (option A, run once by hand): the last 100 trading days from the free daily series, older weeks back to 2 years from the weekly series, marked `weekly_backfill`. A weekly close is never final, so no trade, dividend or market-move note uses one, and it's refused on or after the day the first account opened. A backfill run only fills gaps.
+- **The health check:** a daily GitHub workflow calls the `health` Edge Function with its own key (the workflow never holds the service role key). It answers with `health_check()` (kinds of problems only, never names, since the log may be public): an error when anything is open. "Send test alert" puts a test alert on Dad's Dashboard, which also fails the check, so GitHub emails him.
+- **Keys:** the nightly function's address and key live in Vault (`set_nightly_vault()`, so the key is never typed into a query) and as the function's `NIGHTLY_KEY` secret; `HEALTH_CHECK_KEY` and `ALPHAVANTAGE_API_KEY` are Edge Function secrets. On Dad's computer, the functions use local test keys and a made-up price source; both are refused on hosted Supabase.
+- **Production logins** are made with `npm run setup-account:prod -- --production`: the project ref typed twice, the service role key pasted for that run only (never saved), and only on a database marked as production.
+
 ### Data model additions
 
 These tables and fields add to the Data model section:
@@ -567,3 +581,7 @@ These tables and fields add to the Data model section:
 | `agreement_versions`, `agreement_signatures` | The house rules, one row per version, and who signed which (her row keeps a frozen copy, numbers included); both append-only (stage 8) |
 | `whats_new_features`, `whats_new_seen` | Each feature's one-screen What's new, and which ones each girl has seen or met in onboarding (stage 8) |
 | `transactions.corrects_id`, `.corrects_request_id`, `.question_id`, `.counts_as` | A correction's links to the history line or question it fixes, and whether the graphs count it as money in or out or as earned (stage 8) |
+| `fund_prices.source` | `daily` (a real daily close) or `weekly_backfill` (history for graphs only, never final) (stage 4) |
+| `price_calls` | Every call to the price provider, at most 20 per Alberta day, and how it went (stage 4) |
+| `outbox.net_request_id` | The pg_net request that delivered a queued call (stage 4) |
+| `alerts.kind` adds `database_size`, `price_jump`, `late_split` | The database nearing the free plan's size; a big move with no split (quiet); a split reported too late to apply (stage 4) |

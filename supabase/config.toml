@@ -392,8 +392,14 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Big Bucks: settings for the nightly and health functions on THIS computer only.
+# None of these is a secret: production has its own keys, set in the Supabase
+# Dashboard (RUNBOOK). Both functions refuse a key starting "local-" on hosted
+# Supabase, and the nightly function refuses the made-up price source there.
+[edge_runtime.secrets]
+NIGHTLY_KEY = "local-nightly-key-for-this-computer-only"
+HEALTH_CHECK_KEY = "local-health-key-for-this-computer-only"
+PRICE_SOURCE = "fake"
 
 [analytics]
 enabled = true
@@ -426,4 +432,12 @@ enabled = true
 # Big Bucks: the kid-login Edge Function is the way in, so callers aren't signed
 # in yet. It checks the username, PIN and lockout itself (stage 6).
 [functions.kid-login]
+verify_jwt = false
+
+# The nightly run and the health check: callers prove themselves with their own key
+# header (x-nightly-key, x-health-key), not a sign-in (stage 4).
+[functions.nightly]
+verify_jwt = false
+
+[functions.health]
 verify_jwt = false

@@ -1,10 +1,11 @@
 -- History can't be edited: transactions, rates and interest_accruals reject
--- UPDATE, DELETE and TRUNCATE for every role. (settings is covered in clock_test.sql.)
+-- UPDATE, DELETE and TRUNCATE for every role. (settings is covered in clock_test.sql;
+-- every append-only table's guards are checked precisely at the end.)
 -- The database owner bypasses grants and RLS, so the owner tests prove the
 -- triggers themselves; the app-role tests prove nobody else gets that far.
 begin;
 set local client_min_messages = warning;  -- hide "truncate cascades to ..." notices
-select plan(17);
+select plan(20);
 
 insert into public.accounts (id, name) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Test Kid A');
 insert into public.transactions (account_id, vehicle, type, amount_cents, posting_key)
@@ -46,6 +47,70 @@ set local role authenticated;
 select throws_ok($$delete from public.transactions$$, '42501', null, 'signed-in user: transactions DELETE refused');
 select throws_ok($$update public.rates set rate = 0$$, '42501', null, 'signed-in user: rates UPDATE refused');
 reset role;
+
+-- Every append-only table, precisely (mutation check, 2026-10-09). A table referenced
+-- by another can't be truncated alone, and "truncate … cascade" also reaches other
+-- append-only tables, whose own guard raises the same kind of error, so a broken
+-- guard could hide behind its neighbour's. Here each table's guards must exist, be
+-- switched on and fire on the right operations (that also covers tables that are
+-- empty in this test), and each table's TRUNCATE is tried with every OTHER table's
+-- TRUNCATE guard switched off for that moment, so the refusal has to be its own.
+create temp table append_only_tables (t text);
+insert into append_only_tables values
+  ('transactions'), ('rates'), ('settings'), ('interest_accruals'), ('fund_prices'), ('fund_splits'),
+  ('parent_actions'), ('cancellations'), ('agreement_versions'), ('agreement_signatures'),
+  ('whats_new_features'), ('whats_new_seen'), ('fund_price_corrections');
+
+select is(
+  array(select a.t from append_only_tables a
+         where not exists (
+           select 1 from pg_trigger g
+            where g.tgrelid = ('public.' || a.t)::regclass and g.tgenabled = 'O'
+              and g.tgfoid in ('public.reject_append_only_change()'::regprocedure, 'public.fund_prices_guard()'::regprocedure)
+              and g.tgtype & (1 | 2 | 8 | 16) = (1 | 2 | 8 | 16))
+         order by 1),
+  '{}'::text[], 'every append-only table has its UPDATE and DELETE guard, switched on');
+select is(
+  array(select a.t from append_only_tables a
+         where not exists (
+           select 1 from pg_trigger g
+            where g.tgrelid = ('public.' || a.t)::regclass and g.tgenabled = 'O'
+              and g.tgfoid = 'public.reject_append_only_change()'::regprocedure
+              and g.tgtype & 1 = 0 and g.tgtype & (2 | 32) = (2 | 32))
+         order by 1),
+  '{}'::text[], 'every append-only table has its TRUNCATE guard, switched on');
+
+create function pg_temp.truncate_alone(p_table text) returns text language plpgsql as $$
+declare
+  v_other text;
+  v_err text;
+  v_on text[];
+begin
+  -- Only the guards that are on now, and only those are switched back on after.
+  select coalesce(array_agg(a.t), '{}') into v_on from append_only_tables a join pg_trigger g
+      on g.tgrelid = ('public.' || a.t)::regclass and g.tgname = a.t || '_no_truncate'
+   where a.t <> p_table and g.tgenabled = 'O';
+  foreach v_other in array v_on loop
+    execute format('alter table public.%I disable trigger %I', v_other, v_other || '_no_truncate');
+  end loop;
+  begin
+    execute format('truncate public.%I cascade', p_table);
+    v_err := 'not refused';
+  exception when others then
+    v_err := sqlerrm;
+  end;
+  foreach v_other in array v_on loop
+    execute format('alter table public.%I enable trigger %I', v_other, v_other || '_no_truncate');
+  end loop;
+  return v_err;
+end;
+$$;
+select is(
+  array(select x.t || ': ' || x.e
+          from (select a.t, pg_temp.truncate_alone(a.t) as e from append_only_tables a) x
+         where x.e <> x.t || ' is append-only: truncate is not allowed. Add a new row instead.'
+         order by 1),
+  '{}'::text[], 'each append-only table refuses TRUNCATE by its own guard, even with cascade');
 
 select * from finish();
 rollback;

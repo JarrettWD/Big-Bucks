@@ -53,7 +53,38 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      # The app talks to production: its address and anon key come from the repo's
+      # Actions variables (Settings > Secrets and variables > Actions > Variables).
+      # Both are public by design; row-level security protects the data. Nothing
+      # else goes in the app.
+      - name: Check the production address and anon key
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Set the VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY variables (docs/RUNBOOK.md)."
+            exit 1
+          fi
+          case "$VITE_SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::VITE_SUPABASE_URL must be https://<project>.supabase.co, not a local address."; exit 1 ;;
+          esac
+          # The anon key is a JWT whose role is "anon", or a publishable key. Never the service role.
+          role=$(node -e "try { console.log(JSON.parse(Buffer.from(process.argv[1].split('.')[1], 'base64url').toString()).role ?? '') } catch { console.log('') }" "$VITE_SUPABASE_ANON_KEY")
+          case "$VITE_SUPABASE_ANON_KEY" in
+            sb_publishable_*) ;;
+            sb_secret_*) echo "::error::That's a secret key. The app gets only the anon (publishable) key."; exit 1 ;;
+            *) if [ "$role" != "anon" ]; then
+                 echo "::error::VITE_SUPABASE_ANON_KEY isn't the anon key. Never put the service role key in the app."; exit 1
+               fi ;;
+          esac
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
 
       - uses: actions/configure-pages@v6
 

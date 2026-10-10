@@ -25,7 +25,8 @@ export default defineConfig({
     },
     {
       name: 'android-chrome',
-      testIgnore: /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding).spec.ts/,
+      testIgnore:
+        /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding|nightly).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -57,6 +58,13 @@ export default defineConfig({
       name: 'onboarding',
       testMatch: /onboarding.spec.ts/,
       dependencies: ['parent-fix'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // The nightly run moves the app clock forward two days, so it runs after everything.
+    {
+      name: 'nightly',
+      testMatch: /nightly.spec.ts/,
+      dependencies: ['onboarding'],
       use: { ...devices['Pixel 7'] },
     },
   ],

@@ -78,6 +78,7 @@ select throws_like($$delete from public.settings where key = 'clock_override'$$,
   '%append-only%', 'settings rejects DELETE');
 -- Since stage 8 B2, cancellations points at settings, so Postgres refuses the
 -- truncate for that reason before the append-only trigger runs. Either way it's refused.
+-- That its own guard refuses it is checked in append_only_test.sql.
 select throws_like('truncate public.settings', '%', 'settings rejects TRUNCATE');
 select is((select count(*) > 0 from public.settings), true, '...and every settings row is still there');
 

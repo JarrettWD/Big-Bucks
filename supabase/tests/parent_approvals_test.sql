@@ -478,17 +478,20 @@ insert into outside_pattern values
    || '|dblink|/functions/v1|supabase_functions\.)');
 create temp table outside_senders (fn text);
 insert into outside_senders values ('public.send_outbox()');
+-- By identity, not by name: Postgres prints a public function without "public.".
+create temp table sender_oids as
+  select to_regprocedure(fn)::oid as o from outside_senders where to_regprocedure(fn) is not null;
 select is(
   array(select p.oid::regprocedure::text from pg_proc p
          where pg_get_userbyid(p.proowner) = current_user
            and p.pronamespace <> 'tests'::regnamespace
            and p.prosrc ~* (select re from outside_pattern)
-           and p.oid::regprocedure::text not in (select fn from outside_senders)),
+           and p.oid not in (select o from sender_oids)),
   '{}'::text[],
   'no function calls outside the database except the named sender (CLAUDE.md, "Previews")');
 select is(
   array(select p.oid::regprocedure::text from pg_proc p
-         where p.oid::regprocedure::text in (select fn from outside_senders)
+         where p.oid in (select o from sender_oids)
            and p.prosrc !~ 'if public\.in_preview\(\) then\s+return'),
   '{}'::text[],
   'the sender, once it exists, stops at once in a preview');
@@ -499,7 +502,7 @@ select is(
            and p.prolang = (select oid from pg_language where lanname = 'plpgsql')
            and p.prosrc ~* '\mexecute\M'
            and p.prosrc ~* '(\mnet\M|http|dblink|functions)'
-           and p.oid::regprocedure::text not in (select fn from outside_senders)),
+           and p.oid not in (select o from sender_oids)),
   '{}'::text[],
   'no dynamic SQL that could build a call to the outside');
 select is(

@@ -1,0 +1,78 @@
+name: Health check
+
+# Once a day: asks production's health function whether anything is wrong (an open
+# alert, a missing close, a job falling behind, the database getting big). The run
+# fails when anything is, and GitHub emails Dad about the failed run. The call is
+# also the Free plan's keep-alive: a project with no activity for a week pauses.
+#
+# Actions > Health check > Run workflow > "Send test alert" puts a test alert on the
+# parent Dashboard and fails on purpose, to prove the email reaches Dad.
+#
+# This workflow never holds the service role key: only the health function does.
+# The repo is public, so the log shows only kinds of problems, never names.
+# (Stage 5 moves this workflow to the private backup repo; see docs/PROGRESS.md.)
+
+on:
+  schedule:
+    # 14:00 UTC is 8:00 am in Alberta, after last night's run has finished.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Send test alert (fails on purpose, so GitHub emails you)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: health-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask production how it is
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          HEALTH_CHECK_KEY: ${{ secrets.HEALTH_CHECK_KEY }}
+          MODE: ${{ inputs.test_alert && 'test_alert' || 'check' }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$HEALTH_CHECK_KEY" ]; then
+            echo "::error::Set the VITE_SUPABASE_URL variable and the HEALTH_CHECK_KEY secret (docs/RUNBOOK.md)."
+            exit 1
+          fi
+          case "$SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::VITE_SUPABASE_URL must be the production address, https://<project>.supabase.co"; exit 1 ;;
+          esac
+          # A normal API request too, so the project counts as active.
+          curl -sS -o /dev/null --max-time 30 "$SUPABASE_URL/auth/v1/health" -H "apikey: $ANON_KEY" || true
+          code=$(curl -sS -o reply.json -w '%{http_code}' --max-time 120 -X POST \
+            "$SUPABASE_URL/functions/v1/health" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "x-health-key: $HEALTH_CHECK_KEY" \
+            -d "{\"mode\":\"$MODE\"}") || code=000
+          echo "Answer ($code):"
+          cat reply.json 2>/dev/null || true
+          echo
+          if [ "$MODE" = "test_alert" ]; then
+            if [ "$code" = "503" ] && grep -q '"test"' reply.json; then
+              echo "::error::Test alert from Big Bucks. It is on the parent Dashboard too: Acknowledge it there. If this reached your email, alerts work."
+            else
+              echo "::error::The test alert didn't get a proper answer from the health function (code $code). Check RUNBOOK, 'The project paused'."
+            fi
+            exit 1
+          fi
+          case "$code" in
+            200) echo "All well." ;;
+            503) echo "::error::Big Bucks has an open problem. Open the app's parent Dashboard to see it."; exit 1 ;;
+            401) echo "::error::The health key was refused. The HEALTH_CHECK_KEY secrets in GitHub and Supabase must match."; exit 1 ;;
+            000) echo "::error::Production didn't answer. It may be paused: see RUNBOOK, 'The project paused'."; exit 1 ;;
+            *) echo "::error::Unexpected answer ($code). See RUNBOOK, 'The project paused'."; exit 1 ;;
+          esac
