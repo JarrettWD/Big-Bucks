@@ -8,7 +8,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
-  - Dad approved Part A (2026-10-09), after a mutation check of the safety guards. Committed and pushed.
+  - Dad approved Part A (2026-10-09), after a mutation check of the safety guards. Pushed as commit 4b418dc; CI run 38027684395 passed (test and timemachine).
   - Next: Part B (production setup) step B1.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
@@ -451,6 +451,10 @@ Nothing touched production.
     2. **The "sender stops in a preview" check matched nothing** (found in Part A, fixed then; confirmed caught above).
   - **Not a gap:** removing only kid-login's early lock check still refused a locked device with the right PIN (423), because `record_login_attempt` checks the lock again. That's defence in depth.
   - **Noticed (older, not a guard):** `npm run test:db` only passes on a freshly reset database (`npx supabase db reset`). With the demo loaded, about 70 tests fail: they count the seed's own rows, for example "every rate row is still there" expects exactly 7 rates. That's how CI runs it (fresh), and it has been true since the demo existed. On this computer, run `npx supabase db reset` before `npm run test:db`. It's not caused by the nightly test: a fresh demo shows the same failures.
+- **Committed and pushed (2026-10-09):** commit `4b418dc` on `main`. CI run 38027684395 passed with both jobs green: https://github.com/JarrettWD/Big-Bucks/actions/runs/38027684395
+  - **test:** emails, lint, unit tests, build, pgTAP.
+  - **timemachine:** the simulated year against the reference model.
+- **Next:** Part B, step B1 (RUNBOOK "Production setup", step 1).
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 
