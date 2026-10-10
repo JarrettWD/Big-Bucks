@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 4 in progress** (step 1, the pre-launch audits: three rounds of fixes done locally, 2026-10-09; committed locally, not pushed). Next: Dad's review, then the rest of stage 4.
+- Current stage: **stage 4 in progress**. Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09). Next: the rest of stage 4.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -252,7 +252,11 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - the advisory lock is checked by its source text only (two sessions can't run at once in pgTAP);
   - `max_rows`, `secure_password_change` and the hooks' executable bit can't be tested automatically: RUNBOOK and the commit carry them;
   - the forged-header result on production is a Stage 4 checklist step.
-- **Next:** Dad's review. Committed locally, not pushed. Stage 12: a fresh read-only audit of changes since the third pre-launch audit before the girls' real accounts.
+- **Dad approved the audit fixes (2026-10-09).** Pushed to GitHub `main` as commit `60dbd20` (with the earlier work-in-progress commit `a34f0cf`). The pre-push email check passed.
+- **CI on GitHub:** run 38019899477 passed on 2026-10-09 for commit `60dbd20`, both jobs green: https://github.com/JarrettWD/Big-Bucks/actions/runs/38019899477
+  - **test:** commit-email check, lint, unit tests, type-check and build, database tests (pgTAP).
+  - **timemachine:** the simulated year against the reference model.
+- **Next:** the rest of stage 4. Stage 12: a fresh read-only audit of changes since the third pre-launch audit before the girls' real accounts.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 
