@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 4: live; waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026)**.
+- Current stage: **stage 5: Part A approved and pushed (2026-10-10); Part B (production) starting at step 1.** Stage 4 is live, waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026).
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -52,15 +52,97 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - Likely causes: the stricter check on a newly made package (Inventory's was approved earlier), or a leftover from the first failed install.
     - Next check (Dad, on the phone): `chrome://webapks`, comparing the Inventory and Big Bucks entries.
 
-### Stage 5 — Backups and data protection (not started; notes from stage 4)
+### Stage 5 — Backups and data protection (Part A approved by Dad 2026-10-10, with the certificate check added; Part B in progress)
 
-- `prelaunch_reset()` must also handle the tables added by the pre-launch audits:
-  - `private.kid_pin_resets`: clear it;
-  - `outbox`: clear it;
-  - `fund_price_corrections`: keep it, like fund prices.
-- **Move the scheduled workflows** (the daily health check and the backup) to the private backup repo (Dad, 2026-10-09). It gets a commit every day, so GitHub never turns their schedules off for 60 days without commits. The health check is the keep-alive for the Free plan.
-- The backup must include the `private` schema.
-- The login key in Supabase Vault won't decrypt in a new project. A restore into a new project therefore means `select public.new_kid_login_key();` and a PIN reset for each girl (docs/RUNBOOK.md, "The login key was lost").
+#### Plan, approved by Dad (2026-10-10)
+
+- **Backup repo:** `big-bucks-backups`, private (not created yet: Part B step 1). Dad's GitHub two-factor sign-in is on.
+- **Cloud folder:** OneDrive. Dad's computer runs Windows.
+- **Pre-launch reset:** keep every account (test kid included) and clear only the history.
+- **Backup login:** the read-only `backup_reader` role; fall back to `postgres` only with Dad's OK.
+- **Moving the workflows:** the health check and the backup run in the backup repo, whose daily commit keeps their schedules on.
+- **Done when:** a backup lands in the private repo, a restore drill passes locally, and `prelaunch_reset` is proven locally, refusal after launch included.
+
+#### Part A: built and tested locally (nothing touched production)
+
+- **Migration `20261023000000_backups.sql`:**
+  - `ping()`: the daily API request; anon may call it, and it reads nothing.
+  - `backup_reader`: reads every table in public and private (row-level security bypassed, as a dump needs), and every future table too (default privileges). It can change nothing. `set_backup_login()` (owner only) makes its password and shows it once.
+  - `private.backup_auth()`: the three login tables a restore needs (users with password hashes, identities, MFA factors) as JSON text, plus the storage counts. Postgres can't grant the auth schema, so it goes through this function. Sessions and refresh tokens are left out on purpose.
+  - `private.backup_balances()`: each account's savings, held, GICs, and fund units and cost, from the database's own views.
+  - `record_backup()` (backup login only) writes `job_runs` (job `backup`) and settles a `backup_failed` alert.
+  - `check_backup_age()`: one `backup_failed` alert after 36 hours without a backup, once any backup was ever recorded. The `health` function calls it.
+  - `parent_backup_export()`: parent with MFA; every table as CSV and JSON text; a PIN reset code's hash left out; logged as `download_backup`.
+  - `prelaunch_reset('clear the test history')` and the `prelaunch_resets` record (append-only, parent read).
+  - `after_restore()`: puts back the login guard on `auth.users` and the nightly timer, makes a new login key, and says what's left.
+- **The daily backup:** `ops/backup-repo/` holds the backup repo's contents (copied over in Part B):
+  - `backup.yml` (daily 14:30 UTC) and `health-check.yml` (moved; it reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` there);
+  - `scripts/backup.ts`, `snapshot.ts` and `guards.ts`;
+  - `package.json` and its lockfile (`pg` only), `.gitattributes` (no line-ending changes in `backup/`) and a README.
+- **How a backup is taken:** one exported snapshot holds `counts.json` (rows and a checksum of every row, per table), `balances.csv`, a CSV of each table, `auth.sql`, and pg_dump's `schema.sql` and `data.sql`, so every file describes the same moment.
+  - It fails on purpose, leaving the last backup in place, when the export is empty, a table is gone, an append-only table shrank (allowed once after a pre-launch reset, for the tables it cleared), or storage holds anything.
+  - The workflow refuses any login but `backup_reader` through the session pooler, pings, commits, and only then records the backup.
+- **Download backup:**
+  - the `download-backup` Edge Function (it uses Dad's own token, never the service role key) zips the database's text with fflate 0.8.2, the dependency flagged in the plan;
+  - the Settings button is switched on (`BackupDownload.tsx`).
+- **Restore drill:** `npm run restore:drill -- <backup folder>`:
+  - it uses a throwaway local Supabase with its own name and ports (`scripts/local/restore-drill/`) and removes it afterwards;
+  - it restores, runs `after_restore()`, and compares every table, the logins and every account's balances;
+  - `--tamper` must FAIL; it refuses a backup whose line endings git changed.
+  - `npm run backup:local` backs up the local copy the same way.
+- **OneDrive copy:** `ops/sync-backup.ps1`. It pulls the clone in `C:\BigBucksBackup`, copies `latest` and `big-bucks-history.bundle` into OneDrive, writes `last-sync.txt`, and exits with 1 on failure.
+- **Docs:**
+  - RUNBOOK: Backup setup (Part B, steps 1–11), "The daily backup", "A backup failed", "Restore drill", "Rebuilding production from a backup", "The pre-launch reset";
+  - SPEC: Build decisions, "Backups and data protection".
+- **The Stage 4 notes are all handled:**
+  - `kid_pin_resets` and `outbox` cleared; `fund_price_corrections` and `price_calls` kept;
+  - the private schema is in the backup;
+  - a new login key, PIN resets and step 7 after a restore into a new project.
+
+**Changes from the approved plan, for Dad's review:**
+
+1. **pg_dump instead of `supabase db dump`.** The CLI always runs `SET ROLE postgres`, which a read-only login can't do. So the backup runs pg_dump itself (Postgres 17 image), with `schema.sql` adjusted the way the CLI adjusts it. This kept the read-only login with no fallback to `postgres`.
+2. **Logins: three tables, not the whole auth schema.** Users, identities and MFA factors. No live sign-in tokens sit in the repo, and after a restore everyone signs in again.
+3. **The reset's confirmation is a phrase** (`'clear the test history'`), not the project ref: the database doesn't know its own ref.
+4. **Kept by the reset, beyond the plan's list:**
+   - `cancellations`: clearing them would bring cancelled rate changes back to life;
+   - `job_runs`: clearing it would make nights re-run;
+   - the parent log.
+
+   Also, each account's agreement and onboarding start again, since their signatures are history.
+5. **Two existing security tests changed:** "anon can run no function" now allows exactly `ping()`. Three lists (parent-logged functions, tables, and functions naming the time zone) gained the new Stage 5 entries.
+6. **Dad's change at review (2026-10-10): the backup verifies Supabase's certificate.** Both pg_dump and the Node client use `verify-full` against Supabase's published CA certificate, kept as `supabase-ca.crt` in the backup repo (public; Dad downloads it in RUNBOOK backup setup step 4.5). The backup and the workflow refuse to run without it. Tests: `backup.test.ts` (a missing or bad certificate is refused; the local copy uses no TLS).
+
+**Tests (local, 2026-10-10):**
+- pgTAP **1690 of 1690** (fresh database), including `stage5_backups_test.sql` (71):
+  - the backup login's reads and refusals;
+  - recording, the 36-hour alert and its settling;
+  - Download backup (refusals, every table, exact CSV and JSON, the hash left out, logged);
+  - every reset refusal (app, server, sign-in, phrase, no fresh backup, changed since the backup, after launch);
+  - what's cleared and kept, the guards back on, and `after_restore()`.
+- Vitest **276 of 276**:
+  - `ops/backup-repo/scripts/guards.test.ts`: CSV, every fail-on-purpose rule, the reset exception, the schema adjustment, the drill's verdicts;
+  - `backup.test.ts`: certificate checked for Supabase, refused without it, no TLS locally;
+  - `backup_zip.test.ts`.
+- Playwright **90 of 90**, including "Download backup saves a zip of every table, and is logged".
+- Time machine **PASS, 14 of 14** (31 of 31 planned outcomes).
+- Lint, type checks and build clean.
+- **By hand on the local copy:**
+  - backup as `backup_reader`, then the drill: **PASS** (39 of 39 tables; every account to the cent and unit);
+  - `--tamper`: **FAIL** as it must (the checksum, and Robin's savings off by 1¢);
+  - a backup with converted line endings: refused;
+  - `prelaunch_reset`: a wrong phrase refused; then cleared 296 rows from 16 tables (3 accounts and 9 rates kept, total worth $0.00);
+  - the next backup was allowed once, "(after the pre-launch reset)";
+  - after `launched_at`: refused;
+  - a backup whose ledger shrank: failed on purpose, the old backup untouched;
+  - `sync-backup.ps1` against a throwaway repo: synced, pulled a new commit, the bundle cloned back with its history, and a missing clone exited 1 with the reason.
+- **Not yet checked (needs production, Part B):**
+  - whether the session pooler accepts `backup_reader` (if not: stop and ask);
+  - the auth table columns matching between hosted and local (the drill on a real backup checks this).
+
+**Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
+
+**Dad to do by hand:** Part B, one step at a time: RUNBOOK "Backup setup (Stage 5)", steps 1–11.
 
 ### Stage 4 — Live setup (live 2026-10-10; waiting only on the multi-night price checks, Mon–Wed)
 

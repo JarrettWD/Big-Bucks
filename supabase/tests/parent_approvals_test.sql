@@ -193,7 +193,9 @@ select is(
                                                                  -- Pre-launch audit: fixing a close, recording a closure.
                                                                  'correct_fund_price', 'record_market_closure',
                                                                  -- Second audit: an early close, a PIN reset.
-                                                                 'record_early_close', 'reset_kid_pin'))))
+                                                                 'record_early_close', 'reset_kid_pin',
+                                                                 -- Stage 5: Download backup, logged by itself.
+                                                                 'parent_backup_export'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');

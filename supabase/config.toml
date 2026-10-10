@@ -441,3 +441,9 @@ verify_jwt = false
 
 [functions.health]
 verify_jwt = false
+
+# Download backup: the caller is Dad, signed in. The function passes his token to the
+# database, whose parent_backup_export() checks it (parent with MFA), as for every
+# other parent action (stage 5).
+[functions.download-backup]
+verify_jwt = false

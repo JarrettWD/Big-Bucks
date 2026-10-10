@@ -1,0 +1,99 @@
+name: Backup
+
+# Once a day: a full backup of production, committed to this private repo (Stage 5).
+# Git keeps every day's version, so any past day can be got back. Nothing is ever pruned.
+#
+# It uses the read-only backup_reader login (secret SUPABASE_DB_URL, through
+# Supabase's session pooler, with its certificate checked against supabase-ca.crt):
+# it can read every table and change nothing, except recording its own result. The
+# run fails on purpose, and GitHub emails Dad, when the export is empty or the ledger
+# (or any append-only table) has fewer rows than in yesterday's backup. The daily
+# commit also keeps this repo's schedules switched on.
+#
+# The same run makes one normal API request (ping), so the Free project has outside
+# activity every day.
+
+on:
+  schedule:
+    # 14:30 UTC: 8:30 am in Alberta in summer, 7:30 am in winter. After the 14:00 health check.
+    - cron: '30 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check the settings
+        env:
+          BACKUP_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$BACKUP_DB_URL" ] || [ -z "$SUPABASE_URL" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::Set the SUPABASE_DB_URL secret and the SUPABASE_URL and SUPABASE_ANON_KEY variables (docs/RUNBOOK.md in Big-Bucks, 'The daily backup')."
+            exit 1
+          fi
+          # Supabase's CA certificate: every connection checks the server against it (verify-full).
+          if ! grep -q "BEGIN CERTIFICATE" supabase-ca.crt 2>/dev/null; then
+            echo "::error::supabase-ca.crt is missing from this repo. Download it (RUNBOOK in Big-Bucks, 'Backup setup', step 4)."
+            exit 1
+          fi
+          # Only ever the read-only login: never postgres, never the direct connection.
+          case "$BACKUP_DB_URL" in
+            postgresql://backup_reader.*@*.pooler.supabase.com:5432/postgres) ;;
+            *) echo "::error::SUPABASE_DB_URL must be the session pooler string for backup_reader: postgresql://backup_reader.<project ref>:<password>@<region>.pooler.supabase.com:5432/postgres"; exit 1 ;;
+          esac
+
+      - name: Normal API request (keep-alive)
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          answer=$(curl -sS --max-time 30 -X POST "$SUPABASE_URL/rest/v1/rpc/ping" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "Content-Type: application/json" -d '{}') || answer=""
+          if [ "$answer" != '"ok"' ]; then
+            echo "::error::Production didn't answer the ping. It may be paused: see RUNBOOK, 'The project paused'."
+            exit 1
+          fi
+          echo "Production answered."
+
+      - name: Take the backup
+        id: take
+        env:
+          BACKUP_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/backup.ts take .
+
+      - name: Commit it
+        env:
+          MESSAGE: ${{ steps.take.outputs.message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backup
+          git commit -q -m "$MESSAGE"
+          git push -q
+          echo "$MESSAGE"
+
+      # Only once the backup is safe on GitHub: prelaunch_reset() and the health check rely on this.
+      - name: Record it
+        env:
+          BACKUP_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/backup.ts record .

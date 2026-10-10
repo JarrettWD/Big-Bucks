@@ -241,8 +241,8 @@ select is(
   array(select p.oid::regprocedure::text from pg_proc p
          where p.pronamespace = 'public'::regnamespace and has_function_privilege('anon', p.oid, 'EXECUTE')
          order by 1),
-  '{}'::text[],
-  'anonymous callers cannot run any function');
+  array['ping()'],
+  'anonymous callers cannot run any function but ping(), the daily backup''s keep-alive, which reads nothing (stage 5)');
 
 select set_eq(
   $$select c.table_name::text from information_schema.columns c

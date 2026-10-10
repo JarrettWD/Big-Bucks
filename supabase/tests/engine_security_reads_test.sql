@@ -251,7 +251,7 @@ select is(
 select is(
   array(select p.oid::regprocedure::text from pg_proc p
          where p.pronamespace = 'public'::regnamespace and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  '{}'::text[], 'anonymous callers cannot run any function');
+  array['ping()'], 'anonymous callers cannot run any function but ping(), which reads nothing (stage 5)');
 select is(
   array(select p.proname::text from pg_proc p
          where p.pronamespace = 'public'::regnamespace and p.prosecdef

@@ -5,6 +5,7 @@
 // and the parent action log (who and when). Runs last, in its own project,
 // because it changes rates and the cap that the other tests read.
 import { readFileSync } from 'node:fs';
+import { strFromU8, unzipSync } from 'fflate';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
 import { kid, kidSignIn, logins, parentSignIn, typePin } from './helpers';
@@ -274,11 +275,33 @@ test('a feature switch, a note and a ? explanation', async ({ page }) => {
   expect(g.t).toBe('Money a fund pays you just for owning it.');
 });
 
-test('Download backup is placed, and off until stage 5', async ({ page }) => {
+test('Download backup saves a zip of every table, and is logged', async ({ page }) => {
   await open(page);
   const backup = page.getByRole('region', { name: 'Backup' });
-  await expect(backup.getByRole('button', { name: /Download backup/ })).toBeDisabled();
-  await expect(backup).toContainText('Arrives in stage 5');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    backup.getByRole('button', { name: /Download backup/ }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^big-bucks-backup-\d{4}-\d{2}-\d{2}\.zip$/);
+  await expect(backup.getByRole('status')).toContainText(`Saved ${download.suggestedFilename()}.`);
+
+  // Every table is in it, as CSV and JSON, with the ledger exactly as the database holds it.
+  const zip = unzipSync(readFileSync(await download.path()));
+  const [t] = await rows<{ n: string; tables: string }>(
+    `select (select count(*) from public.transactions)::text as n,
+            (select count(*) from pg_tables where schemaname in ('public', 'private'))::text as tables`,
+  );
+  expect(Object.keys(zip).filter((k) => k.startsWith('csv/')).length).toBe(Number(t.tables));
+  expect(Object.keys(zip).filter((k) => k.startsWith('json/')).length).toBe(Number(t.tables));
+  const ledger = JSON.parse(strFromU8(zip['json/public.transactions.json'])) as unknown[];
+  expect(ledger.length).toBe(Number(t.n));
+  const csv = strFromU8(zip['csv/public.transactions.csv']);
+  expect(csv.split('\n')[0]).toContain('amount_cents');
+  // A PIN reset code's hash is left out of the download.
+  expect(strFromU8(zip['csv/private.kid_pin_resets.csv'])).not.toContain('code_hash');
+
+  const log = await lastLog();
+  expect(log.summary).toMatch(/^Downloaded a backup \(\d+ tables, \d+ rows\)\.$/);
 });
 
 test("7 days' notice for a cut, a dividend notice, and cancelling a planned cut", async ({

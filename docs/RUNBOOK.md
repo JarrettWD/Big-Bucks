@@ -1,12 +1,13 @@
 # Big Bucks — Runbook
 
-Step-by-step jobs for Dad: setting up production (Stage 4), and what to do when something goes wrong. Menu names are as of 2026-10; if Supabase or GitHub has moved one, the setting has the same name.
+Step-by-step jobs for Dad: setting up production (Stage 4) and the backups (Stage 5), and what to do when something goes wrong. Menu names are as of 2026-10; if Supabase or GitHub has moved one, the setting has the same name.
 
 ## Never do these
 
 - **Never run `supabase db reset --linked`.** It wipes the production database completely: every girl's money history. Only ever run `supabase db reset` without `--linked` (that's your own computer).
 - **Never run `supabase db push --include-seed`.** The seed is for your computer only. (On a production database that has been marked, below, it refuses anyway.)
 - **Never point `npm run timemachine`, `npm run demo` or `npm run jobs:local` at production.** They already refuse anything but your own computer, and refuse a database marked as production.
+- **Never make the big-bucks-backups repo public.** It holds the girls' names, the ledger and the logins.
 - **Never paste a key or password into a chat, an issue, a commit or a SQL query.** Keys go only into Supabase's secret settings, GitHub's secret settings and your password manager. The setup script asks for the service role key itself and never saves it.
 
 ## Production setup (Stage 4)
@@ -179,7 +180,7 @@ GitHub emails you that **Health check** failed with "Production didn't answer. I
 2. Repo → **Actions** → **Health check** → **Run workflow**: it must be green (or list only jobs catching up).
 3. Nothing is lost: the next evening's run catches up every missed day in order, with interest for each day. Missed closes come in too, as long as the pause was shorter than about 4 months.
 
-Restore it soon: Supabase may not let a Free project be restored after a long pause (90 days, as of 2026-10). If it happens again without a reason, stop and ask: the health check is the keep-alive, so it may have stopped running (GitHub turns off a repo's schedules after 60 days without commits; Stage 5 moves it to the backup repo, which gets a commit every day).
+Restore it soon: Supabase may not let a Free project be restored after a long pause (90 days, as of 2026-10). If it happens again without a reason, stop and ask: the health check is the keep-alive, so it may have stopped running (it runs in the private big-bucks-backups repo, whose daily backup commit keeps its schedule switched on: check that repo's **Actions** tab).
 
 ## The database is getting big
 
@@ -224,7 +225,171 @@ Each girl's Supabase password is worked out from her PIN with a key kept in Supa
 1. In the Supabase Dashboard, **SQL Editor** → **New query**, run `select public.new_kid_login_key();`. It answers that a new key is in place.
 2. Reset each girl's PIN (above, "In the app").
 
-(The nightly function's key is in Vault too: after a restore into a new project, redo production setup step 7.)
+(After a restore into a new project, `select * from public.after_restore();` makes the new key for you and says what's left: the PIN resets, and production setup step 7 for the nightly function's key, which is in Vault too. See "Rebuilding production from a backup".)
+
+## Backup setup (Stage 5)
+
+Do these in order, once Claude's Part A is approved. ✋ means you do it by hand. Claude runs nothing on production without your OK for that step. Have your password manager open.
+
+### 1. ✋ Create the private backup repo
+
+1. On GitHub, **+** (top right) → **New repository**.
+2. **Owner**: you. **Repository name**: `big-bucks-backups`. Choose **Private**.
+3. Leave **Add a README file** unticked (Claude pushes the first files), then **Create repository**.
+
+It must stay private for good: it will hold the girls' names, the ledger and the logins. Two-factor sign-in on your GitHub account (on since 2026-10-10) protects it.
+
+### 2. Push the database change and two functions
+
+With your OK, Claude runs these and shows you the output of each:
+
+1. `npx supabase db push --dry-run`: it must list only `20261023000000_backups.sql`;
+2. `npx supabase db push`;
+3. `npx supabase functions deploy download-backup health`.
+
+### 3. ✋ The backup login's password (SQL Editor)
+
+1. Supabase Dashboard → **SQL Editor** → **New query**.
+2. Run `select public.set_backup_login();`.
+3. It answers with a long password, shown only this once. Save it in your password manager as "Big Bucks backup_reader".
+
+This login can read every table and change nothing (it can only record its own backup). Running this again makes a new password; then redo step 4 and the secret in step 5.
+
+### 4. ✋ The connection string
+
+1. Supabase Dashboard → **Connect** (the button at the top) → **Connection String**.
+2. **Type**: URI. **Method**: **Session pooler**. Copy the string. It looks like `postgresql://postgres.<project ref>:[YOUR-PASSWORD]@aws-1-ca-central-1.pooler.supabase.com:5432/postgres`.
+3. In your password manager (never in a chat, a file or a note), make the backup's string from it:
+   1. change `postgres.` at the start to `backup_reader.`;
+   2. replace `[YOUR-PASSWORD]`, brackets included, with the password from step 3.
+4. Save it there as "Big Bucks SUPABASE_DB_URL".
+
+The backup refuses any string that isn't `backup_reader` through the session pooler.
+
+5. ✋ **Supabase's certificate** (public, not a secret): Supabase Dashboard → **Database** → **Settings** → **SSL Configuration** → **Download certificate**. Your browser saves it in **Downloads** (a name like `prod-ca-2021.crt`). Tell Claude when it's there: in step 6 Claude checks it and puts it in the backup repo as `supabase-ca.crt`. Every backup connection then checks the database's certificate and name against it (`verify-full`), so nothing can pose as the database. (If the menu has moved, the setting is still called **SSL Configuration**.)
+
+### 5. ✋ The backup repo's secrets and variables
+
+1. The `big-bucks-backups` repo → **Settings** → **Secrets and variables** → **Actions**.
+2. **Secrets** tab → **New repository secret**, once for each:
+   1. `SUPABASE_DB_URL`: the string from step 4.
+   2. `HEALTH_CHECK_KEY`: the same key as the Big-Bucks repo's (from your password manager).
+3. **Variables** tab → **New repository variable**, once for each:
+   1. `SUPABASE_URL`: `https://<project ref>.supabase.co`, the same as Big-Bucks' `VITE_SUPABASE_URL`.
+   2. `SUPABASE_ANON_KEY`: the anon key, the same as Big-Bucks' `VITE_SUPABASE_ANON_KEY`.
+
+### 6. The workflows go in
+
+With your OK, Claude clones the empty repo to `C:\BigBucksBackup\big-bucks-backups`, copies in everything from `ops/backup-repo/` (the two workflows, the scripts, `.gitattributes`, the README) and Supabase's certificate from step 4 as `supabase-ca.crt` (also kept in Big-Bucks under `ops/backup-repo/`), commits as you, and pushes. GitHub emails a schedule's failures to whoever last changed its workflow file, so it must be committed as you.
+
+### 7. ✋ The first backup
+
+1. The `big-bucks-backups` repo → **Actions** → **Backup** → **Run workflow** → **Run workflow**.
+2. It takes about 2 minutes. When it's green, **Code** shows a commit like "Backup 2026-10-15: 34 tables, … rows, … ledger rows", and a `backup` folder.
+3. If it's red, the message says why. "password authentication failed" or "Tenant or user not found" means the connection string (step 4); "certificate verify failed" or "self-signed certificate" means the certificate (step 4.5). Check it; if it still fails, stop and ask. Don't switch the login to `postgres`.
+
+### 8. ✋ The health check from its new home
+
+1. The `big-bucks-backups` repo → **Actions** → **Health check** → **Run workflow** → tick **Send test alert** → **Run workflow**. It fails on purpose, GitHub emails you, and the Dashboard shows the test alert: **Acknowledge** it.
+2. Run it again without the tick: it must be green.
+3. With your OK, Claude then removes `health-check.yml` from the Big-Bucks repo, so it runs in one place only.
+
+### 9. ✋ The copy on your computer (OneDrive)
+
+1. Copy `ops\sync-backup.ps1` from the Big-Bucks folder to `C:\BigBucksBackup\sync-backup.ps1`.
+2. Run it once in a terminal:
+
+```bash
+powershell -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1
+```
+
+   It answers "Synced … Newest backup: …". In OneDrive, the folder **Big Bucks backup** now has `latest` (the newest backup's files), `big-bucks-history.bundle` (every day's backup in one file) and `last-sync.txt`.
+3. Schedule it daily:
+   1. **Start** → type **Task Scheduler** → open it.
+   2. On the right, **Create Basic Task…**. **Name**: `Big Bucks backup copy` → **Next**.
+   3. **Daily** → **Next**. **Start**: tomorrow at **9:30:00 AM**, **Recur every: 1 days** → **Next**.
+   4. **Start a program** → **Next**. **Program/script**: `powershell.exe`. **Add arguments (optional)**: `-NoProfile -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1` → **Next**.
+   5. Tick **Open the Properties dialog for this task when I click Finish** → **Finish**.
+   6. In Properties, **Settings** tab: tick **Run task as soon as possible after a scheduled start is missed** → **OK**.
+4. To test it: in the Task Scheduler Library list, right-click **Big Bucks backup copy** → **Run**, then open `last-sync.txt` in OneDrive. **Last Run Result** should say "The operation completed successfully. (0x0)". A result of 0x1 means `last-sync.txt` says what went wrong.
+
+### 10. ✋ The first restore drill
+
+In a terminal in the Big-Bucks folder, with Docker Desktop running:
+
+```bash
+npm run restore:drill -- C:\BigBucksBackup\big-bucks-backups\backup
+```
+
+It must end with **RESTORE DRILL: PASS**, every table and every account matching. That ticks the ACCEPTANCE box "One backup has been restored into the local copy of Supabase, with balances matching".
+
+### 11. ✋ Download backup on your phone
+
+In the app, signed in as yourself: **Settings** → **Backup** → **Download backup**. It says "Saved big-bucks-backup-….zip". Open the zip from your Downloads: it has a `csv` folder and a `json` folder, with every table in each.
+
+## The daily backup
+
+- **Every morning:** at 14:00 UTC (8:00 am Alberta time in summer, 7:00 am in winter) the **Health check** runs, and at 14:30 UTC the **Backup**. Both run in the private `big-bucks-backups` repo.
+- **What a backup holds:** everything, from one moment. Every table and row, the logins (not sessions), each table as CSV, and every account's balances worked out by the database. It's all in `backup/` in that repo; its README lists the files.
+- **Git keeps every day's version.** To see an old day: **Code** → **History** (the clock icon) → that day's commit → **Browse files**.
+- **When it fails on purpose:** the export is empty, or the ledger (or any other permanent table) has fewer rows than the day before. Yesterday's backup is then left as it was, and GitHub emails you.
+- **The health check watches it too:** if no backup has succeeded for 36 hours, an alert goes on the Dashboard and the check fails, so GitHub emails you.
+- **A second copy on your computer:** Task Scheduler copies it into OneDrive each morning (setup step 9).
+
+## A backup failed
+
+GitHub emailed you that **Backup** failed, or the Dashboard says "The daily backup hasn't succeeded since …".
+
+1. The `big-bucks-backups` repo → **Actions** → **Backup** → the red run. The red step's message says why:
+   - **"Production didn't answer the ping"**: see "The project paused".
+   - **"… has fewer rows than in the last backup … stop and ask"**: rows went missing from a table that can never lose any. Don't run anything else. Stop and ask.
+   - **"The export is empty"**: stop and ask.
+   - **"password authentication failed"**: the password changed. Redo setup steps 3 to 5 (a new password, a new string, the secret).
+   - Anything else, such as a GitHub hiccup: **Re-run all jobs**.
+2. When a run is green, the Dashboard alert settles by itself.
+
+## Restore drill (every few months)
+
+This proves a backup really rebuilds Big Bucks, without touching the live app. It reads only the backup's files and builds a throwaway copy on your computer, separate from your normal local copy.
+
+1. Bring your clone up to date: run `C:\BigBucksBackup\sync-backup.ps1`, or wait for its morning run.
+2. Start Docker Desktop.
+3. In a terminal in the Big-Bucks folder:
+
+```bash
+npm run restore:drill -- C:\BigBucksBackup\big-bucks-backups\backup
+```
+
+4. It restores the backup and puts back what a dump leaves out (`after_restore()`). Then it compares every table (rows, and every row's contents), the logins, and each account's savings, GICs, and fund units and cost with what the backup recorded when it was taken. Each line says **PASS** or **FAIL**, and the last says **RESTORE DRILL: PASS** or **FAIL**. Then it removes the throwaway copy.
+5. Any **FAIL**: stop and ask.
+
+To practise without production: `npm run backup:local` backs up your local copy the same way, then run `npm run restore:drill -- .local-backup/backup`. Adding `--tamper` changes one ledger row by a cent after the restore, to show the drill notices (it must FAIL).
+
+## Rebuilding production from a backup
+
+Only if the production project is lost for good (deleted, or a pause that can't be restored). Stop and ask before starting: Claude walks through it with you. The outline:
+
+1. ✋ A new Supabase project (production setup steps 1 to 4). The Free plan allows two and the food inventory app uses the other, so the lost one must be gone first.
+2. Claude, with your OK, loads the newest backup into it with `psql`, with the same files in the same order as the drill (its prelude, `schema.sql`, `auth.sql`, `data.sql`). Not `db push`: the schema comes from the backup.
+3. ✋ SQL Editor: `select * from public.after_restore();`. It puts back the login guard and the nightly timer and makes a new login key. Then `select public.mark_production();` (harmless if already marked) and `select * from public.check_time_rules();` (production setup step 6).
+4. ✋ **Reset each girl's PIN** (Settings → Logins): Vault's old login key can't be read in a new project, so no old PIN works.
+5. ✋ Production setup step 7 (the nightly address and key in Vault) and step 4 (the function secrets).
+6. Deploy the functions, then update the URL and anon key in both repos' variables (Big-Bucks and big-bucks-backups) and the connection string (backup setup steps 3 to 5). Then deploy the app.
+7. Everyone signs in again (sessions aren't in the backup). Your authenticator app still works: its setup is in the backup.
+
+## The pre-launch reset (Stage 12)
+
+Just before the girls start, this clears the beta's history: every transaction, GIC, request, notice, question, wish list item, signature, alert and login attempt. It keeps every account (the test kid too), every login, and all configuration: rates, settings, cancelled changes, the glossary, notes, holidays, funds, prices and the parent log. Every balance becomes $0.00, and each account signs its agreement and does onboarding again.
+
+1. The `big-bucks-backups` repo → **Actions** → **Backup** → **Run workflow**. Wait until it's green.
+2. Within 2 hours: Supabase Dashboard → **SQL Editor** → **New query**:
+
+```sql
+select public.prelaunch_reset('clear the test history');
+```
+
+3. It answers "Test history cleared: … rows from 16 tables …". It refuses, and changes nothing, if there's no backup from the last 2 hours, if anything changed since that backup, or if `launched_at` is set (then it can never run again).
+4. The next morning's backup is allowed to be smaller, once, and says "(after the pre-launch reset)" in its commit message.
 
 ## Commit emails (each computer you commit from, once)
 

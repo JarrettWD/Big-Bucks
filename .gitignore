@@ -21,3 +21,9 @@ test-results
 # Supabase local
 supabase/.branches
 supabase/.temp
+# Backups of the local copy (npm run backup:local): demo data, never committed
+.local-backup
+.backup-new
+# The restore drill's throwaway Supabase
+scripts/local/restore-drill/supabase/.branches
+scripts/local/restore-drill/supabase/.temp

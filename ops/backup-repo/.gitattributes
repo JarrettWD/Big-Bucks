@@ -1,0 +1,4 @@
+# The backup files must stay byte for byte as pg_dump wrote them: never let git turn
+# their line endings into Windows ones (a carriage return inside data.sql would change
+# the data on a restore).
+backup/** -text

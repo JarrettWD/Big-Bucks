@@ -261,8 +261,12 @@ export const TEXT = {
 
   backupTitle: 'Backup',
   backupButton: 'Download backup',
-  backupOff:
-    'Arrives in stage 5, with the live setup. It will save every table as a zip of CSV and JSON files. Use it before big changes such as a rate change or a correction.',
+  backupHelp:
+    'Saves every table on this device, as a zip of CSV and JSON files. Use it before big changes such as a rate change or a correction. The daily backup to GitHub runs by itself.',
+  backupBusy: 'Making the backup…',
+  backupDone: (file: string) => `Saved ${file}. Look for it in your Downloads.`,
+  backupFailed: (why: string) => `The backup couldn't be made: ${why}`,
+  backupSignIn: 'Sign in again, then try once more.',
 
   recentTitle: 'Recent changes',
   willRecord: 'This will be recorded:',

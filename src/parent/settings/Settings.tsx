@@ -1,7 +1,7 @@
 // Settings: rates (with specials), the deposit cap, how long Dad has to answer a
 // request, inflation, dividend yields, feature switches, market-move notes, the ?
 // explanations, resetting a girl's PIN (Logins), and the Download backup button
-// (off until stage 5).
+// (BackupDownload, stage 5).
 // Every change shows a summary and exactly what the girls will be told
 // (parent_change_preview: the real action, rolled back), then one button that does
 // it. The database checks the rules again and logs who did it and when.
@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../../lib/supabase';
 import { CancelChange, RateChange, SettingChange, WordingEdit } from './Changes';
+import BackupDownload from './BackupDownload';
 import Logins from './Logins';
 import {
   FEATURES,
@@ -423,16 +424,8 @@ export default function Settings() {
       {/* Logins: PIN reset ---------------------------------------------------------------- */}
       <Logins />
 
-      {/* Backup ------------------------------------------------------------------------ */}
-      <section className="set__card" id="set-backup" aria-labelledby="set-backup-h">
-        <h2 id="set-backup-h">{TEXT.backupTitle}</h2>
-        <button type="button" className="set__btn" disabled aria-describedby="set-backup-off">
-          ⬇ {TEXT.backupButton}
-        </button>
-        <p className="set__muted" id="set-backup-off">
-          {TEXT.backupOff}
-        </p>
-      </section>
+      {/* Backup: Download backup ------------------------------------------------------- */}
+      <BackupDownload />
 
       {data.recent.length > 0 && (
         <section className="set__card" aria-labelledby="set-recent">

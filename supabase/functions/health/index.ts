@@ -1,10 +1,11 @@
 // health: the daily health check (Stage 4, plan approved by Dad 2026-10-09).
 //
-// The GitHub workflow .github/workflows/health-check.yml calls this once a day with
-// the x-health-key header (HEALTH_CHECK_KEY). It checks the database size (an alert
-// past about 400 MB), then answers with health_check(): 200 when all is well, 503
-// when anything is open, so the workflow fails and GitHub emails Dad. The call is
-// also the Free plan's keep-alive.
+// The GitHub workflow health-check.yml (in the private big-bucks-backups repo since
+// Stage 5) calls this once a day with the x-health-key header (HEALTH_CHECK_KEY). It
+// checks the database size (an alert past about 400 MB) and the daily backup (an
+// alert when none has succeeded for 36 hours, check_backup_age), then answers with
+// health_check(): 200 when all is well, 503 when anything is open, so the workflow
+// fails and GitHub emails Dad. The call is also the Free plan's keep-alive.
 //
 // mode "test_alert": raises a test alert on Dad's Dashboard (raise_test_alert), so
 // the check fails and GitHub emails him. He acknowledges it on the Dashboard.
@@ -56,6 +57,8 @@ Deno.serve(async (req) => {
   try {
     const size = await db.rpc('check_database_size');
     if (size.error) throw new Error(`check_database_size: ${size.error.message}`);
+    const backup = await db.rpc('check_backup_age');
+    if (backup.error) throw new Error(`check_backup_age: ${backup.error.message}`);
     if (mode === 'test_alert') {
       const t = await db.rpc('raise_test_alert');
       if (t.error) throw new Error(`raise_test_alert: ${t.error.message}`);
@@ -80,6 +83,7 @@ Deno.serve(async (req) => {
       // Plain words with job names, dates and counts only, never anyone's name.
       summary: h.summary,
       database_mb: (size.data as { megabytes: number }).megabytes,
+      last_backup_at: (backup.data as { last_backup_at: string | null }).last_backup_at,
       problems,
       ...(mode === 'test_alert'
         ? {

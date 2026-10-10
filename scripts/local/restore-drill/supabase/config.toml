@@ -1,0 +1,52 @@
+# The restore drill's own throwaway local Supabase (Stage 5). It's separate from the
+# normal local copy (its own name and ports), so a drill never touches the demo or
+# the tests, and never production. npm run restore:drill starts it, restores a
+# backup into it, compares, and removes it again (database and all).
+# Only the database, the logins (auth) and storage (every new project has it) are needed.
+
+project_id = "big-bucks-drill"
+
+[api]
+enabled = false
+port = 55321
+
+[db]
+port = 55322
+shadow_port = 55320
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 55329
+
+[db.migrations]
+enabled = false
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+port = 55323
+
+[inbucket]
+enabled = false
+port = 55324
+
+[storage]
+enabled = true
+
+[analytics]
+enabled = false
+port = 55327
+
+[edge_runtime]
+enabled = false
+inspector_port = 55383
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
