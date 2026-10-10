@@ -30,6 +30,12 @@ jobs:
       - name: Commit emails are GitHub noreply addresses
         run: npm run check:emails
 
+      # Every workflow here and in ops/backup-repo (the private backup repo's copies):
+      # actionlint, with shellcheck on each run script, so a shell typo fails CI
+      # instead of the 8 am health check or backup (Stage 5).
+      - name: Workflows and their scripts check out
+        run: npm run check:workflows
+
       - name: Install dependencies
         run: npm ci
 

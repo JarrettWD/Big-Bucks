@@ -25,7 +25,8 @@
     "env:local": "node scripts/local/env.ts",
     "check:emails": "node scripts/ci/check-commit-emails.ts",
     "backup:local": "node scripts/local/backup-local.ts",
-    "restore:drill": "node scripts/local/restore-drill.ts"
+    "restore:drill": "node scripts/local/restore-drill.ts",
+    "check:workflows": "node scripts/ci/check-workflows.ts"
   },
   "dependencies": {
     "@fontsource/fredoka": "^5.3.0",

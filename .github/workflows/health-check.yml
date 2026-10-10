@@ -74,7 +74,9 @@ jobs:
             503)
               # The health function's own plain words: an open alert, or jobs behind.
               summary=$(jq -r '.summary // empty' reply.json 2>/dev/null || true)
-              echo "::error::${summary:-Big Bucks has an open problem. Open the app's parent Dashboard to see it.}"
+              # (Not ${summary:-…}: bash reads an apostrophe inside that as a quote.)
+              [ -n "$summary" ] || summary="Big Bucks has an open problem. Open the app's parent Dashboard to see it."
+              echo "::error::$summary"
               exit 1 ;;
             401) echo "::error::The health key was refused. The HEALTH_CHECK_KEY secrets in GitHub and Supabase must match."; exit 1 ;;
             000) echo "::error::Production didn't answer. It may be paused: see RUNBOOK, 'The project paused'."; exit 1 ;;
