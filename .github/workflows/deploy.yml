@@ -27,7 +27,9 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
-    runs-on: ubuntu-latest
+    # Pinned (Dad, 2026-10-10): ubuntu-latest moves to Ubuntu 26 from Oct 19, 2026.
+    # Revisit before GitHub retires 24.04 (docs/PROGRESS.md, Stage 5).
+    runs-on: ubuntu-24.04
     env:
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -94,7 +96,9 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    # Pinned (Dad, 2026-10-10): ubuntu-latest moves to Ubuntu 26 from Oct 19, 2026.
+    # Revisit before GitHub retires 24.04 (docs/PROGRESS.md, Stage 5).
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
