@@ -191,7 +191,9 @@ select is(
                                                                  -- B4: Dad countersigning, logged by itself.
                                                                  'countersign_agreement',
                                                                  -- Pre-launch audit: fixing a close, recording a closure.
-                                                                 'correct_fund_price', 'record_market_closure'))))
+                                                                 'correct_fund_price', 'record_market_closure',
+                                                                 -- Second audit: an early close, a PIN reset.
+                                                                 'record_early_close', 'reset_kid_pin'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');

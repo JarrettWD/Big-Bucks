@@ -1,6 +1,7 @@
 // Settings: rates (with specials), the deposit cap, how long Dad has to answer a
 // request, inflation, dividend yields, feature switches, market-move notes, the ?
-// explanations, and the Download backup button (off until stage 5).
+// explanations, resetting a girl's PIN (Logins), and the Download backup button
+// (off until stage 5).
 // Every change shows a summary and exactly what the girls will be told
 // (parent_change_preview: the real action, rolled back), then one button that does
 // it. The database checks the rules again and logs who did it and when.
@@ -8,6 +9,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../../lib/supabase';
 import { CancelChange, RateChange, SettingChange, WordingEdit } from './Changes';
+import Logins from './Logins';
 import {
   FEATURES,
   SWITCH_CHOICES,
@@ -417,6 +419,9 @@ export default function Settings() {
 
         <GlossarySection data={data} open={open} start={start} back={back} finished={finished} />
       </div>
+
+      {/* Logins: PIN reset ---------------------------------------------------------------- */}
+      <Logins />
 
       {/* Backup ------------------------------------------------------------------------ */}
       <section className="set__card" id="set-backup" aria-labelledby="set-backup-h">

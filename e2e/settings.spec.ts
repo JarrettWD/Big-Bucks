@@ -4,9 +4,10 @@
 // girls' notices (word for word what the preview showed, and in Sky's own app)
 // and the parent action log (who and when). Runs last, in its own project,
 // because it changes rates and the cap that the other tests read.
+import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
-import { kid, kidSignIn, parentSignIn } from './helpers';
+import { kid, kidSignIn, logins, parentSignIn, typePin } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -358,4 +359,86 @@ test("7 days' notice for a cut, a dividend notice, and cancelling a planned cut"
       and n.dedupe_key like 'yield_change:%' order by n.id desc limit 1`,
   );
   expect(robin.t).toBe(told[0].text);
+});
+
+test("resetting a girl's PIN: a one-time code, then she chooses a new PIN at sign-in", async ({
+  page,
+  browser,
+}) => {
+  // Second audit, Dad's decision (2026-10-08): Settings → Logins, with the
+  // authenticator code, logged, with a notice to her. A throwaway test kid.
+  const { resetKid } = logins();
+  // She's signed in on a device before the reset (third audit: that session must end at once).
+  const before = await (await browser.newContext()).newPage();
+  await kidSignIn(before, resetKid.username, resetKid.pin);
+  await expect(before).toHaveURL(/\/kid/);
+  const token = await before.evaluate(
+    () => JSON.parse(localStorage.getItem('bb.auth') ?? '{}').access_token as string,
+  );
+  const [{ id: account }] = await rows<{ id: string }>(
+    `select account_id as id from public.profiles where username = $1`,
+    [resetKid.username],
+  );
+  const anon = readFileSync('.env.local', 'utf8')
+    .match(/^VITE_SUPABASE_ANON_KEY=(.*)$/m)![1]
+    .trim();
+  const readHistory = () =>
+    fetch('http://127.0.0.1:54321/rest/v1/rpc/my_activity', {
+      method: 'POST',
+      headers: {
+        apikey: anon,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_account_id: account, p_limit: 5 }),
+    });
+  expect((await readHistory()).status).toBe(200);
+  await open(page);
+  const card = page.getByRole('region', { name: 'Logins' });
+  await card.getByRole('button', { name: "Reset Reset Test's PIN" }).click();
+  await expect(card).toContainText("Reset Test's PIN stops working now");
+  await card.getByRole('button', { name: "Reset Reset Test's PIN" }).click();
+  await expect(card.getByRole('status')).toContainText('Give Reset Test this code:');
+  const code = (await card.locator('.set__code-digits').innerText()).replace(/\s/g, '');
+  expect(code).toMatch(/^\d{6}$/);
+  expect(await lastLog()).toMatchObject({
+    summary: "Reset Reset Test's PIN. She chooses a new one at her next sign-in.",
+  });
+  await expect(card).toContainText('Waiting for her to choose a new PIN');
+  // The device she was signed in on stops working straight away, not when its token runs out.
+  expect((await readHistory()).status).not.toBe(200);
+  await before.context().close();
+
+  // Her old PIN no longer works.
+  const kidPage = await (await browser.newContext()).newPage();
+  await kidSignIn(kidPage, resetKid.username, resetKid.pin);
+  await expect(kidPage.getByRole('alert')).toContainText("That PIN didn't match");
+
+  // Dad's code, then a new PIN twice (a mismatch first).
+  const fresh = code === '135790' ? '246802' : '135790';
+  await typePin(kidPage, code);
+  await expect(kidPage.getByText('Dad reset your PIN. Choose a new 6-digit PIN.')).toBeVisible();
+  await typePin(kidPage, fresh);
+  await expect(kidPage.getByText('Type your new PIN again')).toBeVisible();
+  await typePin(kidPage, '000111');
+  await expect(kidPage.getByRole('alert')).toHaveText(
+    "Those didn't match. Choose your new PIN again.",
+  );
+  await typePin(kidPage, fresh);
+  await typePin(kidPage, fresh);
+  await expect(kidPage).toHaveURL(/\/kid/);
+  await kidPage.context().close();
+
+  // Next time, the new PIN is her PIN.
+  const again = await (await browser.newContext()).newPage();
+  await kidSignIn(again, resetKid.username, fresh);
+  await expect(again).toHaveURL(/\/kid/);
+  await again.context().close();
+  const [n] = await rows<{ title: string }>(
+    `select title from public.notifications
+      where account_id = (select account_id from public.profiles where username = $1)
+        and title = 'Dad reset your PIN'`,
+    [resetKid.username],
+  );
+  expect(n?.title).toBe('Dad reset your PIN');
 });

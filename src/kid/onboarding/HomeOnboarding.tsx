@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { kidRpc, useKidView } from '../kidView';
-import { TEXT, type OnboardingState } from './onboardingText';
+import { TEXT, homeBanner, type OnboardingState } from './onboardingText';
 import './Welcome.css';
 
 /**
@@ -31,37 +31,33 @@ export function SetupBanner() {
   }, [view]);
 
   if (!state) return null;
-  if (!state.done && !view.viewing && state.unlocked)
-    return (
-      <section className="banner" aria-label="Setting up">
-        <div className="banner__card banner__card--celebrate">
-          <p className="banner__title">{TEXT.setupContinue}</p>
-          <Link className="btn btn--small" to={`${view.base}/welcome`}>
-            {TEXT.keepGoing}
-          </Link>
-        </div>
-      </section>
-    );
-  if (!state.done) {
-    if (!view.viewing) return null; // she's locked to her welcome screens anyway
-    return (
-      <section className="banner" aria-label="Setting up">
-        <div className="banner__card banner__card--celebrate">
-          <p className="banner__title">
-            {state.signed_version === null ? TEXT.setupBanner : TEXT.setupContinue}
-          </p>
-        </div>
-      </section>
-    );
-  }
-  if (!state.needs_signature) return null;
+  const which = homeBanner(state, view.viewing);
+  if (which === null) return null;
+  const title =
+    which === 'continue' || which === 'viewing_continue'
+      ? TEXT.setupContinue
+      : which === 'viewing_start'
+        ? TEXT.setupBanner
+        : which === 'changed'
+          ? TEXT.changedBanner
+          : TEXT.changedWaiting;
+  const link =
+    which === 'continue'
+      ? { to: `${view.base}/welcome`, label: TEXT.keepGoing }
+      : which === 'changed'
+        ? { to: `${view.base}/welcome?step=agreement`, label: TEXT.readIt }
+        : null;
+  const label =
+    which === 'changed' || which === 'waiting_for_dad' ? 'Your agreement' : 'Setting up';
   return (
-    <section className="banner" aria-label="Setting up">
+    <section className="banner" aria-label={label}>
       <div className="banner__card banner__card--celebrate">
-        <p className="banner__title">{TEXT.changedBanner}</p>
-        <Link className="btn btn--small" to={`${view.base}/welcome?step=agreement`}>
-          {TEXT.readIt}
-        </Link>
+        <p className="banner__title">{title}</p>
+        {link && (
+          <Link className="btn btn--small" to={link.to}>
+            {link.label}
+          </Link>
+        )}
       </div>
     </section>
   );

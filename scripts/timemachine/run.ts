@@ -25,7 +25,7 @@ import {
   type Holiday,
   type Posting,
 } from './model/model.ts';
-import { generateCloses, LATE_CLOSE, SPLIT } from './prices.ts';
+import { generateCloses, LATE_CLOSE, LATE_CLOSE_2, LATE_CLOSE_3, SPLIT } from './prices.ts';
 import { END_DAY, MISSED, START, STEPS, type Check, type Step } from './scenario.ts';
 
 const KIDS = ['A', 'B'] as const;
@@ -157,6 +157,10 @@ async function main(): Promise<void> {
     let expectations = 0;
     let snapshotDays = 0;
     const runsWaiting: string[] = [];
+    // The nightly runs each late close holds up (in date order).
+    const expectedWaiting = [LATE_CLOSE, LATE_CLOSE_3, LATE_CLOSE_2].flatMap((l) =>
+      l.waits.map((d) => `${d}: waiting`),
+    );
     let reconcileRuns = 0;
     let reconcileProblems = 0;
     const reconcileProblemList: string[] = [];
@@ -521,8 +525,8 @@ async function main(): Promise<void> {
     record('No alerts were raised', openAlerts[0].n === '0', `${openAlerts[0].n} open alerts`);
     record(
       'Missed week and late close caught up',
-      runsWaiting.length === 1 && runsWaiting[0].startsWith(LATE_CLOSE.day),
-      `runs that had to wait: ${runsWaiting.join('; ') || 'none'} (expected only the late close on ${LATE_CLOSE.day})`,
+      runsWaiting.join('; ') === expectedWaiting.join('; '),
+      `runs that had to wait: ${runsWaiting.join('; ') || 'none'} (expected: ${expectedWaiting.join('; ')})`,
     );
 
     // Deliberate faults -----------------------------------------------------------
@@ -609,6 +613,8 @@ async function comparePostings(
     const base = { kid, day: r.day };
     if (r.type === 'deposit') dbPostings.push({ ...base, kind: 'deposit', cents: amt });
     else if (r.type === 'withdraw') dbPostings.push({ ...base, kind: 'withdraw', cents: -amt });
+    else if (r.type === 'interest' && r.vehicle === 'savings' && stem === 'late_interest')
+      dbPostings.push({ ...base, kind: 'late_interest', cents: amt });
     else if (r.type === 'interest' && r.vehicle === 'savings')
       dbPostings.push({ ...base, kind: 'savings_interest', cents: amt });
     else if (r.type === 'interest' && r.vehicle === 'gic')
@@ -1045,6 +1051,12 @@ async function buildReport(
   for (const s of STEPS) lines.push(`- ${s.at}: ${s.why}`);
   lines.push(`- ${SPLIT.day}: Nasdaq-100 2-for-1 split`);
   lines.push(`- ${LATE_CLOSE.day}: Nasdaq-100 close arrives a day late`);
+  lines.push(
+    `- ${LATE_CLOSE_3.day}: Nasdaq-100 close arrives on ${LATE_CLOSE_3.publishedAt.slice(0, 10)}; only its Oct 1 dividend waits (the Dow and TSX pay on time)`,
+  );
+  lines.push(
+    `- ${LATE_CLOSE_2.day}: Dow close arrives on ${LATE_CLOSE_2.publishedAt.slice(0, 10)}; the sale and the Jan 3 dividends post late, with the interest they missed`,
+  );
   lines.push(
     '- Feb 14 – Mar 6, 2028: Nasdaq-100 falls about 25% (Dow and TSX less), then recovers',
   );

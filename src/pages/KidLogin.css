@@ -49,6 +49,12 @@
   font-size: 1.6rem;
   color: var(--bb-purple);
 }
+.kid-login__note {
+  margin: 0 0 0.25rem;
+  text-align: center;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
 .kid-login__label {
   margin: 0;
   font-weight: 600;

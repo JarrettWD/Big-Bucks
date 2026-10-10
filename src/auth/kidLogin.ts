@@ -7,10 +7,20 @@ export type KidLoginResult =
   | { kind: 'ok' }
   | { kind: 'wrong'; triesLeft: number }
   | { kind: 'locked'; until: Date }
+  /** Dad reset her PIN and she typed his code: she chooses a new PIN. */
+  | { kind: 'new_pin_needed' }
+  /** Her new PIN can't be Dad's code. */
+  | { kind: 'bad_new_pin' }
+  /** Her new PIN is saved, but signing in didn't work this time: she signs in with it next. */
+  | { kind: 'pin_set' }
   | { kind: 'offline' }
   | { kind: 'error' };
 
-export async function kidLogin(username: string, pin: string): Promise<KidLoginResult> {
+export async function kidLogin(
+  username: string,
+  pin: string,
+  newPin?: string,
+): Promise<KidLoginResult> {
   let res: Response;
   try {
     res = await fetch(`${functionsUrl}/kid-login`, {
@@ -20,7 +30,7 @@ export async function kidLogin(username: string, pin: string): Promise<KidLoginR
         apikey: anonKeyForFunctions,
         Authorization: `Bearer ${anonKeyForFunctions}`,
       },
-      body: JSON.stringify({ username, pin }),
+      body: JSON.stringify(newPin ? { username, pin, new_pin: newPin } : { username, pin }),
     });
   } catch {
     return { kind: 'offline' };
@@ -39,7 +49,18 @@ export async function kidLogin(username: string, pin: string): Promise<KidLoginR
   if (res.status === 423 && typeof body.locked_until === 'string')
     return { kind: 'locked', until: new Date(body.locked_until) };
   if (res.status === 401) return { kind: 'wrong', triesLeft: Number(body.tries_left ?? 0) };
+  if (res.status === 409 && body.error === 'new_pin_needed') return { kind: 'new_pin_needed' };
+  if (res.status === 400 && body.error === 'bad_new_pin') return { kind: 'bad_new_pin' };
+  if (res.status === 503 && body.error === 'pin_set_try_again') return { kind: 'pin_set' };
   return { kind: 'error' };
+}
+
+/** How long until a lock ends, in words: minutes up to 90, then hours. */
+export function waitWords(until: Date, now = new Date()): string {
+  const m = minutesLeft(until, now);
+  if (m <= 90) return `${m} minute${m === 1 ? '' : 's'}`;
+  const h = Math.ceil(m / 60);
+  return `${h} hours`;
 }
 
 /** Minutes until a lock ends, at least 1. */

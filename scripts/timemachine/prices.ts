@@ -1,8 +1,9 @@
 // Synthetic daily closes for the simulated year: repeatable (seeded), whole-number
 // arithmetic only, on each market's real trading days. Includes a Nasdaq-100
 // crash of about 25% over three weeks in Feb–Mar 2028 and a recovery, smaller
-// drops for the Dow and TSX, a 2-for-1 Nasdaq-100 split, and one close that
-// arrives a day late.
+// drops for the Dow and TSX, a 2-for-1 Nasdaq-100 split, one close that arrives a
+// day late, and one that arrives five days late (late money: second audit,
+// 2026-10-08).
 
 import { at, daysFrom, weekday, type Day, type Moment } from './model/calendar.ts';
 import { MARKET_OF, type FundId, type Holiday } from './model/model.ts';
@@ -19,6 +20,31 @@ export const LATE_CLOSE = {
   fund: 'nasdaq100' as FundId,
   day: '2027-09-14',
   publishedAt: '2027-09-15 15:30',
+  /** The nightly runs that wait for it. */
+  waits: ['2027-09-14'],
+};
+/**
+ * The Dow's Dec 31 close arrives five days late: a sale settling at it and every
+ * dividend paid on Jan 3 wait for it, and their money reaches savings after that day's
+ * interest was worked out, so it gets the interest it missed (Dad, 2026-10-08).
+ */
+export const LATE_CLOSE_2 = {
+  fund: 'dow' as FundId,
+  day: '2027-12-31',
+  publishedAt: '2028-01-05 15:30',
+  waits: ['2027-12-31', '2028-01-01', '2028-01-02', '2028-01-03', '2028-01-04'],
+};
+/**
+ * The Nasdaq-100's Sep 30, 2027 close (the quarter's last) arrives Oct 4. No trade needs
+ * it, so only that fund's Oct 1 dividend waits: the Dow and TSX dividends are paid on
+ * time, and the Nasdaq-100's reaches savings late with the interest it missed (third
+ * audit: each fund on its own).
+ */
+export const LATE_CLOSE_3 = {
+  fund: 'nasdaq100' as FundId,
+  day: '2027-09-30',
+  publishedAt: '2027-10-04 15:30',
+  waits: ['2027-10-01', '2027-10-02', '2027-10-03'],
 };
 /** A day the Nasdaq-100 falls hard: the dollar sale requested the evening before sells everything. */
 export const BIG_DROP_DAY = '2028-02-24';
@@ -77,8 +103,10 @@ export function generateCloses(holidayList: Holiday[], from: Day, through: Day):
       else bp = p.drift + ((next() % (2 * p.wobble + 1)) - p.wobble);
       price = (price * BigInt(10000 + bp)) / 10000n;
       if (fund === SPLIT.fund && d === SPLIT.day) price = price / 2n; // 2-for-1: each unit is worth half
-      const publishedAt =
-        fund === LATE_CLOSE.fund && d === LATE_CLOSE.day ? LATE_CLOSE.publishedAt : at(d, '15:30');
+      const late = [LATE_CLOSE, LATE_CLOSE_2, LATE_CLOSE_3].find(
+        (l) => l.fund === fund && l.day === d,
+      );
+      const publishedAt = late ? late.publishedAt : at(d, '15:30');
       out.push({ fund, day: d, close: mills(price), publishedAt });
     }
   }

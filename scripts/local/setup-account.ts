@@ -1,7 +1,8 @@
 // `npm run setup-account`: create a login on the LOCAL Supabase.
 //
 // Asks for the role, display name, username and PIN (kids) or email and
-// password (parent), and whether a kid is a test account. Nothing is written to
+// password (parent), and whether a kid is a test account; or, for "pin", a new PIN
+// for a kid who already has a login. Nothing is written to
 // the repo: the answers go straight into the local database.
 //
 // Local only for now. Creating the real accounts in production comes after
@@ -44,6 +45,19 @@ async function askUntil(
   }
 }
 
+/** A 6-digit PIN, typed twice, hidden. */
+async function askPin(): Promise<string> {
+  for (;;) {
+    const pin = await askUntil(
+      'PIN (6 digits, hidden): ',
+      (s) => (/^\d{6}$/.test(s) ? null : 'Exactly 6 digits.'),
+      true,
+    );
+    if ((await ask('PIN again: ', true)) === pin) return pin;
+    console.log("  The two PINs didn't match. Try again.");
+  }
+}
+
 const username = (s: string) =>
   /^[a-z0-9_]{3,30}$/.test(s) ? null : 'Use 3 to 30 lowercase letters, numbers or _ (no spaces).';
 const notEmpty = (s: string) => (s ? null : 'Please type something.');
@@ -52,23 +66,22 @@ async function main(): Promise<void> {
   const { keys, db, admin } = await connectLocal();
   try {
     console.log('Create a Big Bucks login on the LOCAL Supabase (this computer only).\n');
-    const role = await askUntil('Kid or parent? (kid/parent): ', (s) =>
-      ['kid', 'parent'].includes(s.toLowerCase()) ? null : 'Type kid or parent.',
+    const role = await askUntil('Kid, parent, or a new PIN for a kid? (kid/parent/pin): ', (s) =>
+      ['kid', 'parent', 'pin'].includes(s.toLowerCase()) ? null : 'Type kid, parent or pin.',
     );
 
-    if (role.toLowerCase() === 'kid') {
+    if (role.toLowerCase() === 'pin') {
+      // A new PIN for a kid who already has a login (Dad can also reset one in the
+      // app: Settings → Logins).
+      const user = await askUntil('Her username: ', username);
+      const pin = await askPin();
+      const r = await admin.rpc('set_kid_pin', { p_username: user, p_pin: pin });
+      if (r.error) throw new Error(r.error.message);
+      console.log(`\nDone: "${user}" signs in with her new PIN.`);
+    } else if (role.toLowerCase() === 'kid') {
       const displayName = await askUntil('Display name (what the app calls her): ', notEmpty);
       const user = await askUntil('Username (for the login screen): ', username);
-      let pin = '';
-      for (;;) {
-        pin = await askUntil(
-          'PIN (6 digits, hidden): ',
-          (s) => (/^\d{6}$/.test(s) ? null : 'Exactly 6 digits.'),
-          true,
-        );
-        if ((await ask('PIN again: ', true)) === pin) break;
-        console.log("  The two PINs didn't match. Try again.");
-      }
+      const pin = await askPin();
       const test = await askUntil('Test account? (y/n): ', (s) =>
         /^[yn]$/i.test(s) ? null : 'Type y or n.',
       );

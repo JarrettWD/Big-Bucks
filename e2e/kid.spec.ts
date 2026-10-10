@@ -74,18 +74,18 @@ test('5 wrong PINs in a row lock the login for 15 minutes, even for the right PI
   await typePin(page, wrong);
   await typePin(page, wrong);
   await expect(page.getByRole('alert')).toHaveText(
-    "That PIN didn't match. 2 more tries before a 15-minute break.",
+    "That PIN didn't match. 2 more tries before a break.",
   );
   await typePin(page, wrong);
   await expect(page.getByRole('alert')).toHaveText(
-    "That PIN didn't match. 1 more try before a 15-minute break.",
+    "That PIN didn't match. 1 more try before a break.",
   );
   await typePin(page, wrong);
   await expect(page.getByRole('alert')).toHaveText(
-    /^Too many tries in a row, so this login is taking a short break\. Try again in 15 minutes, or ask Dad for help\.$/,
+    /^Too many tries in a row, so this login is taking a break\. Try again in 15 minutes, or ask Dad for help\.$/,
   );
   await typePin(page, lockoutKid.pin);
-  await expect(page.getByRole('alert')).toContainText('taking a short break');
+  await expect(page.getByRole('alert')).toContainText('taking a break');
   await expect(page).toHaveURL(/\/login$/);
 });
 

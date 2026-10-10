@@ -150,6 +150,7 @@ export const TEXT = {
     money: 'Inflation and dividends',
     features: 'Feature switches',
     wording: 'Wording',
+    logins: 'Logins',
     backup: 'Backup',
   },
 
@@ -290,4 +291,35 @@ export const TEXT = {
   historyWho: (h: { who: string; when: string | null }) => (h.when ? `${h.who}, ${h.when}` : h.who),
   loadError: (e: string) => `Couldn't load Settings: ${e}`,
   retry: 'Try again',
+};
+
+/** Settings → Logins (PIN reset, Dad's decision 2026-10-08). */
+export interface KidLogin {
+  account_id: string;
+  name: string;
+  is_test: boolean;
+  username: string;
+  reset_pending: boolean;
+  reset_expires: string | null;
+  /** Her code ran out before she used it: her old PIN no longer works either. */
+  reset_expired: boolean;
+}
+
+export const LOGINS = {
+  title: 'Logins',
+  intro:
+    'If a girl forgets her PIN (or someone else may know it), reset it here. She gets a one-time code from you, then chooses a new PIN at her next sign-in.',
+  test: '(test account)',
+  reset: (name: string) => `Reset ${name}'s PIN`,
+  confirm: (name: string) =>
+    `${name}'s PIN stops working now, and she's signed out on every device. You'll get a one-time code to give her: at her next sign-in she types it, then chooses a new PIN. She gets a notice.`,
+  yes: (name: string) => `Reset ${name}'s PIN`,
+  cancel: 'Cancel',
+  giveCode: (name: string) => `Give ${name} this code:`,
+  codeOnce:
+    "It works for 7 days, and it's shown only this once. If it's lost, reset her PIN again.",
+  pending: (until: string | null) =>
+    `Waiting for her to choose a new PIN${until ? ` (her code works until ${until})` : ''}.`,
+  expired: "Her code ran out before she used it, so she can't sign in. Reset her PIN again.",
+  done: 'Done',
 };

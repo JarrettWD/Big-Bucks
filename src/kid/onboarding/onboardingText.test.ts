@@ -3,6 +3,7 @@ import {
   agreementLine,
   decisionChoices,
   fill,
+  homeBanner,
   firstStep,
   ruleSentence,
   shownSteps,
@@ -132,5 +133,34 @@ describe('onboarding wording (stage 8 B4)', () => {
         dad_signed_on: null,
       }),
     ).toBe('Your Big Bucks agreement (version 2) · signed Nov 2, waiting for Dad to sign');
+  });
+});
+
+describe('the Home banner about setting up and the agreement (Dad, 2026-10-08)', () => {
+  const base = {
+    done: true,
+    unlocked: true,
+    signed_version: 1,
+    needs_signature: false,
+    countersigned: true,
+  };
+  it('shows nothing when all is signed', () => {
+    expect(homeBanner(base, false)).toBeNull();
+  });
+  it('asks her to sign a new version (only new deposits wait)', () => {
+    expect(homeBanner({ ...base, needs_signature: true }, false)).toBe('changed');
+    expect(homeBanner({ ...base, needs_signature: true }, true)).toBe('changed');
+  });
+  it('once she has signed it, says new deposits wait for Dad (not in his View as)', () => {
+    expect(homeBanner({ ...base, signed_version: 2, countersigned: false }, false)).toBe(
+      'waiting_for_dad',
+    );
+    expect(homeBanner({ ...base, signed_version: 2, countersigned: false }, true)).toBeNull();
+  });
+  it('before onboarding is done: "keep going" once unlocked; Dad sees whether she started', () => {
+    expect(homeBanner({ ...base, done: false }, false)).toBe('continue');
+    expect(homeBanner({ ...base, done: false, unlocked: false }, false)).toBeNull();
+    expect(homeBanner({ ...base, done: false, signed_version: null }, true)).toBe('viewing_start');
+    expect(homeBanner({ ...base, done: false }, true)).toBe('viewing_continue');
   });
 });

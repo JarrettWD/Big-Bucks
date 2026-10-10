@@ -110,16 +110,16 @@ select throws_ok(
 -- 3. The kid-login lookup ------------------------------------------------------------
 
 select is(public.login_precheck('kid_a'),
-  jsonb_build_object('is_kid', true, 'user_id', (select id from ids where name = 'kid_a_user'), 'email', 'kid_a@kids.local', 'locked_until', null),
+  jsonb_build_object('is_kid', true, 'user_id', (select id from ids where name = 'kid_a_user'), 'email', 'kid_a@kids.local', 'reset_pending', false, 'locked_until', null),
   'a kid''s username gives her hidden email, not locked');
 select is(public.login_precheck('  KID_A '),
-  jsonb_build_object('is_kid', true, 'user_id', (select id from ids where name = 'kid_a_user'), 'email', 'kid_a@kids.local', 'locked_until', null),
+  jsonb_build_object('is_kid', true, 'user_id', (select id from ids where name = 'kid_a_user'), 'email', 'kid_a@kids.local', 'reset_pending', false, 'locked_until', null),
   'usernames ignore capitals and spaces around them');
 select is(public.login_precheck('the_parent'),
-  jsonb_build_object('is_kid', false, 'user_id', null, 'email', null, 'locked_until', null),
+  jsonb_build_object('is_kid', false, 'user_id', null, 'email', null, 'reset_pending', false, 'locked_until', null),
   'a parent username gives nothing: the PIN door is for kids only');
 select is(public.login_precheck('nobody_here'),
-  jsonb_build_object('is_kid', false, 'user_id', null, 'email', null, 'locked_until', null),
+  jsonb_build_object('is_kid', false, 'user_id', null, 'email', null, 'reset_pending', false, 'locked_until', null),
   'an unknown username gives nothing');
 
 -- 4. The lockout: 5 wrong PINs in a row lock for 15 minutes --------------------------
@@ -217,22 +217,22 @@ select is((select count(distinct client)::int from public.login_attempts where u
   '...one label per device');
 
 -- Spreading guesses over many devices doesn't help: 20 in a row lock the username for everyone.
-select tests.clock('2026-10-06 10:00');
+select tests.clock('2026-10-07 10:00');
 update public.alerts set resolved_at = public.app_now() where kind = 'lockout';
 select public.record_login_attempt('kid_a', false, '192.0.2.' || (n / 4)) from generate_series(1, 19) n;
 select is(public.login_precheck('kid_a', '198.51.100.20') -> 'locked_until', 'null'::jsonb,
   '19 wrong PINs spread over 5 devices: no device has 5 in a row, nothing is locked yet');
 select is((public.record_login_attempt('kid_a', false, '192.0.2.99') ->> 'locked_until')::timestamptz,
-  '2026-10-06 10:15-06'::timestamptz, 'the 20th wrong PIN in a row, from any device, locks the username...');
+  '2026-10-07 10:15-06'::timestamptz, 'the 20th wrong PIN in a row, from any device, locks the username...');
 select ok((public.login_precheck('kid_a', '198.51.100.20') ->> 'locked_until') is not null,
   '...for every device, hers included, for 15 minutes');
 select is(
   (select message from public.alerts where kind = 'lockout' and resolved_at is null and details ->> 'username' = 'kid_a'),
-  'Kid A''s login is locked for 15 minutes: 20 wrong PINs in a row, from more than one device.',
+  'Kid A''s login is locked for 15 minutes: 20 wrong PINs in a day, from more than one device.',
   'Dad''s alert says so');
 
 -- One open alert per username: more lockouts while Dad hasn't looked add nothing.
-select tests.clock('2026-10-06 10:20');
+select tests.clock('2026-10-07 10:20');
 select public.record_login_attempt('kid_a', false, '203.0.113.8') from generate_series(1, 5);
 select is((select count(*)::int from public.alerts where kind = 'lockout' and resolved_at is null
             and details ->> 'username' = 'kid_a'), 1, 'another lockout while the alert is open adds no second alert');

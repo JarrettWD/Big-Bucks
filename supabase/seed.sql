@@ -9,14 +9,8 @@
 -- file refuses to run on a marked database, so the time machine can't be switched
 -- on there by accident (for example by `supabase db push --include-seed`).
 -- `supabase db reset --linked` would wipe production completely, mark included:
--- never run it (docs/RUNBOOK.md).
-do $$
-begin
-  if exists (select 1 from public.settings where key = 'is_production') then
-    raise exception 'This database is production. The local seed never runs here.';
-  end if;
-end;
-$$;
+-- never run it (docs/RUNBOOK.md). The check is a tested function (audit_second_test).
+select public.assert_not_production();
 
 -- Turn on the time machine for the local copy.
 insert into public.settings (key, value, effective_date, note)

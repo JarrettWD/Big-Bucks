@@ -1,11 +1,12 @@
 // The kid login: her username once, then a big PIN pad. The username is
 // remembered on this device, so next time she only enters her PIN ("Not you?"
-// switches). Five wrong PINs in a row mean a 15-minute break (decided by the
-// server), explained kindly.
+// switches). Five wrong PINs in a row mean a break (15 minutes, longer if it keeps
+// happening; decided by the server), explained kindly. If Dad reset her PIN, she
+// types his one-time code, then chooses a new PIN and types it again.
 
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { kidLogin, minutesLeft } from '../auth/kidLogin';
+import { kidLogin, waitWords } from '../auth/kidLogin';
 import { forgetKid, getRememberedKid, rememberKid } from '../auth/remember';
 import './KidLogin.css';
 
@@ -17,6 +18,10 @@ export default function KidLogin() {
   const [greeting, setGreeting] = useState(remembered?.displayName ?? remembered?.username ?? '');
   const [step, setStep] = useState<'username' | 'pin'>(remembered ? 'pin' : 'username');
   const [pin, setPin] = useState('');
+  // Dad reset her PIN: his code, then her new PIN twice.
+  const [phase, setPhase] = useState<'pin' | 'new' | 'again'>('pin');
+  const [code, setCode] = useState('');
+  const [firstNew, setFirstNew] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 
@@ -35,16 +40,32 @@ export default function KidLogin() {
     setUsername('');
     setGreeting('');
     setPin('');
+    setPhase('pin');
     setMessage(null);
     setStep('username');
   };
 
-  const tryPin = async (full: string) => {
+  const tryPin = async (full: string, newPin?: string) => {
     setBusy(true);
-    const r = await kidLogin(username, full);
+    const r = await kidLogin(username, full, newPin);
     setBusy(false);
     setPin('');
+    if (r.kind !== 'new_pin_needed' && r.kind !== 'bad_new_pin') setPhase('pin');
     switch (r.kind) {
+      case 'new_pin_needed':
+        setCode(full);
+        setPhase('new');
+        return;
+      case 'pin_set':
+        setMessage({
+          tone: 'oops',
+          text: "Your new PIN is saved! Big Bucks couldn't sign you in just now. Try again in a minute with your new PIN.",
+        });
+        return;
+      case 'bad_new_pin':
+        setPhase('new');
+        setMessage({ tone: 'oops', text: "Choose a new PIN that isn't Dad's code." });
+        return;
       case 'ok':
         // Keep a name we already know; the app fills it in once it loads her profile.
         rememberKid({
@@ -57,15 +78,14 @@ export default function KidLogin() {
           tone: 'oops',
           text:
             r.triesLeft <= 2
-              ? `That PIN didn't match. ${r.triesLeft === 1 ? '1 more try' : `${r.triesLeft} more tries`} before a 15-minute break.`
+              ? `That PIN didn't match. ${r.triesLeft === 1 ? '1 more try' : `${r.triesLeft} more tries`} before a break.`
               : "That PIN didn't match. Try again.",
         });
         return;
       case 'locked': {
-        const m = minutesLeft(r.until);
         setMessage({
           tone: 'rest',
-          text: `Too many tries in a row, so this login is taking a short break. Try again in ${m} minute${m === 1 ? '' : 's'}, or ask Dad for help.`,
+          text: `Too many tries in a row, so this login is taking a break. Try again in ${waitWords(r.until)}, or ask Dad for help.`,
         });
         return;
       }
@@ -88,7 +108,18 @@ export default function KidLogin() {
     setMessage(null);
     const next = pin + d;
     setPin(next);
-    if (next.length === 6) void tryPin(next);
+    if (next.length < 6) return;
+    if (phase === 'pin') void tryPin(next);
+    else if (phase === 'new') {
+      setFirstNew(next);
+      setPin('');
+      setPhase('again');
+    } else if (next === firstNew) void tryPin(code, next);
+    else {
+      setPin('');
+      setPhase('new');
+      setMessage({ tone: 'oops', text: "Those didn't match. Choose your new PIN again." });
+    }
   };
   const back = () => !busy && setPin((p) => p.slice(0, -1));
 
@@ -129,7 +160,16 @@ export default function KidLogin() {
           <h2 id="pin-title" className="kid-login__hi">
             Hi, {greeting}!
           </h2>
-          <p className="kid-login__label">Enter your PIN</p>
+          {phase === 'new' && (
+            <p className="kid-login__note">Dad reset your PIN. Choose a new 6-digit PIN.</p>
+          )}
+          <p className="kid-login__label">
+            {phase === 'pin'
+              ? 'Enter your PIN'
+              : phase === 'new'
+                ? 'Your new PIN'
+                : 'Type your new PIN again'}
+          </p>
           <div
             className="kid-login__dots"
             role="img"

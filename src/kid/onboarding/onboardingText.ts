@@ -294,7 +294,9 @@ export const TEXT = {
   goHome: 'Go to Home',
   setupBanner: "👋 Let's set up your Big Bucks with Dad.",
   setupContinue: "👋 Let's finish setting up your Big Bucks.",
-  changedBanner: 'Your Big Bucks agreement has changed.',
+  changedBanner:
+    'Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed. Everything else works like before.',
+  changedWaiting: 'You signed the new agreement! New deposits wait until Dad signs it too.',
   readIt: 'Read it',
   historyTitle: 'Your Big Bucks agreement',
   historyNone: "You haven't signed your Big Bucks agreement yet.",
@@ -305,3 +307,30 @@ export const TEXT = {
   loadError: "Big Bucks couldn't load this just now. Please try again in a minute.",
   retry: 'Try again',
 };
+
+/**
+ * Which banner Home shows about setting up and the agreement (Dad, 2026-10-08):
+ * - not done, her own app, unlocked: "Let's finish setting up";
+ * - not done, Dad's "View as": whether she has started (no button);
+ * - done, a new version she hasn't signed: "Dad changed the house rules…" (new deposits wait);
+ * - done, she signed the new version but Dad hasn't: "…waits until Dad signs it too";
+ * - otherwise nothing.
+ */
+export type HomeBanner =
+  'continue' | 'viewing_start' | 'viewing_continue' | 'changed' | 'waiting_for_dad' | null;
+
+export function homeBanner(
+  state: Pick<
+    OnboardingState,
+    'done' | 'unlocked' | 'signed_version' | 'needs_signature' | 'countersigned'
+  >,
+  viewing: boolean,
+): HomeBanner {
+  if (!state.done) {
+    if (viewing) return state.signed_version === null ? 'viewing_start' : 'viewing_continue';
+    return state.unlocked ? 'continue' : null;
+  }
+  if (state.needs_signature) return 'changed';
+  if (!state.countersigned && !viewing) return 'waiting_for_dad';
+  return null;
+}

@@ -41,6 +41,12 @@ Each notice has a title and a body.
 - **The market was closed** (Dad recorded an unscheduled closure; pre-launch audit)
   - Title: The market was closed
   - Body: The {New York / Toronto} Stock Exchange was closed on {date}, so your {fund} {buy / sale} will happen at the next close, on {date}.
+- **The market closed early** (Dad recorded an unexpected early close; second audit; only for trades asked for after the early close)
+  - Title: The market closed early
+  - Body: The {New York / Toronto} Stock Exchange closed early on {date}, before your {fund} {buy / sale} could happen. It will happen at the next close, on {date}.
+- **Dad reset her PIN** (second audit)
+  - Title: Dad reset your PIN
+  - Body: Next time you sign in, type the code Dad gives you instead of your PIN. Then you'll choose a new PIN.
 
 ### GICs
 
@@ -146,9 +152,15 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 - Only a kid's account can do this.
 - **The agreement isn't fully signed** (pre-launch audit, 2026-10-08; withdrawals, fund trades, buying or breaking a GIC, finishing onboarding):
   - Not signed yet: Sign your Big Bucks agreement with Dad first.
-  - A new version she hasn't signed (deposits too): Dad changed the house rules. Read your new agreement with Dad and sign it, then try again.
+  - A new version (only new deposits wait; everything else keeps working under the version they both signed: Dad, 2026-10-08):
+    - She hasn't signed it yet: Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed.
+    - She has, Dad hasn't yet: You signed the new agreement! New deposits wait until Dad signs it too.
+  - Her first agreement, before Dad signs, a second deposit: Your first deposit is already waiting for Dad.
+  - **Her Home banner** while a new version waits: "Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed. Everything else works like before." · **Read it**; after she signs: "You signed the new agreement! New deposits wait until Dad signs it too."
   - Dad hasn't countersigned: Dad hasn't signed your agreement yet. As soon as he does, this will work.
+- **Dad, approving for a girl who never signed:** {name} hasn't signed her Big Bucks agreement yet, so nothing can be approved.
 - **Dad, approving before he has countersigned:** {name} signed her agreement and is waiting for you to sign it too. Sign it first (it's at the top of Approvals), then approve this.
+- **Dad's Settings → Logins** (PIN reset): "Reset {name}'s PIN" → "{name}'s PIN stops working now, and she's signed out on every device. You'll get a one-time code to give her: at her next sign-in she types it, then chooses a new PIN. She gets a notice." → "Give {name} this code: 123 456. It works for 7 days, and it's shown only this once. If it's lost, reset her PIN again." While waiting: "Waiting for her to choose a new PIN (her code works until {date})." A code that ran out: "Her code ran out before she used it, so she can't sign in. Reset her PIN again."
 
 ### Deposits
 
@@ -263,8 +275,13 @@ These come from the app's screens (`src/`), not the database, so wording edits h
 - **First time on a device:** Your username · Next
 - **After that (her username is remembered on the device):** Hi, {her name}! · Enter your PIN · Not you?
 - **Wrong PIN:** That PIN didn't match. Try again.
-- **Wrong PIN, 2 or 1 tries left:** That PIN didn't match. {2 more tries / 1 more try} before a 15-minute break.
-- **Locked (5 wrong PINs in a row):** Too many tries in a row, so this login is taking a short break. Try again in {minutes} minutes, or ask Dad for help.
+- **Wrong PIN, 2 or 1 tries left:** That PIN didn't match. {2 more tries / 1 more try} before a break.
+- **Locked (5 wrong PINs in a row on her device, or 20 in a day from any devices):** Too many tries in a row, so this login is taking a break. Try again in {N minutes, up to 90; then N hours}, or ask Dad for help. (A lock lasts 15 minutes; a second within a day, an hour; a third, 24 hours.)
+- **Dad reset her PIN** (she typed his code): Dad reset your PIN. Choose a new 6-digit PIN. · Your new PIN · Type your new PIN again
+  - The two don't match: Those didn't match. Choose your new PIN again.
+  - Her new PIN is Dad's code: Choose a new PIN that isn't Dad's code.
+  - Her new PIN was saved but signing in failed just then: Your new PIN is saved! Big Bucks couldn't sign you in just now. Try again in a minute with your new PIN.
+- **Signed out by a PIN reset** (any action from a device whose session was ended): You were signed out. Please sign in again.
 - **No connection to the server:** Big Bucks couldn't reach the bank. Check your internet and try again.
 - **Anything else going wrong:** Something went wrong on our side. Please try again in a minute.
 - **A login with no Big Bucks profile:** This login isn't set up for Big Bucks yet. Ask Dad.

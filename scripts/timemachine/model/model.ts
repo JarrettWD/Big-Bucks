@@ -115,7 +115,9 @@ export type PostingKind =
   | 'gic_renew'
   | 'split'
   | 'correction_add'
-  | 'correction_take';
+  | 'correction_take'
+  /** Interest money missed while it waited to reach savings (a late close). */
+  | 'late_interest';
 
 /** One money event as it should appear in the ledger. */
 export interface Posting {
@@ -141,6 +143,8 @@ interface Gic {
    * the nightly run was late processing the maturity (Dad's decision, 2026-10-08).
    */
   choiceEnds?: Day;
+  /** When the nightly run told her it matured: she can choose only from then. */
+  toldAt?: Moment;
   status: 'active' | 'matured' | 'broken' | 'closed';
   balance: bigint;
 }
@@ -238,8 +242,14 @@ export class Model {
     accrued: Q;
   }[] = [];
 
+  /** The first day of the simulation (the fund work's day-by-day walk starts here). */
+  private readonly firstDay: Day;
+  /** Things that happen at a set moment: savings credits from late money, dividends. */
+  private scheduled: { at: Moment; run: () => void }[] = [];
+
   constructor(start: Moment, holidays: Holiday[]) {
     this.now = start;
+    this.firstDay = dayOf(start);
     for (const h of holidays) this.holidays.set(`${h.market}|${h.date}`, h);
     // Starting rates and cap from the spec.
     const r = (vehicle: 'savings' | 'gic', term: number | null, rate: string) =>
@@ -443,7 +453,7 @@ export class Model {
   }
 
   private available(kid: string): bigint {
-    return this.kid(kid).savings - this.heldCents(kid);
+    return this.kid(kid).savings - this.heldCents(kid) - this.lateHeld(kid);
   }
 
   // ---------------------------------------------------------------- the clock
@@ -486,7 +496,152 @@ export class Model {
         consider(r.settleAt, () => this.settle(r));
       }
     }
+    for (const sc of this.scheduled)
+      consider(sc.at, () => {
+        this.scheduled.splice(this.scheduled.indexOf(sc), 1);
+        sc.run();
+      });
     return best;
+  }
+
+  // ---------------------------------------------------------------- late money
+  //
+  // Dad's decision (2026-10-08): savings interest never waits for fund prices. The fund
+  // work goes day by day (a day's work waits until everything it needs has arrived, and
+  // later days wait behind it), but within a day each trade settles, and each fund's
+  // dividend is paid, as soon as its own close is there. If a trade or dividend posts
+  // after that day's interest was worked out, its savings side counts from the start of
+  // the first day whose interest wasn't worked out yet, and money that reached savings
+  // late gets the interest it missed. Until the run posts it, that money can't be used.
+
+  /** The nightly run happens on day d (not one of the skipped nights). */
+  private runsOn(d: Day): boolean {
+    return !this.skipped.has(d);
+  }
+
+  /** The day of the first nightly run at or after moment m. */
+  private runOf(m: Moment): Day {
+    let d = dayOf(m);
+    if (at(d, NIGHTLY_RUN) < m) d = addDays(d, 1);
+    while (!this.runsOn(d)) d = addDays(d, 1);
+    return d;
+  }
+
+  private laterDay(a: Day | null, b: Day): Day {
+    return a !== null && a > b ? a : b;
+  }
+
+  /** The run at which fund work for day d has a close it needs (never before d's own run). */
+  private needRun(fund: FundId, closeDay: Day, d: Day): Day {
+    const c = this.closes.get(`${fund}|${closeDay}`);
+    if (!c) throw new Error(`reference model has no close for ${fund} on ${closeDay}`);
+    return this.runOf(c.publishedAt > at(d, NIGHTLY_RUN) ? c.publishedAt : at(d, NIGHTLY_RUN));
+  }
+
+  /** The trades settling at day d's close. */
+  private tradesOn(d: Day): Req[] {
+    return [...this.reqs.values()].filter(
+      (r) => r.settleDay === d && (r.kind === 'buy' || r.kind === 'sell' || r.kind === 'sell_all'),
+    );
+  }
+
+  /** The dividends paid on day d: each fund whose quarter starts its payments that day and
+   *  that anyone held, with the quarter's last trading day (whose close it needs). */
+  private dividendsOn(d: Day): { fund: FundId; last: Day }[] {
+    const out: { fund: FundId; last: Day }[] = [];
+    const [y, m] = parts(d);
+    if (![1, 4, 7, 10].includes(m)) return out;
+    const qStart = mk(y, m, 1);
+    for (const f of FUNDS) {
+      const market = MARKET_OF[f];
+      let first = qStart;
+      while (!this.isTradingDay(market, first)) first = addDays(first, 1);
+      if (first !== d) continue;
+      const held = [...this.kids.values()].some((k) =>
+        k.unitChanges.some((u) => u.fund === f && u.at < at(qStart, '00:00')),
+      );
+      if (!held) continue;
+      let last = addDays(qStart, -1);
+      while (!this.isTradingDay(market, last)) last = addDays(last, -1);
+      out.push({ fund: f, last });
+    }
+    return out;
+  }
+
+  /** The run that finishes all of day d's fund work (null before the first day). */
+  private doneRun(d: Day): Day | null {
+    let done: Day | null = null;
+    for (let x = this.firstDay; x <= d; x = addDays(x, 1)) {
+      let run = this.laterDay(done, this.runOf(at(x, NIGHTLY_RUN)));
+      for (const r of this.tradesOn(x)) run = this.laterDay(run, this.needRun(r.fund!, x, x));
+      for (const v of this.dividendsOn(x))
+        run = this.laterDay(run, this.needRun(v.fund, v.last, x));
+      done = run;
+    }
+    return done;
+  }
+
+  /** The run that settles a trade at day d's close in this fund. */
+  private settleRun(fund: FundId, d: Day): Day {
+    return this.laterDay(this.doneRun(addDays(d, -1)), this.needRun(fund, d, d));
+  }
+
+  /** The run that pays fund f's dividend on day d: after all of d's settlements. */
+  private dividendRun(fund: FundId, last: Day, d: Day): Day {
+    let run = this.laterDay(this.doneRun(addDays(d, -1)), this.runOf(at(d, NIGHTLY_RUN)));
+    for (const r of this.tradesOn(d)) run = this.laterDay(run, this.needRun(r.fund!, d, d));
+    return this.laterDay(run, this.needRun(fund, last, d));
+  }
+
+  /** The day money posted by `run` for day d counts from in savings: d itself, or the first
+   *  day whose interest wasn't worked out yet when that run posted it. */
+  private savingsDay(d: Day, run: Day): Day {
+    let prev = addDays(run, -1);
+    while (!this.runsOn(prev)) prev = addDays(prev, -1);
+    return prev > d ? prev : d;
+  }
+
+  /** The savings interest `cents` would have earned from day `from` up to the day
+   *  before `until`, at each day's savings rate, rounded up. */
+  private lateInterest(cents: bigint, from: Day, until: Day): bigint {
+    let total = Q.ZERO;
+    for (let x = from; x < until; x = addDays(x, 1))
+      total = total.add(
+        Q.of(cents)
+          .mul(this.rateOn('savings', null, x))
+          .div(Q.of(100 * daysInYear(parts(x)[0]))),
+      );
+    return total.ceil();
+  }
+
+  /** Money that isn't usable yet: in savings for interest, but not posted by the run yet. */
+  private lateHolds: { kid: string; cents: bigint; from: Moment; until: Moment }[] = [];
+
+  private lateHeld(kid: string): bigint {
+    let h = 0n;
+    for (const x of this.lateHolds)
+      if (x.kid === kid && x.from <= this.now && this.now < x.until) h += x.cents;
+    return h;
+  }
+
+  /** Money into savings for day `from`'s fund work, posted by `run`: it counts from day
+   *  `day`, with the interest it missed if that's later, and is usable once posted. */
+  private creditLate(kid: string, cents: bigint, from: Day, day: Day, run: Day): void {
+    const k = this.kid(kid);
+    const posted = at(run, NIGHTLY_RUN);
+    const credit = () => {
+      let total = cents;
+      const missed = this.lateInterest(cents, from, day);
+      if (missed > 0n) {
+        total += missed;
+        this.postings.push({ kid, day, kind: 'late_interest', cents: missed });
+      }
+      k.savings += total;
+      if (posted > this.now)
+        this.lateHolds.push({ kid, cents: total, from: this.now, until: posted });
+    };
+    if (day === from) credit();
+    else this.scheduled.push({ at: at(day, '00:00'), run: credit });
   }
 
   // ---------------------------------------------------------------- daily rules
@@ -523,6 +678,7 @@ export class Model {
       let told = d;
       while (this.skipped.has(told)) told = addDays(told, 1);
       g.choiceEnds = addDays(d, 7 + diffDays(told, d));
+      g.toldAt = at(told, NIGHTLY_RUN);
       if (interest > 0n)
         this.postings.push({
           kid: g.kid,
@@ -568,8 +724,16 @@ export class Model {
           // average units × close (dollars) × 100 (cents) × yield% ÷ 100 ÷ 4
           const cents = unitDays.div(Q.of(qDays)).mul(close).mul(yld).div(Q.of(4)).ceil();
           if (cents <= 0n) continue;
-          k.savings += cents;
-          this.postings.push({ kid: k.id, day: d, kind: 'dividend', cents, fund: f });
+          const kidId = k.id;
+          this.scheduled.push({
+            at: at(d, NIGHTLY_RUN),
+            run: () => {
+              const run = this.dividendRun(f, last, d);
+              const day = this.savingsDay(d, run);
+              this.postings.push({ kid: kidId, day, kind: 'dividend', cents, fund: f });
+              this.creditLate(kidId, cents, d, day, run);
+            },
+          });
         }
       }
     }
@@ -639,7 +803,15 @@ export class Model {
     if (r.kind === 'buy') {
       // units = amount ÷ close, rounded up at 8 decimal places
       const units = Q.of(r.cents, 100).div(close).ceilTo(8);
-      k.savings -= r.cents;
+      // The money leaves savings at the close, or from a later day if the close came late
+      // (until then it earned savings interest a little longer).
+      const day = this.savingsDay(r.settleDay!, this.settleRun(fund, r.settleDay!));
+      if (day === r.settleDay) k.savings -= r.cents;
+      else {
+        // Still held until it leaves savings (the run keeps the request waiting till then).
+        this.lateHolds.push({ kid: k.id, cents: r.cents, from: this.now, until: at(day, '00:00') });
+        this.scheduled.push({ at: at(day, '00:00'), run: () => (k.savings -= r.cents) });
+      }
       k.unitChanges.push({ at: t, fund, units });
       this.postings.push({ kid: k.id, day: dayOf(t), kind: 'buy', cents: r.cents, units, fund });
     } else {
@@ -654,9 +826,11 @@ export class Model {
         if (need.cmp(have) < 0) units = need;
       }
       const proceeds = units.mul(close).mul(Q.of(100)).ceil();
-      k.savings += proceeds;
+      const run = this.settleRun(fund, r.settleDay!);
+      const day = this.savingsDay(r.settleDay!, run);
       k.unitChanges.push({ at: t, fund, units: Q.ZERO.sub(units) });
-      this.postings.push({ kid: k.id, day: dayOf(t), kind: 'sell', cents: proceeds, units, fund });
+      this.postings.push({ kid: k.id, day, kind: 'sell', cents: proceeds, units, fund });
+      this.creditLate(k.id, proceeds, r.settleDay!, day, run);
     }
     r.status = 'settled';
   }
@@ -779,6 +953,7 @@ export class Model {
       case 'choose': {
         const g = this.gics.get(a.gic);
         if (!g || g.status !== 'matured') return no('not waiting for a choice');
+        if (g.toldAt && t < g.toldAt) return no('the nightly run has not matured it yet');
         if (a.choice === 'to_savings') {
           this.gicToSavings(g, today);
           return { ok: true };

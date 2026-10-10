@@ -8,6 +8,8 @@ export interface Logins {
     kids: { username: string; pin: string; displayName: string; isTest: boolean }[];
   };
   lockoutKid: { username: string; pin: string };
+  resetKid: { username: string; pin: string };
+  apiKid: { username: string; pin: string };
   newParent: { email: string; password: string };
 }
 

@@ -13,6 +13,36 @@ export const LOCAL_DB_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/post
 export type Who =
   { role: 'authenticated'; sub: string; aal: 'aal1' | 'aal2' } | { role: 'service_role' };
 
+/** Why this address isn't the local database, or null when it is. */
+export function addressProblem(url: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return `Refusing to run: "${url}" isn't a database address.`;
+  }
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname) || u.port !== '54322')
+    return `Refusing to run: the time machine only runs against the local database (127.0.0.1:54322), not ${u.hostname}:${u.port}.`;
+  if (/supabase\.(co|com|net)/i.test(url))
+    return 'Refusing to run: that looks like a hosted Supabase project.';
+  return null;
+}
+
+/**
+ * Why this database isn't a local copy the time machine may use, or null when it is:
+ * the newest is_local_dev row must say 'true', and it must never have been marked as
+ * production (mark_production, pre-launch audit 2026-10-08).
+ */
+export function databaseProblem(
+  localDev: string | undefined,
+  markedProduction: boolean,
+): string | null {
+  if (markedProduction) return 'Refusing to run: this database is marked as production.';
+  if (localDev !== 'true')
+    return 'Refusing to run: this database does not say is_local_dev = true.';
+  return null;
+}
+
 export class LocalDb {
   readonly client: pg.Client;
 
@@ -21,31 +51,23 @@ export class LocalDb {
   }
 
   static async connect(url = process.env.TIMEMACHINE_DB_URL ?? LOCAL_DB_URL): Promise<LocalDb> {
-    const u = new URL(url);
-    if (!['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname) || u.port !== '54322') {
-      throw new Error(
-        `Refusing to run: the time machine only runs against the local database (127.0.0.1:54322), not ${u.hostname}:${u.port}.`,
-      );
-    }
-    if (/supabase\.(co|com|net)/i.test(url))
-      throw new Error('Refusing to run: that looks like a hosted Supabase project.');
+    const bad = addressProblem(url);
+    if (bad) throw new Error(bad);
     const client = new pg.Client({ connectionString: url });
     await client.connect();
-    const db = new LocalDb(client);
-    const r = await client.query(
-      `select value from public.settings where key = 'is_local_dev' order by id desc limit 1`,
+    const r = await client.query<{ local_dev: string | null; production: boolean }>(
+      `select (select value from public.settings where key = 'is_local_dev' order by id desc limit 1) as local_dev,
+              exists (select 1 from public.settings where key = 'is_production') as production`,
     );
-    if (r.rows[0]?.value !== 'true') {
+    const problem = databaseProblem(
+      r.rows[0]?.local_dev ?? undefined,
+      r.rows[0]?.production ?? false,
+    );
+    if (problem) {
       await client.end();
-      throw new Error('Refusing to run: this database does not say is_local_dev = true.');
+      throw new Error(problem);
     }
-    // Production marks itself for good (mark_production, pre-launch audit 2026-10-08).
-    const prod = await client.query(`select 1 from public.settings where key = 'is_production'`);
-    if (prod.rows.length > 0) {
-      await client.end();
-      throw new Error('Refusing to run: this database is marked as production.');
-    }
-    return db;
+    return new LocalDb(client);
   }
 
   async close(): Promise<void> {

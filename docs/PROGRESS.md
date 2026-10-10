@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 8 complete** (2026-10-07), local only. **Next: stage 4 (live setup)**, starting with Dad's independent pre-launch audit (see Stage 4 below).
+- Current stage: **stage 4 in progress** (step 1, the pre-launch audits: three rounds of fixes done locally, 2026-10-09; committed locally, not pushed). Next: Dad's review, then the rest of stage 4.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -21,6 +21,19 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 12 — Launch prep (not started)
+
+- **Dad's rule (2026-10-09):** "Before creating the girls' real accounts: a fresh read-only audit scoped to changes since the third pre-launch audit."
+
+### Stage 5 — Backups and data protection (not started; notes from stage 4)
+
+- `prelaunch_reset()` must also handle the tables added by the pre-launch audits:
+  - `private.kid_pin_resets`: clear it;
+  - `outbox`: clear it;
+  - `fund_price_corrections`: keep it, like fund prices.
+- The backup must include the `private` schema.
+- The login key in Supabase Vault won't decrypt in a new project. A restore into a new project therefore means `select public.new_kid_login_key();` and a PIN reset for each girl (docs/RUNBOOK.md, "The login key was lost").
 
 ### Stage 4 — Live setup (in progress; step 1, the pre-launch audit, 2026-10-08)
 
@@ -105,41 +118,141 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
   `onboarding_test.sql` is updated for the new message. **Nothing has been re-run since this change.**
 - **WIP commit, not pushed (2026-10-09):** Dad asked for a local work-in-progress commit of everything so far. From here on, CLAUDE.md's rule applies: the committed audit migrations are never edited again. The fixes below go in new migrations.
-- **Still to do, in order:**
-  1. **Agreement:**
-     - known-answer tests for the new-version rule;
-     - the Home banner reworded, plus a "waiting for Dad to sign the new version" banner.
-  2. **Login:**
-     - the device address comes from the one Supabase's proxy sets, not one the caller can fake (check on production);
-     - longer lockouts when they repeat (15 minutes, then 1 hour, then 24 hours);
-     - pad kid-login's remaining failure replies to 1.5 seconds.
-  3. **PIN reset:**
-     - database: a one-time code shown to Dad, and her new PIN chosen at her next sign-in;
-     - kid-login change;
-     - her "choose a new PIN" screen and Dad's "Reset Robin's PIN" screen (authenticator code, logged, a notice to her);
-     - the setup-script option;
-     - a RUNBOOK section for a lost login key;
-     - tests, including end-to-end at every screen size.
-  4. **Prices:**
-     - Dad can confirm a stored close as final;
-     - Dad can record an unexpected early close;
-     - a closure is refused once that day's dividends are paid;
-     - the holiday-dates warning ignores Dad's closure rows;
-     - an advisory lock so a price fix and settlement can't run at the same moment.
-  5. **Time machine:** a close arriving 2 or more nights late, with a sale and a dividend waiting on it, and the late-money rule written independently into the reference model.
-  6. **Minor items:**
-     - a stronger commit-email hook (the author and committer identities, and a check before pushing);
-     - the model refusing a GIC choice during the missed week;
-     - tests for the seed's production guard and the time machine's production refusal;
-     - negative tests that reconcile catches late money without its interest;
-     - placeholders instead of Dad's GitHub address in the repo.
-  7. **Docs:**
-     - the Stage 4 production checklist in RUNBOOK.md, including the 20,000-row setting;
-     - SPEC, MESSAGES and PROGRESS updates.
-  8. **Then:**
-     - all tests (`test:db`, `npm test`, `test:e2e`) and the time machine;
-     - a third fresh read-only audit of everything changed since the first audit;
-     - stop for Dad's review. No further commits until he has reviewed.
+- **Second round, done (2026-10-09, local only, not pushed).** New migrations, because the first round is committed:
+  - `20261019000000_audit2_logins`:
+    - Lockouts escalate: 15 minutes, then an hour, then 24 hours within a day.
+    - A device's count resets only on a right PIN from that same device.
+    - The username-wide count is every wrong PIN in the last 24 hours; a right PIN doesn't reset it.
+    - PIN reset:
+      - `reset_kid_pin` (authenticator code, logged, a notice to her) signs her out everywhere and gives Dad a one-time 6-digit code, valid 7 days;
+      - `check_pin_reset_code` and `finish_pin_reset` are for kid-login;
+      - `set_kid_pin` is for the setup script;
+      - `parent_logins` feeds the Settings card;
+      - the codes live in a `private` schema.
+    - `new_kid_login_key()` makes a new login key if the old one is lost.
+  - `20261019010000_audit2_prices`:
+    - Dad can confirm a non-final close with the same value.
+    - `record_early_close` for an unexpected early close.
+    - A closure is refused on a quarter's first trading day whose dividends are paid.
+    - Dad's own rows don't count for the holiday warning.
+    - Price fixes, settlement and dividends take turns via an advisory lock per fund and day.
+  - `20261019020000_audit2_misc`: `assert_not_production()`, called by the seed, so the guard has a test.
+- **Also changed:**
+  - **Agreement gate** (`20261018050000`, rewritten before the WIP commit):
+    - only new deposits wait on a new version;
+    - approving needs Dad's signature on the latest version she signed.
+    - Her Home banners are reworded: "Dad changed the house rules…" while she hasn't signed, then "You signed the new agreement! New deposits wait until Dad signs it too."
+  - **kid-login:**
+    - the device address comes from the platform's own headers (`cf-connecting-ip` / `x-real-ip`, else the last `X-Forwarded-For` entry);
+    - every failure, server errors included, is padded to 1.5 s;
+    - the PIN-reset sign-in flow.
+  - **Kid login screen:** Dad's code, then a new PIN typed twice. Lock messages say "a break" and give minutes or hours.
+  - **Settings → Logins:** "Reset {name}'s PIN", with a confirmation step and the code shown once.
+  - **`npm run setup-account`:** a `pin` option.
+  - **Time machine:**
+    - a second late close: the Dow's Dec 31, 2027 close arrives Jan 5;
+    - kid A's sale and the Jan 3 dividends post late, with the interest they missed;
+    - the reference model has its own independent version of the late-money rule;
+    - the model refuses a GIC choice before the nightly run has matured the GIC.
+  - **Commit-email checks:**
+    - the pre-commit hook reads git's real author and committer identities;
+    - a new pre-push hook checks every commit about to be published;
+    - `.gitattributes` keeps the hooks' line endings Unix.
+  - **Time-machine guards:** they are now small tested functions (`scripts/timemachine/db.test.ts`).
+  - **Placeholders** replace Dad's GitHub address in the test and RUNBOOK.
+  - **Docs:**
+    - RUNBOOK has the Stage 4 production checklist (including the 20,000-row setting, and checks that the login key, the login trigger and the device addresses work on production), PIN resets and a lost login key;
+    - SPEC and MESSAGES are updated.
+- **Not covered by a test (noted):**
+  - "no agreement version at all" can't be set up in a test, because versions are append-only;
+  - the new banners and Settings card are covered by the layout and PIN-reset end-to-end tests, not by unit tests.
+- **Results (all local, 2026-10-09):**
+  - `npm run test:db` (pgTAP): **1472 of 1472**, including the new `audit_second_test.sql` (69).
+  - `npm test` (Vitest): **222 of 222**.
+  - `npm run test:e2e` (Playwright): **84 of 84**, including the PIN reset end to end.
+  - `npm run timemachine`: **PASS, 14 of 14**, 104 of 104 actions agreed. The 5 late-interest lines and the late sale and dividends match the independent model to the cent.
+  - Lint and build: clean.
+- **Third audit (2026-10-09):** a fresh read-only agent reviewed everything changed since the first audit. Every earlier finding is verified fixed, and there are no money, RLS or grant regressions.
+  - **Must fix:** none.
+  - **Should fix:**
+    1. **Not signed out right away:** after a PIN reset, an open session keeps working until its access token runs out (up to 1 hour).
+    2. **Lockout not cleared:** a PIN reset doesn't clear an active lockout, which can be up to 24 hours.
+    3. **Device address unverified:** the RUNBOOK check can't catch a caller faking the device-address headers. It needs a forged-header test on production.
+    4. **Setup-script PIN option is local only:** the RUNBOOK's fallback changes only the local database, and `set_kid_pin` doesn't sign her out.
+    5. **Model too coarse:** the reference model treats a whole fund-day as late, while the database settles each trade and fund separately. They agree on today's scenario but would disagree on others.
+    6. (Already done: the results above were recorded after the audit read this file.)
+  - **Minor:** 11 items, including:
+    - lock escalation restarts after each 24-hour lock;
+    - closures and early closes don't take the price lock;
+    - a closure overwrites an official holiday row;
+    - no RLS on `private.kid_pin_resets`;
+    - the hook files aren't marked executable (Mac and Linux).
+  - **Test-coverage gaps:** 10.
+- **Dad's review of the third audit (2026-10-09):**
+  - fix all five should-fix items as suggested, all the minor items, and the main test-coverage gaps;
+  - add the forged-header test to the production checklist;
+  - no fourth full audit: verify each fix with targeted tests, then run every suite and the time machine;
+  - commit locally, don't push.
+- **Third round, done (2026-10-09). New migration `20261020000000_audit3`, and app and script changes:**
+  1. **Ended sessions stop working at once.** `session_alive()` is checked by `my_account_id()`, `is_parent()` and `kid_account()`.
+     - Verified:
+       - `audit_third_test.sql`: after a reset, her old token can't act, read or pass row-level security, and an ended parent session isn't a parent;
+       - the PIN-reset end-to-end test: her device from before the reset gets refused at once.
+  2. **A PIN reset lifts her lockouts** and resolves the lockout alert (`clear_kid_lockouts`).
+     - Verified: `audit_third_test.sql`.
+  3. **Production checklist step 7:** the forged-header test (RUNBOOK).
+     - Verified locally: `e2e/kidlogin.spec.ts` shows which header gives the device address, and that it's stored only as a hash. On your own computer the platform header can be forged, so the production check is what decides.
+  4. **The setup script's PIN option:** RUNBOOK now says it's for your computer's copy only. `set_kid_pin` also signs her out and lifts lockouts.
+     - Verified: `audit_third_test.sql`.
+  5. **The reference model works trade by trade and fund by fund,** like the database. Money not yet posted by the run can't be spent in the model.
+     - Verified by two new time-machine cases:
+       - the Nasdaq-100's Sep 30, 2027 close arrives Oct 4: only its Oct 1 dividend is late, while the Dow and TSX pay on time;
+       - on Dec 31, kid B's TSX buy settles on time while the Dow waits.
+- **Minor items:**
+  - **Lockouts:**
+    - escalation counts locks over a week, so a lock after a 24-hour lock is 24 hours again;
+    - the open alert shows the latest lock.
+  - **kid-login:**
+    - a comment explains the two quick, unrecorded answers;
+    - if her new PIN was saved but signing in failed, the reply says so: "Your new PIN is saved!…".
+  - **PIN reset:**
+    - reset codes are hashed with their own prefix (`pin_reset_code_hash`; codes made before this migration are cleared);
+    - Settings → Logins shows a code that ran out;
+    - `private.kid_pin_resets` has row-level security.
+  - **Closures and early closes:**
+    - they take the same per-fund, per-day lock as settlement;
+    - a closure keeps an official holiday row's source.
+  - **Agreement and approvals:**
+    - approving needs her signature;
+    - before Dad signs her first agreement, one first deposit at a time.
+  - **Other:**
+    - `mark_production()` dates its rows by the app clock;
+    - both git hooks are executable (mode 755);
+    - the Home banner logic is a small tested function (`homeBanner`).
+- **Test-coverage gaps closed:**
+  - **kid-login, called directly** (`e2e/kidlogin.spec.ts`):
+    - every failure takes 1.5 s, known username or not;
+    - the order the device address is taken in, and that it's stored hashed;
+    - wrong reset codes count as wrong PINs;
+    - the right code leads to a new PIN, and works only once.
+  - **"Record an early close" refusals:** a kid or Dad without his code; once a trade has settled at the usual close; on a non-trading day; and its grants.
+  - **Also covered:**
+    - `parent_logins` refusals;
+    - `set_kid_pin` ending a pending reset;
+    - `reset_pending` after expiry;
+    - approving without a signature;
+    - the Home banners.
+- **Results (all local, 2026-10-09):**
+  - `npm run test:db` (pgTAP): **1510 of 1510**, including `audit_third_test.sql` (38).
+  - `npm test` (Vitest): **226 of 226**.
+  - `npm run test:e2e` (Playwright): **87 of 87**.
+  - `npm run timemachine`: **PASS, 14 of 14**, 105 of 105 actions agreed; 7 late-interest lines and the on-time trades and dividends match the model to the cent.
+  - Lint and build: clean.
+- **Still open (by design):**
+  - the advisory lock is checked by its source text only (two sessions can't run at once in pgTAP);
+  - `max_rows`, `secure_password_change` and the hooks' executable bit can't be tested automatically: RUNBOOK and the commit carry them;
+  - the forged-header result on production is a Stage 4 checklist step.
+- **Next:** Dad's review. Committed locally, not pushed. Stage 12: a fresh read-only audit of changes since the third pre-launch audit before the girls' real accounts.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 

@@ -393,6 +393,17 @@ export const STEPS: Step[] = [
     why: 'exactly at the 12:00 pm TSX early close, so it waits; closed Dec 27–28: settles Dec 29',
   },
 
+  {
+    at: '2027-12-31 09:00',
+    do: { kind: 'sell', kid: 'A', fund: 'dow', cents: $(10), label: 'tA_late' },
+    why: "the Dow's Dec 31 close arrives Jan 5: the sale's money counts from Jan 4, with the interest it missed",
+  },
+  {
+    at: '2027-12-31 09:01',
+    do: { kind: 'buy', kid: 'B', fund: 'tsx', cents: $(10), label: 'tB_ontime' },
+    why: "the TSX's Dec 31 close is on time: this buy settles that night, though the Dow's close is late",
+  },
+
   // 2028: renewal, a leap-day maturity, the crash, the inverted month --------------------------
   // gA6m matures Sun Jan 2.
   {
