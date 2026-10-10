@@ -4,12 +4,16 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 4 in progress**.
+- Current stage: **stage 4: live; waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026)**.
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
   - Dad approved Part A (2026-10-09), after a mutation check of the safety guards. Pushed as commit 4b418dc; CI run 38027684395 passed (test and timemachine).
-  - Next: Part B (production setup) step B1.
+  - Part B (production setup) done 2026-10-10: project `qcjplrvbpqdvmoundipw` is live, with the app at https://jarrettwd.github.io/Big-Bucks/. Steps 1–13 were checked; the test alert reached Dad's email and the Dashboard.
+  - The three follow-up fixes are live: the plain-words health check (migration pushed, `health` redeployed), the manifest `id` with no orientation lock (Deploy to GitHub Pages green), and the clipboard option. Commit `a013ea4`, CI run 38080462474 passed.
+  - **Still open:**
+    - RUNBOOK step 14: real closes for DIA and QQQ from Mon Oct 12 (Thanksgiving: the TSX is closed), and XIC from Tue Oct 13. Then green morning health checks.
+    - Installing as an app on Dad's Samsung is blocked by Play Protect. A Chrome shortcut works for now, and the full-screen-app plan (a TWA wrapper) is a must before Stage 12.
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -32,6 +36,21 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Dad's rule (2026-10-09):** "Before creating the girls' real accounts: a fresh read-only audit scoped to changes since the third pre-launch audit."
 - **To finish before Stage 12** (Dad, 2026-10-09):
   - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`, including confirming a non-final close). The database functions exist and are tested; until the screens exist, RUNBOOK says "stop and ask".
+- **Goal before Stage 12** (Dad, 2026-10-10): Big Bucks installs as a proper full-screen app on the girls' Samsung devices (the A17 phone and the Galaxy tablets). The web app stays as it is.
+  - **Task: evaluate a Trusted Web Activity (TWA) wrapper** around the existing PWA:
+    - **Bubblewrap** (Google's command-line tool) vs **PWABuilder** (Microsoft's site), targeting current Android.
+    - **How to install it:** sideloading the signed APK vs **Google Play internal testing** (or a closed track), including what Samsung's Auto Blocker allows for each.
+    - Costs, Dad's steps, and a recommendation.
+  - **Known points to cover:**
+    - A TWA shows full screen only if the site proves it owns the app, with a Digital Asset Links file at `/.well-known/assetlinks.json` on the site's **origin**. The app lives at `jarrettwd.github.io/Big-Bucks/`, so that file would have to be served from `jarrettwd.github.io` itself (the user-site repo `JarrettWD.github.io`), or from a custom domain. Without it, Chrome shows its address bar.
+    - Google Play needs a developer account: a one-time US$25 fee (as of 2026-10, to be checked), identity checks, and possibly a testing-track rule for new personal accounts.
+    - The signing key: who keeps it, and where. Not in the repo, like every other secret.
+    - Updates: the web app updates itself; the wrapper only needs rebuilding if its settings change.
+    - Any new service or paid account needs Dad's OK first (CLAUDE.md).
+  - **Compared with Dad's Inventory app, which installs full-screen on his Samsung (2026-10-10, read-only).** After the manifest fix went live, Big Bucks' install is blocked by Play Protect ("built for an older version of Android").
+    - Manifest, icons (all real PNGs at their stated sizes), service worker and headers were compared: no difference could explain it. Play Protect judges the WebAPK that Google's servers build, whose Android target the site can't set.
+    - Likely causes: the stricter check on a newly made package (Inventory's was approved earlier), or a leftover from the first failed install.
+    - Next check (Dad, on the phone): `chrome://webapks`, comparing the Inventory and Big Bucks entries.
 
 ### Stage 5 — Backups and data protection (not started; notes from stage 4)
 
@@ -43,7 +62,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - The backup must include the `private` schema.
 - The login key in Supabase Vault won't decrypt in a new project. A restore into a new project therefore means `select public.new_kid_login_key();` and a PIN reset for each girl (docs/RUNBOOK.md, "The login key was lost").
 
-### Stage 4 — Live setup (in progress; step 1, the pre-launch audit, 2026-10-08)
+### Stage 4 — Live setup (live 2026-10-10; waiting only on the multi-night price checks, Mon–Wed)
 
 - **Dad's rule (2026-10-04):** "Before creating real accounts or any real deposit: run an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix findings, then proceed."
 - **Step 1: first audit (2026-10-08).** A fresh read-only agent audited every migration and function, RLS and grants, the money rules, notice rules, corrections, the parent log, previews, the demo's safeguards, and secrets. Findings:
@@ -494,6 +513,19 @@ Nothing touched production.
   - Playwright **90 of 90**;
   - lint and build clean.
   - Not checked by eye: the Dashboard's "jobs behind" line (the demo is never behind); its wording is tested in pgTAP.
+- **Made live (2026-10-10, each with Dad's OK):**
+  - commit `a013ea4`, with CI run 38080462474 green (test and timemachine);
+  - `db push` of `20261022000000_health_words` (dry run first: that one migration, no seed);
+  - `functions deploy health`;
+  - Dad ran Deploy to GitHub Pages: green. The live manifest has `id: "/Big-Bucks/"` and no orientation.
+- **The Samsung install after the fix:** still blocked, now by Play Protect ("built for an older version of Android"). Dad uses a Chrome shortcut. The full-screen app goes through the TWA evaluation (Stage 12 list); the comparison with the Inventory app is noted there.
+- **Part C status:**
+  - [x] Locally, the nightly run catches up after a skipped day.
+  - [x] `check_time_rules()` passes on production.
+  - [x] Send test alert reaches Dad's email (and the Dashboard).
+  - [x] Every suite and the time machine pass, CI is green, and PROGRESS is updated.
+  - [ ] **Production has a few nights of real closes for DIA, QQQ and XIC** (Mon–Wed, Oct 12–14). This is the only box left before Stage 4 is done.
+- **Dad to do by hand:** RUNBOOK step 14 each evening Mon–Wed, and check the morning Health check.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)
 
