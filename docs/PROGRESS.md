@@ -90,7 +90,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 **Oct 11, 2026: neither scheduled workflow fired** (Dad checked: the schedules were correct, with no disabled banner; the Actions list showed only his manual runs). Likely a brand-new repo's schedules not yet registered, at the busy :00 and :30 marks, where GitHub delays and can drop scheduled runs. **Fix:** Health check moved to `7 14 * * *` (8:07 am) and Backup to `37 14 * * *` (8:37 am), committed by Dad, which also re-registers both schedules. **The real test is Mon Oct 12.** A check that doesn't depend on GitHub follows (part 2).
 
-**A skipped day is noticed without GitHub (Dad, 2026-10-11; built and tested locally, awaiting Dad's OK for production):**
+**A skipped day is noticed without GitHub (Dad, 2026-10-11; live on production 2026-10-11, checked by Dad below):**
 - **Migration `20261025000000_outside_jobs.sql`:**
   - `job_runs` gains job `health`, and `alerts` gains kind `health_check_missing`;
   - `record_health_check()` (service role only): the health function records each run and settles an open `health_check_missing` alert;
@@ -114,6 +114,11 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - "The daily backup" says it's now watched from the database's timer and Dad's computer;
   - step 9's pop-up list says 30 hours.
 - **SPEC:** the build decision and the data model are updated.
+- **Checked live by Dad (2026-10-11):**
+  - **Manual Health check** (big-bucks-backups): green, "All well."
+  - **Its run is recorded** in production's `job_runs`: id 26, job `health`, status `ok`, finished 2026-10-11 10:54:03 Alberta time. So the migration is applied and the redeployed `health` function calls `record_health_check()`.
+  - **Schedule confirmed on GitHub:** `backup.yml` cron `37 14 * * *`.
+  - **`sync-backup.ps1` `47d66f3` reviewed and installed** as `C:\BigBucksBackup\sync-backup.ps1` (Claude confirmed its content matches the repo's `47d66f3` copy, line endings aside). The task ran with result 0x0 and no pop-up. `last-sync.txt`: "Synced 2026-10-11 10:57. Newest backup: 2026-10-11 Backup 2026-10-11: 34 tables, 766 rows, 3 ledger rows. Script: installed copy matches the repo's (47d66f3 of 2026-10-11)."
 
 **Open follow-ups:**
 1. **Sunday Oct 11, after 5 pm (Dad):** the interest check. In the Supabase SQL Editor (read-only):
