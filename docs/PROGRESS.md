@@ -45,6 +45,12 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - There's no `related_applications`, intent or link-capture setting.
   - Dad's admin side was always meant for another browser anyway (BUILD-PLAN Stage 6: Firefox or Samsung Internet); the Chrome shortcut works meanwhile.
   - **Don't** reset Chrome's site data for `jarrettwd.github.io`: Big Bucks and Inventory share that address, so it would wipe Inventory's saved data too.
+  - **Parked, low priority** (Dad, 2026-10-10): cosmetic, Dad's phone only.
+    - **Tried, no change** (still "Create shortcut" only): removing leftover Big Bucks icons, then retrying; clearing Google Play Store's cache; clearing Chrome's cache. These kept all site data and sign-ins.
+    - **Remaining options, Dad's call later:**
+      - **Chrome Beta:** a separate app with its own fresh record. Install Big Bucks from it; it then runs in Chrome Beta, signed in separately.
+      - **`adb logcat` diagnosis:** read Android's own log when the toast appears. This needs Developer options switched on, Dad's call.
+    - **Excluded:** clearing `jarrettwd.github.io` site data (Inventory's data), clearing Chrome's data (all sign-ins), turning off Play Protect, and a new manifest `id`.
 - **Pre-launch check: install on a girl's phone** (Dad, 2026-10-10). On the girls' phone (Samsung, supervised with Google Family Link), install Big Bucks through Chrome (**⋮** → **Add to home screen** → **Install**) and confirm:
   - it opens full screen from its own icon, with no address bar;
   - it appears in Android's app list;
