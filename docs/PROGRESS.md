@@ -90,7 +90,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - it restores, runs `after_restore()`, and compares every table, the logins and every account's balances;
   - `--tamper` must FAIL; it refuses a backup whose line endings git changed.
   - `npm run backup:local` backs up the local copy the same way.
-- **OneDrive copy:** `ops/sync-backup.ps1`. It pulls the clone in `C:\BigBucksBackup`, copies `latest` and `big-bucks-history.bundle` into OneDrive, writes `last-sync.txt`, and exits with 1 on failure.
+- **OneDrive copy:** `sync-backup.ps1` (since moved into the backup repo, below). It pulls the clone in `C:\BigBucksBackup`, copies `latest` and `big-bucks-history.bundle` into OneDrive, writes `last-sync.txt`, and exits with 1 on failure.
 - **Docs:**
   - RUNBOOK: Backup setup (Part B, steps 1–11), "The daily backup", "A backup failed", "Restore drill", "Rebuilding production from a backup", "The pre-launch reset";
   - SPEC: Build decisions, "Backups and data protection".
@@ -163,6 +163,12 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Old health check removed** from Big-Bucks (Dad's OK, 2026-10-10): `.github/workflows/health-check.yml` is gone. The check runs only from big-bucks-backups. RUNBOOK's three "Repo → Actions → Health check" steps now point there.
 - Pins and the removal pushed (`5804236`, `73ac002`); CI run 38096850126 green on `ubuntu-24.04` (test, with the workflow check, and timemachine). Big-Bucks' workflows are now CI, Deploy (manual) and Backfill (manual).
 - **`sync-backup.ps1` fix** (found checking step 9 on the real clone): it reported the newest *commit* as the newest backup, but a workflow fix can be newer than the last backup. That would show the wrong backup and could hide the "more than 2 days old" warning. It now reads the newest commit that changed `backup/`. Checked against the real clone, into a scratch folder: "Newest backup: 2026-10-10 Backup 2026-10-10: 34 tables, 743 rows, 3 ledger rows", although the newest commit is a workflow fix.
+- **Step 9** (Dad): the manual run synced. `last-sync.txt` reads "Synced 2026-10-10 18:17. Newest backup: 2026-10-10 Backup 2026-10-10: 34 tables, 743 rows, 3 ledger rows." OneDrive's **Big Bucks backup** holds `latest`, `big-bucks-history.bundle` and `last-sync.txt`. The scheduled task (daily 9:30 am, missed starts run later) ran with result 0x0. Dad also unticked "Start the task only if the computer is on AC power".
+- **The task's copy can't go stale** (Dad spotted the gap; Claude's call). `sync-backup.ps1` moved from `ops/` into the backup repo (`ops/backup-repo/scripts/`, and `scripts/` there). The task runs the copy inside the clone, which the script pulls each run, so a fix pushed to the repo arrives by itself and runs from the next run on.
+  - It finds its own clone, and `last-sync.txt` now ends "Script: <commit> of <date>." It says when that copy has changes not committed, and when a newer version just arrived ("the one before <commit> (which just arrived…)").
+  - It would fail loudly, never mix versions, if the clone's copy were edited by hand (the pull refuses).
+  - Tested into scratch folders: in the real clone before and after the commit, and in a throwaway repo where the pull brought a newer script (the next run shows the new version).
+  - **Dad to do:** point the task at `C:BigBucksBackupig-bucks-backupsscriptssync-backup.ps1`, then delete the old `C:BigBucksBackupsync-backup.ps1`.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 

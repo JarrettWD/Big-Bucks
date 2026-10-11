@@ -13,6 +13,8 @@ The files here (everything except `backup/`) come from `ops/backup-repo/` in the
 
 The backup commits every day, so GitHub never switches these schedules off.
 
+On Dad's computer, Task Scheduler runs `scripts/sync-backup.ps1` from his clone (`C:BigBucksBackupig-bucks-backups`) at 9:30 am. It pulls this repo, then copies the latest backup and `big-bucks-history.bundle` (every day's backup in one file) into OneDrive. A fix pushed here reaches his computer with that pull. Its `last-sync.txt` names the version that ran.
+
 ## What's in `backup/`
 
 All from the same moment:
