@@ -120,18 +120,17 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **Schedule confirmed on GitHub:** `backup.yml` cron `37 14 * * *`.
   - **`sync-backup.ps1` `47d66f3` reviewed and installed** as `C:\BigBucksBackup\sync-backup.ps1` (Claude confirmed its content matches the repo's `47d66f3` copy, line endings aside). The task ran with result 0x0 and no pop-up. `last-sync.txt`: "Synced 2026-10-11 10:57. Newest backup: 2026-10-11 Backup 2026-10-11: 34 tables, 766 rows, 3 ledger rows. Script: installed copy matches the repo's (47d66f3 of 2026-10-11)."
 
-**Open follow-ups:**
-1. **Sunday Oct 11, after 5 pm (Dad):** the interest check. In the Supabase SQL Editor (read-only):
-   - `select id, run_for_date, status, details ->> 'reason' as reason, finished_at at time zone 'America/Edmonton' as finished_alberta from public.job_runs where job = 'interest' order by id desc limit 3;`
-   - `select count(*) as calls_since_4pm from public.outbox where created_at > (date '2026-10-11' + time '16:00') at time zone 'America/Edmonton';`
+**Sunday Oct 11 interest check (Dad): PASS.** The first evening with the first-night fix live:
+- `job_runs` interest: id 27 for 2026-10-10, `ok`, finished 4:30:02 pm Alberta time; id 37 for 2026-10-11, `retrying`, "the day isn't over yet", at 4:30:02 pm (correct: a day's interest is worked out once it's over).
+- `calls_since_4pm` = 1: a single nightly call (Oct 10, before the fix, had about 14 extra calls).
 
-   Pass: an `interest` row for 2026-10-10 `ok` around 4:30 pm, one 2026-10-11 row "the day isn't over yet", and `calls_since_4pm` 1 (2 is fine). If not, stop and ask; no money is at risk.
-2. **ACCEPTANCE "The daily backup commits to GitHub every day, and the copy on Dad's computer updates":** tick after a few days of 14:37 UTC backups and 9:30 am syncs without a pop-up.
-3. **`ubuntu-24.04` revisit:** every workflow in both repos is pinned. Before GitHub retires 24.04 (watch the run logs for its notice), try Ubuntu 26 with a manual Backup, a restore drill, CI and a deploy, then move them all.
-4. **Supabase CLI:** v2.120.0 is available (installed: v2.119.0). Note only, no update now. When it's updated, run the full local suite and a restore drill.
-5. **`supabase-ca.crt` expires 2031-04-26:** before then, download the new certificate (RUNBOOK backup setup step 4.5) and replace it in both repos.
-6. **`actions/upload-artifact@v4`** in Big-Bucks' `ci.yml` runs on Node 20, which GitHub is retiring: update it with the next CI change.
-7. **Any change to `sync-backup.ps1`:** Claude tells Dad explicitly that it needs his review and install (Dad's rule).
+**Open follow-ups:**
+1. **ACCEPTANCE "The daily backup commits to GitHub every day, and the copy on Dad's computer updates":** tick after a few days of 14:37 UTC backups and 9:30 am syncs without a pop-up.
+2. **`ubuntu-24.04` revisit:** every workflow in both repos is pinned. Before GitHub retires 24.04 (watch the run logs for its notice), try Ubuntu 26 with a manual Backup, a restore drill, CI and a deploy, then move them all.
+3. **Supabase CLI:** v2.120.0 is available (installed: v2.119.0). Note only, no update now. When it's updated, run the full local suite and a restore drill.
+4. **`supabase-ca.crt` expires 2031-04-26:** before then, download the new certificate (RUNBOOK backup setup step 4.5) and replace it in both repos.
+5. **`actions/upload-artifact@v4`** in Big-Bucks' `ci.yml` runs on Node 20, which GitHub is retiring: update it with the next CI change.
+6. **Any change to `sync-backup.ps1`:** Claude tells Dad explicitly that it needs his review and install (Dad's rule).
 
 
 #### Plan, approved by Dad (2026-10-10)
