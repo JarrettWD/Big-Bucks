@@ -296,22 +296,34 @@ With your OK, Claude clones the empty repo to `C:\BigBucksBackup\big-bucks-backu
 
 ### 9. ✋ The copy on your computer (OneDrive)
 
-1. The script lives in the big-bucks-backups repo, at `scripts\sync-backup.ps1`, so it's already in your clone (`C:\BigBucksBackup\big-bucks-backups`, made in step 6). Task Scheduler runs that copy. Each run pulls the clone, so a fix pushed to the repo reaches your computer by itself and runs from the next run on: there's nothing to re-copy. Never edit the clone's copy by hand: the pull would then refuse, and the sync fails until it's put back.
-2. Run it once in a terminal:
+1. **Two copies, on purpose.** The script lives in the big-bucks-backups repo, at `scripts\sync-backup.ps1`, so your clone (`C:\BigBucksBackup\big-bucks-backups`, made in step 6) always has the newest one. That copy only waits for your review. Task Scheduler runs the **installed** copy, `C:\BigBucksBackup\sync-backup.ps1`, which changes only when you install a new one. So nothing that arrives with a pull ever runs on your computer by itself (Guard 1, 2026-10-10). The installed copy refuses to run from inside the clone.
+2. **Install it, or a newer version** (after reviewing it on GitHub: big-bucks-backups → `scripts/sync-backup.ps1` → **History** → the newest commit). In Windows PowerShell:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File C:\BigBucksBackup\big-bucks-backups\scripts\sync-backup.ps1
+Copy-Item C:\BigBucksBackup\big-bucks-backups\scripts\sync-backup.ps1 C:\BigBucksBackup\sync-backup.ps1 -Force
 ```
 
-   It answers "Synced … Newest backup: … Script: <version> of <date>." In OneDrive, the folder **Big Bucks backup** now has `latest` (the newest backup's files), `big-bucks-history.bundle` (every day's backup in one file) and `last-sync.txt`. The **Script** part tells you which version ran. Compare it with the newest commit that changed `scripts/sync-backup.ps1` on GitHub.
-3. Schedule it daily:
+   Claude tells you explicitly whenever the script changes and needs your review and install. If you forget, the next run says so (below).
+3. Run it once in a terminal:
+
+```bash
+powershell -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1
+```
+
+   It answers "Synced … Newest backup: … Script: installed copy matches the repo's (<commit> of <date>)." In OneDrive, the folder **Big Bucks backup** now has `latest` (the newest backup's files), `big-bucks-history.bundle` (every day's backup in one file) and `last-sync.txt`.
+4. Schedule it daily:
    1. **Start** → type **Task Scheduler** → open it.
    2. On the right, **Create Basic Task…**. **Name**: `Big Bucks backup copy` → **Next**.
    3. **Daily** → **Next**. **Start**: tomorrow at **9:30:00 AM**, **Recur every: 1 days** → **Next**.
-   4. **Start a program** → **Next**. **Program/script**: `powershell.exe`. **Add arguments (optional)**: `-NoProfile -ExecutionPolicy Bypass -File C:\BigBucksBackup\big-bucks-backups\scripts\sync-backup.ps1` → **Next**.
+   4. **Start a program** → **Next**. **Program/script**: `powershell.exe`. **Add arguments (optional)**: `-NoProfile -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1` → **Next**.
    5. Tick **Open the Properties dialog for this task when I click Finish** → **Finish**.
-   6. In Properties, **Settings** tab: tick **Run task as soon as possible after a scheduled start is missed** → **OK**.
-4. To test it: in the Task Scheduler Library list, right-click **Big Bucks backup copy** → **Run**, then open `last-sync.txt` in OneDrive. **Last Run Result** should say "The operation completed successfully. (0x0)". A result of 0x1 means `last-sync.txt` says what went wrong.
+   6. In Properties: on the **General** tab, leave **Run only when user is logged on** selected (that's what lets the pop-up appear). On the **Settings** tab, tick **Run task as soon as possible after a scheduled start is missed**. On the **Conditions** tab, untick **Start the task only if the computer is on AC power**. → **OK**.
+5. To test it: in the Task Scheduler Library list, right-click **Big Bucks backup copy** → **Run**, then open `last-sync.txt` in OneDrive. **Last Run Result** should say "The operation completed successfully. (0x0)".
+
+**When it needs a look,** a Windows pop-up titled **Big Bucks backup copy** says what's wrong and points to `last-sync.txt`. It closes by itself after 12 hours. When all is well there's no pop-up. It pops up for:
+- **"A newer sync script is in the repo … NOT been installed":** review it, then install it (item 2). It still synced.
+- **"The newest backup is more than 2 days old":** see "A backup failed".
+- **"The backup copy on this computer failed: …":** the reason follows. If it isn't clear, send it to Claude.
 
 ### 10. ✋ The first restore drill
 
@@ -352,7 +364,7 @@ GitHub emailed you that **Backup** failed, or the Dashboard says "The daily back
 
 This proves a backup really rebuilds Big Bucks, without touching the live app. It reads only the backup's files and builds a throwaway copy on your computer, separate from your normal local copy.
 
-1. Bring your clone up to date: run `C:\BigBucksBackup\big-bucks-backups\scripts\sync-backup.ps1`, or wait for its morning run.
+1. Bring your clone up to date: run `C:\BigBucksBackup\sync-backup.ps1`, or wait for its morning run.
 2. Start Docker Desktop.
 3. In a terminal in the Big-Bucks folder:
 

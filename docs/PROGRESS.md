@@ -149,7 +149,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Step 4** (Dad): `SUPABASE_DB_URL` built in his password manager (backup_reader, session pooler, port 5432).
 - **Step 4.5** (Dad): Supabase's CA certificate downloaded. Checked by Claude: **Supabase Root 2021 CA**, SHA-256 80:70:25:AD:…:CA:FA. **It expires on April 26, 2031**: before then, download the new one (RUNBOOK backup setup step 4.5) and replace `supabase-ca.crt` in both repos, or every backup will fail.
 - **Step 5** (Dad): the backup repo's secrets (`SUPABASE_DB_URL`, `HEALTH_CHECK_KEY`) and variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
-- **Step 6** (Claude, with Dad's OK): cloned to `C:BigBucksBackupig-bucks-backups`; 11 files from `ops/backup-repo/` (not the two test files, which run in Big-Bucks' CI), plus the certificate as `supabase-ca.crt` (also in Big-Bucks); a secrets scan was clean; committed as Dad (`9ef92b1`) and pushed.
+- **Step 6** (Claude, with Dad's OK): cloned to `C:\BigBucksBackup\big-bucks-backups`; 11 files from `ops/backup-repo/` (not the two test files, which run in Big-Bucks' CI), plus the certificate as `supabase-ca.crt` (also in Big-Bucks); a secrets scan was clean; committed as Dad (`9ef92b1`) and pushed.
 - **Step 7** (Dad): the first backup ran green: "Backup 2026-10-10: 34 tables, 743 rows, 3 ledger rows", committed by github-actions[bot] (`2021e37`). This proves the session pooler accepts `backup_reader` with `verify-full` against the CA certificate. The repo is still private.
 - **Runner pinned** (Dad, 2026-10-10): GitHub moves `ubuntu-latest` to Ubuntu 26 from Oct 19, 2026, so `backup.yml` and `health-check.yml` (both copies) now say `runs-on: ubuntu-24.04`. **To revisit:** before GitHub retires the 24.04 image (watch for its deprecation notice in the run logs), try Ubuntu 26 with a manual Backup run and a restore drill, then move both. Big-Bucks' own workflows are pinned too (Dad, 2026-10-10): `ci.yml` (test and timemachine), `deploy.yml` (build and deploy) and `backfill-prices.yml`. **Every workflow in both repos now runs on `ubuntu-24.04`**, and the revisit covers all of them: when the time comes, also run CI and a deploy on the new image.
 - **Step 8, first try** (Dad): part 1 (Send test alert) worked end to end: red, GitHub's email arrived, the Dashboard alert was acknowledged. Part 2 (the normal check) went red with `line 37: unexpected EOF while looking for matching '"'` and exit code 2, although production answered 200 "All well.".
@@ -168,7 +168,35 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - It finds its own clone, and `last-sync.txt` now ends "Script: <commit> of <date>." It says when that copy has changes not committed, and when a newer version just arrived ("the one before <commit> (which just arrived…)").
   - It would fail loudly, never mix versions, if the clone's copy were edited by hand (the pull refuses).
   - Tested into scratch folders: in the real clone before and after the commit, and in a throwaway repo where the pull brought a newer script (the next run shows the new version).
-  - **Dad to do:** point the task at `C:BigBucksBackupig-bucks-backupsscriptssync-backup.ps1`, then delete the old `C:BigBucksBackupsync-backup.ps1`.
+  - **Dad to do:** point the task at `C:\BigBucksBackup\big-bucks-backups\scripts\sync-backup.ps1`, then delete the old `C:\BigBucksBackup\sync-backup.ps1`.
+- **Self-updating script risk** (Dad, 2026-10-10). With the task running the clone's copy, whatever reached `scripts/sync-backup.ps1` ran on Dad's computer. The Backup job ran npm packages with a token that could push anywhere, and `actions/checkout` left that token on disk. Claude's assessment: real. A "made by Dad" author check would be useless, because a commit's author is just text anyone with the token can write. Pinning npm adds little: the lockfile already pins exact versions with checksums. Dad approved two guards, plus action pinning and a pop-up:
+  - **Guard 1 (Dad's computer):** Task Scheduler runs an installed copy again, `C:\BigBucksBackup\sync-backup.ps1`, never the clone's. A pull only copies files (git runs nothing from a repo).
+    - The installed copy compares its content (SHA-256, ignoring line endings, which git on Windows changes by itself: tested LF against CRLF, a match) with the repo's `scripts/sync-backup.ps1`. When they differ, it still syncs, writes "NEEDS A LOOK … A newer sync script is in the repo (<commit>) … NOT been installed …", shows a Windows pop-up and ends with 0x3.
+    - The pop-up (built in: WScript.Shell, no modules) also shows for a backup more than 2 days old (0x3) and for any failure (0x1, with the reason). It closes by itself after 12 hours, so a run never hangs, and never shows when all is well.
+    - It refuses to run from inside the clone.
+    - Tested in a throwaway repo, with the pop-up off except where noted:
+      - all well → 0, no warning;
+      - newer script in the repo → 3, the warning, the installed copy untouched;
+      - after installing → 0;
+      - newest backup 3 days old → 3;
+      - no clone → 1;
+      - the clone's copy run by mistake → 1, refused;
+      - with the pop-up on: a warning run took 5.3 s (a 5-second test pop-up, then closed by itself), an all-well run 1.1 s with no pop-up.
+  - **Guard 2 (Backup workflow):** three jobs.
+    - **take** (`contents: read`, `persist-credentials: false`, `npm ci --ignore-scripts`) makes the backup and hands `backup/` on as an artifact, kept 1 day.
+    - **commit** (`contents: write`) runs no npm, Node or Docker. `scripts/check-incoming.sh` lets through only `schema.sql`, `data.sql`, `auth.sql`, `counts.json`, `balances.csv`, `manifest.json` and `csv/(public|private).<table>.csv` (no links, no other files or folders, none missing or empty). It also refuses if anything outside `backup/` would change, then commits and pushes.
+    - **record** (`contents: read`) records the backup after the push.
+    - Tested on a real local backup in Linux bash: the good copy passed (40 files). Seven doctored copies all refused: an added `scripts/sync-backup.ps1`, a stray top-level file, a non-CSV in `csv/`, a link to `/etc/passwd`, a `.github/workflows` folder, a missing `counts.json`, an empty `data.sql`.
+  - **Actions pinned to commits**, each at least 12 weeks old (the newest releases were only 3 days old):
+    - checkout v7.0.1 `3d3c42e5…` (2026-07-17);
+    - setup-node v7.0.0 `82076278…` (2026-07-13);
+    - upload-artifact v7.0.1 `043fb46d…` (2026-04-10);
+    - download-artifact v8.0.1 `3e5f45b2…` (2026-03-11).
+    - The Postgres image isn't pinned to a digest (Dad's call).
+  - `npm run check:workflows` now also runs shellcheck on `ops/backup-repo/scripts/*.sh`.
+  - **Remaining risk:** the take job must hold the read-only database login, so a bad package there could read the data (never change it). Kept small: one library (`pg`), from the lockfile, no install scripts.
+  - **Rule (Dad, 2026-10-10):** whenever `sync-backup.ps1` changes, Claude tells Dad explicitly that it needs his review and install.
+- Also seen: CI warns that `actions/upload-artifact@v4` (Big-Bucks' `ci.yml`) runs on Node 20, which GitHub is retiring. Harmless for now; update it with the next CI change.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 

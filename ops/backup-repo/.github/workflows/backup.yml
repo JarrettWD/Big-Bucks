@@ -12,6 +12,14 @@ name: Backup
 #
 # The same run makes one normal API request (ping), so the Free project has outside
 # activity every day.
+#
+# Three jobs, so third-party code never shares a job with the token that can push
+# (Guard 2, Dad 2026-10-10):
+#   take    reads only: npm packages and pg_dump make the backup, handed on as an artifact;
+#   commit  can push: no npm, Node or Docker; it lets through only backup files
+#           (scripts/check-incoming.sh), into backup/, and pushes;
+#   record  reads only: tells the database the backup is safe on GitHub.
+# Every action is pinned to a commit (a tag can be moved; a commit can't).
 
 on:
   schedule:
@@ -19,28 +27,35 @@ on:
     - cron: '30 14 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: backup
   cancel-in-progress: false
 
 jobs:
-  backup:
+  take:
     # Pinned (Dad, 2026-10-10): ubuntu-latest moves to Ubuntu 26 from Oct 19, 2026. Revisit before
     # GitHub retires 24.04 (docs/PROGRESS.md, Stage 5).
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      message: ${{ steps.take.outputs.message }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No token left on disk for the packages below.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      # Exactly the versions in package-lock.json, and none of their install scripts.
+      - run: npm ci --ignore-scripts
 
       - name: Check the settings
         env:
@@ -83,18 +98,80 @@ jobs:
           BACKUP_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: node scripts/backup.ts take .
 
+      - name: Hand it to the commit job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup/
+          if-no-files-found: error
+          # It holds the girls' data: kept only until the commit job has it.
+          retention-days: 1
+
+  commit:
+    needs: take
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Receive the backup
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/incoming
+
+      - name: Only backup files, into backup/ only
+        env:
+          INCOMING: ${{ runner.temp }}/incoming
+        run: |
+          bash scripts/check-incoming.sh "$INCOMING"
+          rm -rf backup
+          cp -R "$INCOMING" backup
+          git add -A backup
+          # Belt and braces: the commit may change nothing outside backup/.
+          outside=$(git status --porcelain | grep -v '^.. backup/' || true)
+          if [ -n "$outside" ]; then
+            echo "::error::Something outside backup/ changed, so nothing was committed: $outside"
+            exit 1
+          fi
+
       - name: Commit it
         env:
-          MESSAGE: ${{ steps.take.outputs.message }}
+          MESSAGE: ${{ needs.take.outputs.message }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add backup
-          git commit -q -m "$MESSAGE"
+          git commit -q -m "${MESSAGE:-Backup}"
           git push -q
-          echo "$MESSAGE"
+          echo "${MESSAGE:-Backup}"
 
-      # Only once the backup is safe on GitHub: prelaunch_reset() and the health check rely on this.
+  # Only once the backup is safe on GitHub: prelaunch_reset() and the health check rely on this.
+  record:
+    needs: commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Receive the backup
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup
+
       - name: Record it
         env:
           BACKUP_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
