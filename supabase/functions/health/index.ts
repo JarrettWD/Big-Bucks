@@ -2,8 +2,10 @@
 //
 // The GitHub workflow health-check.yml (in the private big-bucks-backups repo since
 // Stage 5) calls this once a day with the x-health-key header (HEALTH_CHECK_KEY). It
-// checks the database size (an alert past about 400 MB) and the daily backup (an
-// alert when none has succeeded for 36 hours, check_backup_age), then answers with
+// records that the health check ran (record_health_check: the database's own nightly
+// timer alerts when none has run for 36 hours, so a day GitHub skips is noticed), checks
+// the database size (an alert past about 400 MB) and the daily backup (an alert when
+// none has succeeded for 36 hours, check_backup_age), then answers with
 // health_check(): 200 when all is well, 503 when anything is open, so the workflow
 // fails and GitHub emails Dad. The call is also the Free plan's keep-alive.
 //
@@ -55,6 +57,9 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   try {
+    // This run counts as a health check (the nightly timer alerts after 36 hours without one).
+    const ran = await db.rpc('record_health_check');
+    if (ran.error) throw new Error(`record_health_check: ${ran.error.message}`);
     const size = await db.rpc('check_database_size');
     if (size.error) throw new Error(`check_database_size: ${size.error.message}`);
     const backup = await db.rpc('check_backup_age');

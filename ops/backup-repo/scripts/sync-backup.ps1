@@ -18,7 +18,8 @@
 # When something needs a look, it says so in last-sync.txt and shows a Windows
 # pop-up, and Task Scheduler's result isn't 0x0:
 #   - a newer sync script is in the repo and isn't installed (result 0x3; it still syncs);
-#   - the newest backup is more than 2 days old (result 0x3);
+#   - the newest backup is more than 30 hours old, so a day GitHub skipped shows the
+#     next morning (result 0x3; Dad, 2026-10-11, was 2 days);
 #   - the sync failed (result 0x1).
 # When all is well: no pop-up, result 0x0.
 #
@@ -93,7 +94,13 @@ try {
   # The newest commit that changed backup/ (other commits, like workflow fixes, aren't backups).
   $latest = (Invoke-Git @('log', '-1', '--format=%cs %s', '--', 'backup')) -join ''
   if (-not $latest) { throw 'The clone has no backup commit yet.' }
-  $latestDay = [datetime]::ParseExact($latest.Substring(0, 10), 'yyyy-MM-dd', $null)
+  # When it was committed, exactly (seconds since 1970, UTC), for its age in hours.
+  $latestUnix = [int64]((Invoke-Git @('log', '-1', '--format=%ct', '--', 'backup')) -join '')
+  $latestUtc = [DateTimeOffset]::FromUnixTimeSeconds($latestUnix).UtcDateTime
+  # Shown in Alberta time, whatever this computer's own time zone ("Mountain Standard
+  # Time" is Windows' name for it, daylight saving included).
+  $latestAt = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($latestUtc, 'Mountain Standard Time')
+  $ageHours = ([DateTime]::UtcNow - $latestUtc).TotalHours
 
   # Is this installed copy the same as the repo's? Compared by content (SHA-256),
   # ignoring line endings, which git on Windows may change on its own.
@@ -122,8 +129,8 @@ try {
   if ($newer) {
     $warnings += "A newer sync script is in the repo ($offeredCommit). It has NOT been installed. Review it on GitHub (big-bucks-backups, scripts/sync-backup.ps1, History), then install it (RUNBOOK, backup setup step 9)."
   }
-  if (((Get-Date).Date - $latestDay).TotalDays -gt 2) {
-    $warnings += 'The newest backup is more than 2 days old. Check the Backup workflow in big-bucks-backups on GitHub (RUNBOOK, "A backup failed").'
+  if ($ageHours -gt 30) {
+    $warnings += "The newest backup is $([math]::Floor($ageHours)) hours old (from $($latestAt.ToString('MMM d, h:mm tt')) Alberta time): more than 30. Check the Backup workflow in big-bucks-backups on GitHub (RUNBOOK, ""A backup failed"")."
   }
   $line = "Synced $stamp. Newest backup: $latest. Script: $version."
   if ($warnings.Count -gt 0) {

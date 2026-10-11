@@ -322,7 +322,7 @@ powershell -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1
 
 **When it needs a look,** a Windows pop-up titled **Big Bucks backup copy** says what's wrong and points to `last-sync.txt`. It closes by itself after 12 hours. When all is well there's no pop-up. It pops up for:
 - **"A newer sync script is in the repo … NOT been installed":** review it, then install it (item 2). It still synced.
-- **"The newest backup is more than 2 days old":** see "A backup failed".
+- **"The newest backup is … hours old … more than 30":** see "A backup failed". A morning GitHub skipped shows here the next morning.
 - **"The backup copy on this computer failed: …":** the reason follows. If it isn't clear, send it to Claude.
 
 ### 10. ✋ The first restore drill
@@ -345,20 +345,33 @@ In the app, signed in as yourself: **Settings** → **Backup** → **Download ba
 - **What a backup holds:** everything, from one moment. Every table and row, the logins (not sessions), each table as CSV, and every account's balances worked out by the database. It's all in `backup/` in that repo; its README lists the files.
 - **Git keeps every day's version.** To see an old day: **Code** → **History** (the clock icon) → that day's commit → **Browse files**.
 - **When it fails on purpose:** the export is empty, or the ledger (or any other permanent table) has fewer rows than the day before. Yesterday's backup is then left as it was, and GitHub emails you.
-- **The health check watches it too:** if no backup has succeeded for 36 hours, an alert goes on the Dashboard and the check fails, so GitHub emails you.
+- **Watched from two places, not only GitHub:**
+  - **The database's own timer** (every evening from 4:30 pm) raises a Dashboard alert when no backup has been recorded for 36 hours, and another when no health check has run for 36 hours. A morning GitHub skips shows on the Dashboard that evening, around 9:00 pm. The next health check that does run then fails, and GitHub emails you.
+  - **Your computer's 9:30 am sync** pops up when the newest backup is more than 30 hours old.
 - **A second copy on your computer:** Task Scheduler copies it into OneDrive each morning (setup step 9).
 
 ## A backup failed
 
-GitHub emailed you that **Backup** failed, or the Dashboard says "The daily backup hasn't succeeded since …".
+GitHub emailed you that **Backup** failed, the Dashboard says "The daily backup hasn't succeeded since …", or your computer popped up "The newest backup is … hours old".
 
-1. The `big-bucks-backups` repo → **Actions** → **Backup** → the red run. The red step's message says why:
-   - **"Production didn't answer the ping"**: see "The project paused".
-   - **"… has fewer rows than in the last backup … stop and ask"**: rows went missing from a table that can never lose any. Don't run anything else. Stop and ask.
-   - **"The export is empty"**: stop and ask.
-   - **"password authentication failed"**: the password changed. Redo setup steps 3 to 5 (a new password, a new string, the secret).
-   - Anything else, such as a GitHub hiccup: **Re-run all jobs**.
+1. The `big-bucks-backups` repo → **Actions** → **Backup**.
+   - **No run at all that morning** (only older ones listed): GitHub didn't start it. Click **Run workflow** → **Run workflow** to take today's backup now. If it happens again, stop and ask: the schedule may need moving or re-registering (it happened on Oct 11, 2026).
+   - **A red run:** open it. The red step's message says why:
+     - **"Production didn't answer the ping"**: see "The project paused".
+     - **"… has fewer rows than in the last backup … stop and ask"**: rows went missing from a table that can never lose any. Don't run anything else. Stop and ask.
+     - **"The export is empty"**: stop and ask.
+     - **"password authentication failed"**: the password changed. Redo setup steps 3 to 5 (a new password, a new string, the secret).
+     - Anything else, such as a GitHub hiccup: **Re-run all jobs**.
 2. When a run is green, the Dashboard alert settles by itself.
+
+## The health check didn't run
+
+The Dashboard says "The daily health check hasn't run since …". It runs every morning at 8:07 am in the big-bucks-backups repo, and it's also the Free plan's keep-alive.
+
+1. The `big-bucks-backups` repo → **Actions** → **Health check**.
+   - **No run that morning:** GitHub didn't start it. Click **Run workflow** (leave **Send test alert** unticked) → **Run workflow**. If it happens again, stop and ask.
+   - **A red run:** its message says why (see "The project paused" for "Production didn't answer").
+2. When a health check runs, the Dashboard alert settles by itself.
 
 ## Restore drill (every few months)
 

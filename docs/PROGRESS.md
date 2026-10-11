@@ -90,6 +90,31 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 **Oct 11, 2026: neither scheduled workflow fired** (Dad checked: the schedules were correct, with no disabled banner; the Actions list showed only his manual runs). Likely a brand-new repo's schedules not yet registered, at the busy :00 and :30 marks, where GitHub delays and can drop scheduled runs. **Fix:** Health check moved to `7 14 * * *` (8:07 am) and Backup to `37 14 * * *` (8:37 am), committed by Dad, which also re-registers both schedules. **The real test is Mon Oct 12.** A check that doesn't depend on GitHub follows (part 2).
 
+**A skipped day is noticed without GitHub (Dad, 2026-10-11; built and tested locally, awaiting Dad's OK for production):**
+- **Migration `20261025000000_outside_jobs.sql`:**
+  - `job_runs` gains job `health`, and `alerts` gains kind `health_check_missing`;
+  - `record_health_check()` (service role only): the health function records each run and settles an open `health_check_missing` alert;
+  - `check_health_age()`: one `health_check_missing` alert after 36 hours without a health check (once one ever ran);
+  - `check_outside_jobs()` runs both that and `check_backup_age()`;
+  - `nightly_kick()` gains exactly one call, `check_outside_jobs()` from 4:30 pm, before its "done" check. It's otherwise identical (diffed against Stage 4's).
+  - No interest, GIC, fund or posting code is touched.
+- **The `health` function** calls `record_health_check()` first, which needs a redeploy. Checked locally: it answered 200 and recorded its run.
+- **`sync-backup.ps1`:** it warns (pop-up, 0x3) when the newest backup is more than 30 hours old, by commit time; it was "more than 2 days" by date. The time it shows is converted to Alberta time explicitly (Windows' "Mountain Standard Time" zone, daylight saving included), whatever the computer's own zone. Tested in a throwaway repo: 31 hours → warning, pop-up, 0x3; 29 hours → 0x0 and no pop-up; a backup committed Oct 10 03:00 UTC shows as "Oct 9, 9:00 PM Alberta time". **Needs Dad's review and install** (his rule).
+- **Test first:** `supabase/tests/outside_jobs_test.sql`, 27 known answers through `nightly_kick()`:
+  - **must not alert:** no Vault setup (2½-day-old records), before any backup or health check ever, two good mornings, and 4:30 and 8:00 pm on the skipped day (32 and 35½ hours);
+  - **alerts:** exactly one of each kind at 9:00 pm on the skipped day (not quiet, in plain words), still one at 9:30, and `health_check()` reports both;
+  - **settling:** each settles with its own next run;
+  - **after the reset:** no alert right after `prelaunch_reset`;
+  - **money unaffected:** the kick queues tonight's call at every step, alerts or not;
+  - **permissions:** only the service role can record a health check.
+  - Before the fix it failed (`record_health_check()` didn't exist). Against the old `nightly_kick()` (rolled back), the 8 alert checks fail and every must-not-alert and queueing check passes, so the change is only the alerts.
+- **RUNBOOK:**
+  - "A backup failed" covers "no run at all that morning" (run it by hand; if it recurs, stop and ask);
+  - a new "The health check didn't run" section, which the new alert points to;
+  - "The daily backup" says it's now watched from the database's timer and Dad's computer;
+  - step 9's pop-up list says 30 hours.
+- **SPEC:** the build decision and the data model are updated.
+
 **Open follow-ups:**
 1. **Sunday Oct 11, after 5 pm (Dad):** the interest check. In the Supabase SQL Editor (read-only):
    - `select id, run_for_date, status, details ->> 'reason' as reason, finished_at at time zone 'America/Edmonton' as finished_alberta from public.job_runs where job = 'interest' order by id desc limit 3;`
