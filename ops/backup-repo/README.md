@@ -8,8 +8,8 @@ The files here (everything except `backup/`) come from `ops/backup-repo/` in the
 
 | Workflow | When | What |
 | --- | --- | --- |
-| **Health check** | daily, 14:00 UTC (8:00 am Alberta in summer) | Asks production how it is. Fails, so GitHub emails Dad, on any open alert, a job falling behind, a big database, or a backup that stopped. Manual run: tick **Send test alert** to check the email. |
-| **Backup** | daily, 14:30 UTC | One snapshot of production into `backup/`, then a commit. Fails on purpose if the export is empty or the ledger (or any append-only table) has fewer rows than yesterday. Also pings the API (the Free plan's keep-alive). |
+| **Health check** | daily, 14:07 UTC (8:07 am Alberta in summer) | Asks production how it is. Fails, so GitHub emails Dad, on any open alert, a job falling behind, a big database, or a backup that stopped. Manual run: tick **Send test alert** to check the email. |
+| **Backup** | daily, 14:37 UTC (8:37 am Alberta in summer) | One snapshot of production into `backup/`, then a commit. Fails on purpose if the export is empty or the ledger (or any append-only table) has fewer rows than yesterday. Also pings the API (the Free plan's keep-alive). |
 
 The backup commits every day, so GitHub never switches these schedules off.
 

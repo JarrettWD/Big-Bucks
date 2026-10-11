@@ -23,8 +23,10 @@ name: Backup
 
 on:
   schedule:
-    # 14:30 UTC: 8:30 am in Alberta in summer, 7:30 am in winter. After the 14:00 health check.
-    - cron: '30 14 * * *'
+    # 14:37 UTC: 8:37 am in Alberta in summer, 7:37 am in winter. After the 14:07 health check.
+    # Off the hour and half hour on purpose: GitHub delays, and can drop, scheduled runs at
+    # those busy times (both schedules failed to fire on Oct 11, 2026; Dad, moved then).
+    - cron: '37 14 * * *'
   workflow_dispatch:
 
 permissions: {}

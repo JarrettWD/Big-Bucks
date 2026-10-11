@@ -157,7 +157,7 @@ Stage 4 is done when production has a few nights of real closes for DIA, QQQ and
   4. reconciles every day not yet checked.
 - A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on.
 - At 9:00 pm, a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
-- Every morning at 8:00 am Alberta time, **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
+- Every morning at 8:07 am Alberta time (7:07 am in winter), **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
 
 ## A close is missing
 
@@ -341,7 +341,7 @@ In the app, signed in as yourself: **Settings** → **Backup** → **Download ba
 
 ## The daily backup
 
-- **Every morning:** at 14:00 UTC (8:00 am Alberta time in summer, 7:00 am in winter) the **Health check** runs, and at 14:30 UTC the **Backup**. Both run in the private `big-bucks-backups` repo.
+- **Every morning:** at 14:07 UTC (8:07 am Alberta time in summer, 7:07 am in winter) the **Health check** runs, and at 14:37 UTC (8:37 am) the **Backup**. They're off the hour and half hour on purpose: GitHub delays, and can drop, scheduled runs at those busy times. Both run in the private `big-bucks-backups` repo.
 - **What a backup holds:** everything, from one moment. Every table and row, the logins (not sessions), each table as CSV, and every account's balances worked out by the database. It's all in `backup/` in that repo; its README lists the files.
 - **Git keeps every day's version.** To see an old day: **Code** → **History** (the clock icon) → that day's commit → **Browse files**.
 - **When it fails on purpose:** the export is empty, or the ledger (or any other permanent table) has fewer rows than the day before. Yesterday's backup is then left as it was, and GitHub emails you.

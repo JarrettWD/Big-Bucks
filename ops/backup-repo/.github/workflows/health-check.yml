@@ -14,8 +14,10 @@ name: Health check
 
 on:
   schedule:
-    # 14:00 UTC is 8:00 am in Alberta, after last night's run has finished.
-    - cron: '0 14 * * *'
+    # 14:07 UTC: 8:07 am in Alberta in summer, 7:07 am in winter, after last night's run has
+    # finished. Off the hour on purpose: GitHub delays, and can drop, scheduled runs at busy
+    # times (both schedules failed to fire on Oct 11, 2026; Dad, moved then).
+    - cron: '7 14 * * *'
   workflow_dispatch:
     inputs:
       test_alert:

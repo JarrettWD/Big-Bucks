@@ -64,8 +64,8 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 **Done.** Every Stage 5 deliverable is built, tested and live. RUNBOOK backup setup steps 1–11 are all checked by Dad.
 
 - **The private repo `big-bucks-backups`** runs two daily workflows.
-  - **Health check (14:00 UTC):** moved there; the old copy was removed from Big-Bucks.
-  - **Backup (14:30 UTC):** three jobs, take → commit → record.
+  - **Health check (14:07 UTC, 8:07 am; was 14:00 until Oct 11):** moved there; the old copy was removed from Big-Bucks.
+  - **Backup (14:37 UTC, 8:37 am; was 14:30 until Oct 11):** three jobs, take → commit → record.
   - It has committed two real backups so far. The first ("743 rows") proved the pooler accepts `backup_reader` with `verify-full`; the second ("766 rows") proved the three-job workflow.
 - **Restore drill on a real production backup: PASS.** 39 of 39 tables match, and every balance to the cent and unit. ACCEPTANCE ticked.
 - **The OneDrive copy:** a daily 9:30 am Task Scheduler run of the installed `C:\BigBucksBackup\sync-backup.ps1`. It writes `latest`, `big-bucks-history.bundle` and `last-sync.txt`, and shows a pop-up only when something needs a look.
@@ -88,13 +88,15 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **(a)** After `prelaunch_reset('clear the test history')`, `first_account_day()` returns the test kid's opening day (Oct 10), not launch day. It's the earliest account's opening day, and the reset keeps every account (unchanged `created_at`) and every `job_runs` row. That's right for launch night: the nightly jobs really ran every night since Oct 10, so launch night's "yesterday" has a genuine interest result, and the evening finishes after one call, with or without the fix. Test checks 15–21 prove it, including against the old function.
 - **(b)** Only `nightly_status()` changed. The migration holds exactly two statements: `create or replace function public.nightly_status(…)` and its `comment`. No interest accrual or monthly posting code, no `run_daily`, no table and no permission was touched.
 
+**Oct 11, 2026: neither scheduled workflow fired** (Dad checked: the schedules were correct, with no disabled banner; the Actions list showed only his manual runs). Likely a brand-new repo's schedules not yet registered, at the busy :00 and :30 marks, where GitHub delays and can drop scheduled runs. **Fix:** Health check moved to `7 14 * * *` (8:07 am) and Backup to `37 14 * * *` (8:37 am), committed by Dad, which also re-registers both schedules. **The real test is Mon Oct 12.** A check that doesn't depend on GitHub follows (part 2).
+
 **Open follow-ups:**
 1. **Sunday Oct 11, after 5 pm (Dad):** the interest check. In the Supabase SQL Editor (read-only):
    - `select id, run_for_date, status, details ->> 'reason' as reason, finished_at at time zone 'America/Edmonton' as finished_alberta from public.job_runs where job = 'interest' order by id desc limit 3;`
    - `select count(*) as calls_since_4pm from public.outbox where created_at > (date '2026-10-11' + time '16:00') at time zone 'America/Edmonton';`
 
    Pass: an `interest` row for 2026-10-10 `ok` around 4:30 pm, one 2026-10-11 row "the day isn't over yet", and `calls_since_4pm` 1 (2 is fine). If not, stop and ask; no money is at risk.
-2. **ACCEPTANCE "The daily backup commits to GitHub every day, and the copy on Dad's computer updates":** tick after a few days of 14:30 UTC backups and 9:30 am syncs without a pop-up.
+2. **ACCEPTANCE "The daily backup commits to GitHub every day, and the copy on Dad's computer updates":** tick after a few days of 14:37 UTC backups and 9:30 am syncs without a pop-up.
 3. **`ubuntu-24.04` revisit:** every workflow in both repos is pinned. Before GitHub retires 24.04 (watch the run logs for its notice), try Ubuntu 26 with a manual Backup, a restore drill, CI and a deploy, then move them all.
 4. **Supabase CLI:** v2.120.0 is available (installed: v2.119.0). Note only, no update now. When it's updated, run the full local suite and a restore drill.
 5. **`supabase-ca.crt` expires 2031-04-26:** before then, download the new certificate (RUNBOOK backup setup step 4.5) and replace it in both repos.
@@ -124,7 +126,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - `prelaunch_reset('clear the test history')` and the `prelaunch_resets` record (append-only, parent read).
   - `after_restore()`: puts back the login guard on `auth.users` and the nightly timer, makes a new login key, and says what's left.
 - **The daily backup:** `ops/backup-repo/` holds the backup repo's contents (copied over in Part B):
-  - `backup.yml` (daily 14:30 UTC) and `health-check.yml` (moved; it reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` there);
+  - `backup.yml` (daily 14:30 UTC; 14:37 since Oct 11) and `health-check.yml` (moved; it reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` there);
   - `scripts/backup.ts`, `snapshot.ts` and `guards.ts`;
   - `package.json` and its lockfile (`pg` only), `.gitattributes` (no line-ending changes in `backup/`) and a README.
 - **How a backup is taken:** one exported snapshot holds `counts.json` (rows and a checksum of every row, per table), `balances.csv`, a CSV of each table, `auth.sql`, and pg_dump's `schema.sql` and `data.sql`, so every file describes the same moment.
