@@ -54,7 +54,9 @@ try {
 
   # 1. The newest backups from GitHub.
   Invoke-Git @('pull', '--ff-only', '--quiet') | Out-Null
-  $latest = (Invoke-Git @('log', '-1', '--format=%cs %s')) -join ''
+  # The newest commit that changed backup/ (other commits, like workflow fixes, aren't backups).
+  $latest = (Invoke-Git @('log', '-1', '--format=%cs %s', '--', 'backup')) -join ''
+  if (-not $latest) { throw 'The clone has no backup commit yet.' }
   $latestDay = [datetime]::ParseExact($latest.Substring(0, 10), 'yyyy-MM-dd', $null)
 
   # 2. The latest backup's files. Robocopy codes below 8 mean success.

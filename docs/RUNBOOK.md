@@ -296,7 +296,7 @@ With your OK, Claude clones the empty repo to `C:\BigBucksBackup\big-bucks-backu
 
 ### 9. ✋ The copy on your computer (OneDrive)
 
-1. Copy `ops\sync-backup.ps1` from the Big-Bucks folder to `C:\BigBucksBackup\sync-backup.ps1`.
+1. The clone it pulls into, `C:\BigBucksBackup\big-bucks-backups`, was made in step 6. Copy `ops\sync-backup.ps1` from the Big-Bucks folder to `C:\BigBucksBackup\sync-backup.ps1`.
 2. Run it once in a terminal:
 
 ```bash
