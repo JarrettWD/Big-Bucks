@@ -64,7 +64,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 - [ ] A close still missing at 9:00 pm Alberta time alerts Dad, and the alert clears itself when the close arrives
 - [ ] The morning health check is green on a normal day, and fails (emailing Dad) when anything is open
 - [ ] The daily backup commits to GitHub every day, and the copy on Dad’s computer updates
-- [ ] The Download backup button produces a complete zip
+- [x] The Download backup button produces a complete zip (2026-10-10, on Dad's phone: csv and json folders, manifest.json, README.txt)
 - [ ] The project has never paused
 - [ ] “Something looks wrong?” sends Dad a question, and his reply shows in her history
 

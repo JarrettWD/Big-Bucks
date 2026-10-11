@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 5: Part A approved and pushed (2026-10-10); Part B (production) starting at step 1.** Stage 4 is live, waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026).
+- Current stage: **stage 5 done (2026-10-10): backups live, restore drill passed on a production backup** (follow-ups in its close-out). Stage 4 is live, waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026). Phase 1 is complete once those pass.
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -52,7 +52,50 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - Likely causes: the stricter check on a newly made package (Inventory's was approved earlier), or a leftover from the first failed install.
     - Next check (Dad, on the phone): `chrome://webapks`, comparing the Inventory and Big Bucks entries.
 
-### Stage 5 — Backups and data protection (Part A approved by Dad 2026-10-10, with the certificate check added; Part B in progress)
+### Stage 5 — Backups and data protection (done 2026-10-10)
+
+#### Stage 5 close-out (2026-10-10)
+
+**Done.** Every Stage 5 deliverable is built, tested and live. RUNBOOK backup setup steps 1–11 are all checked by Dad.
+
+- **The private repo `big-bucks-backups`** runs two daily workflows.
+  - **Health check (14:00 UTC):** moved there; the old copy was removed from Big-Bucks.
+  - **Backup (14:30 UTC):** three jobs, take → commit → record.
+  - It has committed two real backups so far. The first ("743 rows") proved the pooler accepts `backup_reader` with `verify-full`; the second ("766 rows") proved the three-job workflow.
+- **Restore drill on a real production backup: PASS.** 39 of 39 tables match, and every balance to the cent and unit. ACCEPTANCE ticked.
+- **The OneDrive copy:** a daily 9:30 am Task Scheduler run of the installed `C:\BigBucksBackup\sync-backup.ps1`. It writes `latest`, `big-bucks-history.bundle` and `last-sync.txt`, and shows a pop-up only when something needs a look.
+- **Download backup on Dad's phone:** "Saved big-bucks-backup-2026-10-10.zip", with the csv and json folders, `manifest.json` and `README.txt`. Dad deleted the zip afterwards. ACCEPTANCE ticked: "The Download backup button produces a complete zip".
+- **`prelaunch_reset()`:** proven locally (pgTAP, plus a real run on the local copy, including the refusal after launch). It runs on production only at Stage 12.
+- **Security:**
+  - the read-only backup login;
+  - Supabase's CA certificate checked (`verify-full`; it expires 2031-04-26);
+  - Guard 1: the installed sync script never runs pulled code;
+  - Guard 2: no third-party code shares a job with the push token, and only backup files are committed;
+  - actions pinned to commits;
+  - every workflow and its scripts checked by actionlint and shellcheck in CI.
+- **Found and fixed along the way:**
+  - the health check's quoting bug, which failed every normal run since `a013ea4`;
+  - `sync-backup.ps1` reporting the wrong "newest backup";
+  - the first-night `nightly_status()` gap (migration `20261024000000_first_night.sql`, live).
+- **Tests at the close:** pgTAP 1711 of 1711, Vitest 276 of 276, Playwright 90 of 90, time machine PASS 14 of 14. CI is green on every pushed commit except `a291f83`, whose run was cancelled by a newer push; `99ddeb4` covers it.
+
+**Dad's approval conditions for the first-night fix, answered:**
+- **(a)** After `prelaunch_reset('clear the test history')`, `first_account_day()` returns the test kid's opening day (Oct 10), not launch day. It's the earliest account's opening day, and the reset keeps every account (unchanged `created_at`) and every `job_runs` row. That's right for launch night: the nightly jobs really ran every night since Oct 10, so launch night's "yesterday" has a genuine interest result, and the evening finishes after one call, with or without the fix. Test checks 15–21 prove it, including against the old function.
+- **(b)** Only `nightly_status()` changed. The migration holds exactly two statements: `create or replace function public.nightly_status(…)` and its `comment`. No interest accrual or monthly posting code, no `run_daily`, no table and no permission was touched.
+
+**Open follow-ups:**
+1. **Sunday Oct 11, after 5 pm (Dad):** the interest check. In the Supabase SQL Editor (read-only):
+   - `select id, run_for_date, status, details ->> 'reason' as reason, finished_at at time zone 'America/Edmonton' as finished_alberta from public.job_runs where job = 'interest' order by id desc limit 3;`
+   - `select count(*) as calls_since_4pm from public.outbox where created_at > (date '2026-10-11' + time '16:00') at time zone 'America/Edmonton';`
+
+   Pass: an `interest` row for 2026-10-10 `ok` around 4:30 pm, one 2026-10-11 row "the day isn't over yet", and `calls_since_4pm` 1 (2 is fine). If not, stop and ask; no money is at risk.
+2. **ACCEPTANCE "The daily backup commits to GitHub every day, and the copy on Dad's computer updates":** tick after a few days of 14:30 UTC backups and 9:30 am syncs without a pop-up.
+3. **`ubuntu-24.04` revisit:** every workflow in both repos is pinned. Before GitHub retires 24.04 (watch the run logs for its notice), try Ubuntu 26 with a manual Backup, a restore drill, CI and a deploy, then move them all.
+4. **Supabase CLI:** v2.120.0 is available (installed: v2.119.0). Note only, no update now. When it's updated, run the full local suite and a restore drill.
+5. **`supabase-ca.crt` expires 2031-04-26:** before then, download the new certificate (RUNBOOK backup setup step 4.5) and replace it in both repos.
+6. **`actions/upload-artifact@v4`** in Big-Bucks' `ci.yml` runs on Node 20, which GitHub is retiring: update it with the next CI change.
+7. **Any change to `sync-backup.ps1`:** Claude tells Dad explicitly that it needs his review and install (Dad's rule).
+
 
 #### Plan, approved by Dad (2026-10-10)
 
