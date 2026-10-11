@@ -224,7 +224,12 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **Why launch night was never at risk:** `first_account_day()` is the earliest account's opening day. After the reset it's still the test kid's (Oct 10), not launch day, because the reset keeps every account and `job_runs`, and the nightly jobs have run every night since. So the day before launch has a real interest row. Using launch day instead would be wrong: the jobs would think the days between never ran, and the health check would think nothing could be behind. The fix matters for a fresh start (a new project, or a database with no accounts yet).
   - **On a database with accounts already** (the local demo), the test reports all 21 as SKIP with the reason. It prints a NOTICE either way ("ran all 21 checks" or "SKIPPED"), which shows in CI's log.
   - **Local:** pgTAP 1711 of 1711 (fresh), Vitest 276 of 276, Playwright 90 of 90, time machine PASS 14 of 14, lint and workflow checks clean.
-  - **To production** (Dad's OK, not before 10:35 pm, after the last nightly kick): commit, CI green with the NOTICE, a dry run listing only this migration, then `db push`. No function redeploy is needed.
+  - **Live (2026-10-10, with Dad's OK):**
+    - committed `bc64aa8` at 10:35 pm, after the last nightly kick;
+    - CI run 38112055805 green; Dad read its log: "NOTICE: first_night_test: ran all 21 checks on a database with no accounts beforehand", "Files=36, Tests=1711", "Result: PASS" (the CI log needs a signed-in viewer, so Claude can't read it);
+    - the dry run at 10:56 pm listed only `20261024000000_first_night.sql` (no seeds, no roles);
+    - `db push` applied it, and a second dry run says "Remote database is up to date".
+  - **Sunday's 5 pm check (Dad) is unchanged:** Oct 10 had an account, so its interest is still waited for, and is worked out at the first kick.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 
