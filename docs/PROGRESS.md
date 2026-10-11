@@ -212,6 +212,19 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **Self-resolving:** from Oct 11, the day before is Oct 10, whose interest runs at the first kick.
   - **The gap:** `nightly_status()` lacks the "not before the first account opened" exception `jobs_behind()` got in `a013ea4`. It only bites on the very first night ever (the pre-launch reset keeps the accounts).
   - **Check:** Oct 11's backup should show interest for Oct 10 `ok` and only one or two outbox calls that evening. If not, stop and ask.
+- **First-night fix** (Dad, 2026-10-10: fix it anyway): migration `20261024000000_first_night.sql`. It holds exactly two statements, a new `nightly_status()` and its comment. No interest accrual or posting code, no table, and no grant changes (still `postgres` and `service_role` only).
+  - **The rule:** the day before's savings interest is waited for only when an account was open that day. With no account at all, it isn't waited for. This is the same exception `jobs_behind()` has.
+  - **Test first:** `supabase/tests/first_night_test.sql`, 21 known answers through the real timer (`nightly_kick()` at 4:30 and 5:00 pm, with `run_daily` and `reconcile_through` in between, as the nightly function runs them). The time machine runs the jobs directly, so it never covered this path. The cases:
+    - an empty project;
+    - the first night (one call, then done at 5:00 and 10:30 pm);
+    - the second night (a real day's missing interest is still waited for);
+    - **launch night:** a week of beta nights, then `prelaunch_reset('clear the test history')` after a fresh backup, two new accounts, and one call.
+  - **Before the fix:** 7 failed (the first night queued 3 calls, the empty project waited, 4 calls over two nights), reproducing production's Oct 10.
+  - **After:** 21 of 21. Run against the old `nightly_status()` (rolled back), launch night's 7 checks pass anyway.
+  - **Why launch night was never at risk:** `first_account_day()` is the earliest account's opening day. After the reset it's still the test kid's (Oct 10), not launch day, because the reset keeps every account and `job_runs`, and the nightly jobs have run every night since. So the day before launch has a real interest row. Using launch day instead would be wrong: the jobs would think the days between never ran, and the health check would think nothing could be behind. The fix matters for a fresh start (a new project, or a database with no accounts yet).
+  - **On a database with accounts already** (the local demo), the test reports all 21 as SKIP with the reason. It prints a NOTICE either way ("ran all 21 checks" or "SKIPPED"), which shows in CI's log.
+  - **Local:** pgTAP 1711 of 1711 (fresh), Vitest 276 of 276, Playwright 90 of 90, time machine PASS 14 of 14, lint and workflow checks clean.
+  - **To production** (Dad's OK, not before 10:35 pm, after the last nightly kick): commit, CI green with the NOTICE, a dry run listing only this migration, then `db push`. No function redeploy is needed.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 
