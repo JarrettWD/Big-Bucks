@@ -13,7 +13,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - The three follow-up fixes are live: the plain-words health check (migration pushed, `health` redeployed), the manifest `id` with no orientation lock (Deploy to GitHub Pages green), and the clipboard option. Commit `a013ea4`, CI run 38080462474 passed.
   - **Still open:**
     - RUNBOOK step 14: real closes for DIA and QQQ from Mon Oct 12 (Thanksgiving: the TSX is closed), and XIC from Tue Oct 13. Then green morning health checks.
-    - Installing as an app on Dad's Samsung is blocked by Play Protect. A Chrome shortcut works for now, and the full-screen-app plan (a TWA wrapper) is a must before Stage 12.
+    - Installing on Dad's S26 is still blocked by a stale record from its first, Play-Protect-blocked attempt (a Chrome shortcut works). A fresh Samsung tablet installed it as a proper app, so no TWA wrapper is needed (Stage 12 entry).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: no
@@ -36,21 +36,20 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Dad's rule (2026-10-09):** "Before creating the girls' real accounts: a fresh read-only audit scoped to changes since the third pre-launch audit."
 - **To finish before Stage 12** (Dad, 2026-10-09):
   - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`, including confirming a non-final close). The database functions exist and are tested; until the screens exist, RUNBOOK says "stop and ask".
-- **Goal before Stage 12** (Dad, 2026-10-10): Big Bucks installs as a proper full-screen app on the girls' Samsung devices (the A17 phone and the Galaxy tablets). The web app stays as it is.
-  - **Task: evaluate a Trusted Web Activity (TWA) wrapper** around the existing PWA:
-    - **Bubblewrap** (Google's command-line tool) vs **PWABuilder** (Microsoft's site), targeting current Android.
-    - **How to install it:** sideloading the signed APK vs **Google Play internal testing** (or a closed track), including what Samsung's Auto Blocker allows for each.
-    - Costs, Dad's steps, and a recommendation.
-  - **Known points to cover:**
-    - A TWA shows full screen only if the site proves it owns the app, with a Digital Asset Links file at `/.well-known/assetlinks.json` on the site's **origin**. The app lives at `jarrettwd.github.io/Big-Bucks/`, so that file would have to be served from `jarrettwd.github.io` itself (the user-site repo `JarrettWD.github.io`), or from a custom domain. Without it, Chrome shows its address bar.
-    - Google Play needs a developer account: a one-time US$25 fee (as of 2026-10, to be checked), identity checks, and possibly a testing-track rule for new personal accounts.
-    - The signing key: who keeps it, and where. Not in the repo, like every other secret.
-    - Updates: the web app updates itself; the wrapper only needs rebuilding if its settings change.
-    - Any new service or paid account needs Dad's OK first (CLAUDE.md).
-  - **Compared with Dad's Inventory app, which installs full-screen on his Samsung (2026-10-10, read-only).** After the manifest fix went live, Big Bucks' install is blocked by Play Protect ("built for an older version of Android").
-    - Manifest, icons (all real PNGs at their stated sizes), service worker and headers were compared: no difference could explain it. Play Protect judges the WebAPK that Google's servers build, whose Android target the site can't set.
-    - Likely causes: the stricter check on a newly made package (Inventory's was approved earlier), or a leftover from the first failed install.
-    - Next check (Dad, on the phone): `chrome://webapks`, comparing the Inventory and Big Bucks entries.
+- **Full-screen app on the girls' devices: no wrapper needed** (Dad, 2026-10-10). The TWA wrapper evaluation is off this list.
+  - **Why:** Big Bucks installed as a proper app through Chrome (a WebAPK, full screen) on one of the girls' Samsung Galaxy tablets, a fresh device that had never had a failed attempt.
+  - **Dad's S26 is the only device affected:** its first install attempt was blocked by Play Protect, and Chrome there still offers only "Create shortcut" and shows "Could not open app". `chrome://webapks` and Android's app list show no Big Bucks.
+  - **The live site isn't the cause** (checked 2026-10-10, read-only):
+    - Chrome's own installability check (`Page.getInstallabilityErrors`, headless Chromium, phone viewport) reports no errors for Big Bucks or Inventory.
+    - The manifest (`id`, `start_url` and `scope` all `/Big-Bucks/`, `display: standalone`, real 192 and 512 PNGs plus a 512 maskable), the service worker (scope `/Big-Bucks/`, controls the page) and the headers all check out.
+    - There's no `related_applications`, intent or link-capture setting.
+  - Dad's admin side was always meant for another browser anyway (BUILD-PLAN Stage 6: Firefox or Samsung Internet); the Chrome shortcut works meanwhile.
+  - **Don't** reset Chrome's site data for `jarrettwd.github.io`: Big Bucks and Inventory share that address, so it would wipe Inventory's saved data too.
+- **Pre-launch check: install on a girl's phone** (Dad, 2026-10-10). On the girls' phone (Samsung, supervised with Google Family Link), install Big Bucks through Chrome (**⋮** → **Add to home screen** → **Install**) and confirm:
+  - it opens full screen from its own icon, with no address bar;
+  - it appears in Android's app list;
+  - Family Link didn't block or hold the install for approval. If it asks, the approval is Dad's, in Family Link.
+  - Then sign in with the test kid's login to check the app works there (her own account comes at Stage 12). Do this before Stage 12's real accounts.
 
 ### Stage 5 — Backups and data protection (done 2026-10-10)
 
