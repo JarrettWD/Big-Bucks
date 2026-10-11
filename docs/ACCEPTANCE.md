@@ -11,7 +11,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 - [ ] All known-answer tests pass (interest, GIC maturity, broken GIC, trade units, rounding up)
 - [ ] The time machine runs a simulated year (rate changes, maturities, dividends, a crash, a missed week) with every balance correct
 - [ ] Security tests pass: one girl can’t see or change the other’s data, and no one can edit history
-- [ ] One backup has been restored into the local copy of Supabase, with balances matching
+- [x] One backup has been restored into the local copy of Supabase, with balances matching (2026-10-10: production backup `2cc0fd4`, 39 of 39 tables, every balance; RUNBOOK "Restore drill")
 
 **Phase 1, live: accounts and logins**
 

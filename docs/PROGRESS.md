@@ -197,6 +197,21 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - **Remaining risk:** the take job must hold the read-only database login, so a bad package there could read the data (never change it). Kept small: one library (`pg`), from the lockfile, no install scripts.
   - **Rule (Dad, 2026-10-10):** whenever `sync-backup.ps1` changes, Claude tells Dad explicitly that it needs his review and install.
 - Also seen: CI warns that `actions/upload-artifact@v4` (Big-Bucks' `ci.yml`) runs on Node 20, which GitHub is retiring. Harmless for now; update it with the next CI change.
+- **Guards live, checked by Dad** (2026-10-10):
+  - **A.** Installed `296b75f` as `C:\BigBucksBackup\sync-backup.ps1`; Claude confirmed it's byte-for-byte the clone's copy.
+  - **B.** The task runs the installed copy, with "Run only when user is logged on".
+  - **C.** A manual Backup ran green in all three jobs (take, commit, record) with the pinned actions, and the bot committed `2cc0fd4`: "Backup 2026-10-11: 34 tables, 766 rows, 3 ledger rows" (dated in UTC).
+  - **D.** The sync ran with no pop-up and result 0x0: "Script: installed copy matches the repo's (296b75f of 2026-10-10)."
+- **Step 10, the first restore drill on a real production backup** (Dad): **PASS**, 39 of 39 tables matching row for row, and the test kid's 4 balances to the cent and unit. `after_restore()` put back the login guard and the nightly timer and made a new login key; the nightly Vault entries were reported missing (expected outside production). **ACCEPTANCE: "One backup has been restored into the local copy of Supabase, with balances matching" ticked.**
+- **What grew between the two backups** (743 → 766 rows; ledger unchanged at 3):
+  - `alerts` 1 → 3: the two step 8 test alerts;
+  - `parent_actions` 3 → 5: their two acknowledgements;
+  - `job_runs` 12 → 22: one `backup` record, and nine more `interest` rows for Oct 10 with status `retrying`;
+  - `outbox` 2 → 11: one queued nightly call per 30-minute kick.
+- **First-night quirk (Stage 4, to watch; no change made):** on the evening the first account opened, `nightly_status()` waits for the *day before's* savings interest (Oct 9). That day can't exist, because no account was open, so the evening never counts as done. The timer kicks every 30 minutes until 10:30 pm (about 14 extra nightly calls), and each kick logs today's interest as `retrying` (correct: a day's interest is worked out once it's over). There are no price calls on a Saturday, no alerts, and no money effect.
+  - **Self-resolving:** from Oct 11, the day before is Oct 10, whose interest runs at the first kick.
+  - **The gap:** `nightly_status()` lacks the "not before the first account opened" exception `jobs_behind()` got in `a013ea4`. It only bites on the very first night ever (the pre-launch reset keeps the accounts).
+  - **Check:** Oct 11's backup should show interest for Oct 10 `ok` and only one or two outbox calls that evening. If not, stop and ask.
 
 **Known issues:** none in Part A. The reset proof's `launched_at` row on the local copy is gone: the time machine reset the database afterwards.
 
