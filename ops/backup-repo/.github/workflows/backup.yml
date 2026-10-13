@@ -19,14 +19,18 @@ name: Backup
 #   commit  can push: no npm, Node or Docker; it lets through only backup files
 #           (scripts/check-incoming.sh), into backup/, and pushes;
 #   record  reads only: tells the database the backup is safe on GitHub.
+# Before them, on GitHub's schedule (the backstop) only, fresh (reads only, git alone)
+# stops the run when this morning's backup is already committed.
 # Every action is pinned to a commit (a tag can be moved; a commit can't).
 
 on:
+  # The morning start (Dad, 2026-10-12): production's own timer starts this workflow at
+  # 7:00 am Alberta time (workflow_dispatch, through GitHub's API), because GitHub's schedule
+  # fired 8 hours late on Oct 12, 2026, and not at all on Oct 11. The schedule stays as a
+  # backstop, after the morning window: 18:37 UTC is 12:37 pm in Alberta, all year (UTC−6).
+  # When it does run, it stops early if a backup was committed in the last 12 hours.
   schedule:
-    # 14:37 UTC: 8:37 am in Alberta in summer, 7:37 am in winter. After the 14:07 health check.
-    # Off the hour and half hour on purpose: GitHub delays, and can drop, scheduled runs at
-    # those busy times (both schedules failed to fire on Oct 11, 2026; Dad, moved then).
-    - cron: '37 14 * * *'
+    - cron: '37 18 * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -36,7 +40,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The backstop only (GitHub's schedule): was this morning's backup already committed? A
+  # started or manual run always backs up. Reads only, and runs no third-party code.
+  fresh:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      skip: ${{ steps.age.outputs.skip }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Is the newest backup less than 12 hours old?
+        id: age
+        run: |
+          # Only the bot commits backups, so a bot commit at the top is the newest backup.
+          author=$(git log -1 --format=%an)
+          age=$(( $(date +%s) - $(git log -1 --format=%ct) ))
+          if [ "$author" = "github-actions[bot]" ] && [ "$age" -lt 43200 ]; then
+            echo "A backup was committed $(( age / 60 )) minutes ago (the morning start), so this backstop run stops here."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No backup in the last 12 hours: the backstop backs up now."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
   take:
+    needs: fresh
+    # Runs when fresh was skipped (a started or manual run) or found no recent backup.
+    if: ${{ !cancelled() && needs.fresh.outputs.skip != 'true' }}
     # Pinned (Dad, 2026-10-10): ubuntu-latest moves to Ubuntu 26 from Oct 19, 2026. Revisit before
     # GitHub retires 24.04 (docs/PROGRESS.md, Stage 5).
     runs-on: ubuntu-24.04
@@ -111,6 +147,7 @@ jobs:
 
   commit:
     needs: take
+    if: ${{ !cancelled() && needs.take.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -152,6 +189,7 @@ jobs:
   # Only once the backup is safe on GitHub: prelaunch_reset() and the health check rely on this.
   record:
     needs: commit
+    if: ${{ !cancelled() && needs.commit.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

@@ -157,7 +157,7 @@ Stage 4 is done when production has a few nights of real closes for DIA, QQQ and
   4. reconciles every day not yet checked.
 - A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on.
 - At 9:00 pm, a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
-- Every morning at 8:07 am Alberta time (7:07 am in winter), **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
+- Every morning, once the backup is in (about 7:15 am Alberta time, see "The daily backup"), **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
 
 ## A close is missing
 
@@ -341,7 +341,8 @@ In the app, signed in as yourself: **Settings** → **Backup** → **Download ba
 
 ## The daily backup
 
-- **Every morning:** at 14:07 UTC (8:07 am Alberta time in summer, 7:07 am in winter) the **Health check** runs, and at 14:37 UTC (8:37 am) the **Backup**. They're off the hour and half hour on purpose: GitHub delays, and can drop, scheduled runs at those busy times. Both run in the private `big-bucks-backups` repo.
+- **Every morning (the morning start, since Oct 2026):** production's own timer starts the **Backup** at 7:00 am Alberta time, then the **Health check** once that backup is recorded (normally 7:15 am), or at 9:00 am if it never is. In the repo's **Actions** list they show as run by "workflow_dispatch". Both run in the private `big-bucks-backups` repo. Alberta is UTC−6 all year, so the times never shift.
+- **GitHub's own schedule is the backstop:** Backup at 18:37 UTC (12:37 pm) and Health check at 19:07 UTC (1:07 pm), shown as "Scheduled". GitHub often starts them hours late; that's fine. A backstop Backup stops early (green, with only the **fresh** job run) when this morning's backup is already committed. Why: on Oct 11, 2026 GitHub's schedule didn't fire at all, and on Oct 12 it fired 8 hours late.
 - **What a backup holds:** everything, from one moment. Every table and row, the logins (not sessions), each table as CSV, and every account's balances worked out by the database. It's all in `backup/` in that repo; its README lists the files.
 - **Git keeps every day's version.** To see an old day: **Code** → **History** (the clock icon) → that day's commit → **Browse files**.
 - **When it fails on purpose:** the export is empty, or the ledger (or any other permanent table) has fewer rows than the day before. Yesterday's backup is then left as it was, and GitHub emails you.
@@ -355,7 +356,7 @@ In the app, signed in as yourself: **Settings** → **Backup** → **Download ba
 GitHub emailed you that **Backup** failed, the Dashboard says "The daily backup hasn't succeeded since …", or your computer popped up "The newest backup is … hours old".
 
 1. The `big-bucks-backups` repo → **Actions** → **Backup**.
-   - **No run at all that morning** (only older ones listed): GitHub didn't start it. Click **Run workflow** → **Run workflow** to take today's backup now. If it happens again, stop and ask: the schedule may need moving or re-registering (it happened on Oct 11, 2026).
+   - **No run at all that morning** (no "workflow_dispatch" run around 7:00 am): the morning start didn't happen. Click **Run workflow** → **Run workflow** to take today's backup now. Then look at the Dashboard for "GitHub refused this morning's start…" (see "The morning start failed"). If neither explains it, stop and ask.
    - **A red run:** open it. The red step's message says why:
      - **"Production didn't answer the ping"**: see "The project paused".
      - **"… has fewer rows than in the last backup … stop and ask"**: rows went missing from a table that can never lose any. Don't run anything else. Stop and ask.
@@ -366,12 +367,47 @@ GitHub emailed you that **Backup** failed, the Dashboard says "The daily backup 
 
 ## The health check didn't run
 
-The Dashboard says "The daily health check hasn't run since …". It runs every morning at 8:07 am in the big-bucks-backups repo, and it's also the Free plan's keep-alive.
+The Dashboard says "The daily health check hasn't run since …". It's started every morning after the backup (see "The daily backup") in the big-bucks-backups repo, and it's also the Free plan's keep-alive.
 
 1. The `big-bucks-backups` repo → **Actions** → **Health check**.
-   - **No run that morning:** GitHub didn't start it. Click **Run workflow** (leave **Send test alert** unticked) → **Run workflow**. If it happens again, stop and ask.
+   - **No run that morning:** it wasn't started. Click **Run workflow** (leave **Send test alert** unticked) → **Run workflow**. Then see "The morning start failed". If it happens again, stop and ask.
    - **A red run:** its message says why (see "The project paused" for "Production didn't answer").
 2. When a health check runs, the Dashboard alert settles by itself.
+
+## The morning start
+
+Production's own timer starts the Backup and the Health check each morning through GitHub's API. It needs a GitHub token that can only start workflows in big-bucks-backups. Set it up once, after the database change is live (Claude tells you when). Never between 7:00 and 11:45 am.
+
+1. ✋ GitHub: your profile photo (top right) → **Settings** → **Developer settings** (bottom of the left list) → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+2. **Token name:** `big-bucks-morning-start`. **Description:** "Production starts the Backup and Health check each morning." **Resource owner:** you.
+3. **Expiration:** **Custom**, then a weekday about a year out (GitHub allows up to 366 days). Write the date down.
+4. **Repository access:** **Only select repositories** → pick `big-bucks-backups`. Nothing else.
+5. **Permissions** → **Repository permissions** → **Actions**: **Read and write**. Leave everything else at **No access**. GitHub adds **Metadata: Read-only** by itself; that's expected.
+6. **Generate token**, then copy it (GitHub shows it only once). Don't paste it anywhere else.
+7. ✋ Supabase, production project → **Integrations** → **Vault** → **Secrets** → **Add new secret**. **Name:** `github_dispatch_token`. **Secret:** paste the token. **Description:** "Starts the morning backup (expires <date>)". Save. Use this screen, never the SQL Editor: the SQL Editor keeps a history of what you type.
+8. ✋ Supabase → **SQL Editor**, with your username and the date from step 3:
+   `select public.set_github_dispatch('<your GitHub username>/big-bucks-backups', date '<YYYY-MM-DD>');`
+   It answers "Saved: …, token expires …. The token is in Vault too: the first start is at 7:00 am."
+9. The next morning, check the runs (Claude gives you the exact list).
+
+**If the token leaks**, someone could start, cancel or re-run big-bucks-backups' workflows, delete their logs, turn them off, or download the day's backup artifact (kept 1 day). They couldn't read or change the repo's files or secrets, or touch Big-Bucks. Revoke it (GitHub → the same **Fine-grained tokens** page → the token → **Delete**), then make a new one.
+
+## The morning start failed
+
+The Dashboard says "GitHub refused this morning's start of the …" or "GitHub didn't start this morning's …". GitHub's own schedule still backs up later the same day (the backstop), so no day is lost. Its Health check fails while this alert is open, so GitHub emails you too.
+
+1. **"(401)" or "(403)": the token has expired or been revoked.** Make a new one: "Renew the GitHub token".
+2. **"(404)":** GitHub can't find the repo or workflow. Check the repo name you gave `set_github_dispatch` (step 8 of "The morning start") and that the token still lists `big-bucks-backups`.
+3. **"(no answer)" or another number:** usually a GitHub hiccup. If tomorrow's start works, the alert settles by itself. If it happens twice in a row, stop and ask.
+4. The next start GitHub accepts settles the alert by itself. To start today's backup now: big-bucks-backups → **Actions** → **Backup** → **Run workflow**.
+
+## Renew the GitHub token
+
+The Dashboard says "The GitHub token that starts the morning backup expires on …" (21 days ahead), or the morning start failed with 401.
+
+1. Do steps 1 to 8 of "The morning start": a new token (same settings), pasted into the existing Vault secret `github_dispatch_token` (**Integrations** → **Vault** → the secret → **Edit**), then `set_github_dispatch` with the new expiry date. The reminder settles when the new date is saved.
+2. On GitHub's **Fine-grained tokens** page, delete the old token.
+3. Update your calendar reminder for the new date.
 
 ## Restore drill (every few months)
 
@@ -396,9 +432,9 @@ Only if the production project is lost for good (deleted, or a pause that can't 
 
 1. ✋ A new Supabase project (production setup steps 1 to 4). The Free plan allows two and the food inventory app uses the other, so the lost one must be gone first.
 2. Claude, with your OK, loads the newest backup into it with `psql`, with the same files in the same order as the drill (its prelude, `schema.sql`, `auth.sql`, `data.sql`). Not `db push`: the schema comes from the backup.
-3. ✋ SQL Editor: `select * from public.after_restore();`. It puts back the login guard and the nightly timer and makes a new login key. Then `select public.mark_production();` (harmless if already marked) and `select * from public.check_time_rules();` (production setup step 6).
+3. ✋ SQL Editor: `select * from public.after_restore();`. It puts back the login guard and the nightly and morning timers and makes a new login key. Then `select public.mark_production();` (harmless if already marked) and `select * from public.check_time_rules();` (production setup step 6).
 4. ✋ **Reset each girl's PIN** (Settings → Logins): Vault's old login key can't be read in a new project, so no old PIN works.
-5. ✋ Production setup step 7 (the nightly address and key in Vault) and step 4 (the function secrets).
+5. ✋ Production setup step 7 (the nightly address and key in Vault) and step 4 (the function secrets). Then "The morning start", steps 7 and 8 (Vault can't be read in a new project, so the token goes in again; a new one if the old one is lost).
 6. Deploy the functions, then update the URL and anon key in both repos' variables (Big-Bucks and big-bucks-backups) and the connection string (backup setup steps 3 to 5). Then deploy the app.
 7. Everyone signs in again (sessions aren't in the backup). Your authenticator app still works: its setup is in the backup.
 

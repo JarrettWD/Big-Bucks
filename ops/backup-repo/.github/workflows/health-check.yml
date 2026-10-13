@@ -14,10 +14,12 @@ name: Health check
 
 on:
   schedule:
-    # 14:07 UTC: 8:07 am in Alberta in summer, 7:07 am in winter, after last night's run has
-    # finished. Off the hour on purpose: GitHub delays, and can drop, scheduled runs at busy
-    # times (both schedules failed to fire on Oct 11, 2026; Dad, moved then).
-    - cron: '7 14 * * *'
+    # The morning start (Dad, 2026-10-12): production's own timer starts this workflow
+    # (workflow_dispatch) once this morning's backup is recorded, or at 9:00 am Alberta time.
+    # GitHub's schedule, which fired 8 hours late on Oct 12, 2026, stays as a backstop after
+    # the morning window and the backstop backup: 19:07 UTC is 1:07 pm in Alberta, all year
+    # (UTC−6).
+    - cron: '7 19 * * *'
   workflow_dispatch:
     inputs:
       test_alert:
