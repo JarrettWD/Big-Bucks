@@ -26,6 +26,10 @@
 # Run it by hand to check it:
 #   powershell -ExecutionPolicy Bypass -File C:\BigBucksBackup\sync-backup.ps1
 # -NoPopup writes last-sync.txt without the pop-up (for tests).
+#
+# Every time it shows is Alberta time, worked out as UTC-6 (Dad, 2026-10-12): Alberta stays
+# on UTC-6 all year from Nov 1, 2026, the same rule the database uses. Never this
+# computer's own clock or Windows' "Mountain Standard Time", which may still fall back.
 
 param(
   [string]$RepoPath = 'C:\BigBucksBackup\big-bucks-backups',
@@ -36,7 +40,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$stamp = Get-Date -Format 'yyyy-MM-dd HH:mm'
+
+# Alberta time at a UTC moment: UTC-6 (the rule since Mar 8, 2026; every backup is later).
+function Get-AlbertaTime([DateTime]$utc) {
+  return [DateTime]::SpecifyKind($utc, [DateTimeKind]::Utc).AddHours(-6)
+}
+
+$stamp = (Get-AlbertaTime ([DateTime]::UtcNow)).ToString('yyyy-MM-dd HH:mm')
 if (-not $CloudFolder -and $env:OneDrive) { $CloudFolder = Join-Path $env:OneDrive 'Big Bucks backup' }
 $statusFile = if ($CloudFolder) { Join-Path $CloudFolder 'last-sync.txt' } else { '(no OneDrive folder)' }
 
@@ -92,14 +102,13 @@ try {
   # 1. The newest backups from GitHub.
   Invoke-Git @('pull', '--ff-only', '--quiet') | Out-Null
   # The newest commit that changed backup/ (other commits, like workflow fixes, aren't backups).
-  $latest = (Invoke-Git @('log', '-1', '--format=%cs %s', '--', 'backup')) -join ''
-  if (-not $latest) { throw 'The clone has no backup commit yet.' }
+  $subject = (Invoke-Git @('log', '-1', '--format=%s', '--', 'backup')) -join ''
+  if (-not $subject) { throw 'The clone has no backup commit yet.' }
   # When it was committed, exactly (seconds since 1970, UTC), for its age in hours.
   $latestUnix = [int64]((Invoke-Git @('log', '-1', '--format=%ct', '--', 'backup')) -join '')
   $latestUtc = [DateTimeOffset]::FromUnixTimeSeconds($latestUnix).UtcDateTime
-  # Shown in Alberta time, whatever this computer's own time zone ("Mountain Standard
-  # Time" is Windows' name for it, daylight saving included).
-  $latestAt = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($latestUtc, 'Mountain Standard Time')
+  $latestAt = Get-AlbertaTime $latestUtc
+  $latest = "$($latestAt.ToString('yyyy-MM-dd')) $subject"
   $ageHours = ([DateTime]::UtcNow - $latestUtc).TotalHours
 
   # Is this installed copy the same as the repo's? Compared by content (SHA-256),
