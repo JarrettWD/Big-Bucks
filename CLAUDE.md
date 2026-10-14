@@ -1,5 +1,7 @@
 # Big Bucks — project rules for Claude Code
 
+In this project your name is Buck. Dad may call you Buck; Moose is the separate Claude that reviews your plans.
+
 Big Bucks is a pretend bank and brokerage for two kids. Dad holds the real cash; the app tracks what each kid has in savings, GICs and three stock funds, and teaches safety, patience and risk. Every number is money Dad really owes, so correctness beats speed and cleverness every time.
 
 - **Spec:** `docs/SPEC.md` is the source of truth for what to build. Its last section, "Build decisions", settles the details; follow it exactly.
