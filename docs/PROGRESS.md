@@ -133,6 +133,13 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 - **Right after the 7:30 pm kick** (ran 01:30:00.10–.13 UTC, succeeded): the dry run listed only `20261026000000_morning_start.sql` (no seeds, no roles); `db push` applied it at 7:31 pm; a second dry run: "Remote database is up to date".
 - **Checked on production afterwards:** `big-bucks-morning` (`0,15,30,45 13,14,15,16,17 * * *`, `select public.morning_kick(); select public.send_outbox();`) next to `big-bucks-nightly` (unchanged); `morning_kick()` and `set_github_dispatch()` exist; no GitHub Vault entries yet (the kick answers "not set up" until Dad's token steps); no unsent outbox row; no open alerts.
 - **big-bucks-backups `4b88117`:** the two workflows and `sync-backup.ps1`, each identical to `ops/backup-repo/` (`bdfe365`, `20094d8`). Pushed from a separate scratch clone, not Dad's sync clone. **The script needs Dad's review and install.**
+- **Dad's steps, the same evening (RUNBOOK, "The morning start"):**
+  - **Sync script `4b88117`** reviewed, pulled into the clone, installed as `C:\BigBucksBackup\sync-backup.ps1`, and run once by hand: no pop-up.
+  - **GitHub token** `big-bucks-morning-start`: fine-grained, only `big-bucks-backups`, Actions read and write (plus the Metadata read-only GitHub adds), nothing else, expires **Wed Oct 13, 2027**. GitHub's first attempt failed on its side ("We failed to generate the API credential"); Dad deleted it and the second worked.
+  - **Vault:** `github_dispatch_token` saved through the Vault screen (not the SQL Editor), described "Starts the morning backup (expires 2027-10-13)". Clipboard cleared.
+  - **SQL Editor:** `set_github_dispatch('<username>/big-bucks-backups', date '2027-10-13')` → "Saved: <username>/big-bucks-backups, token expires Oct 13, 2027. The token is in Vault too: the first start is at 7:00 am."; `morning_kick()` → "outside the morning window: 7:00 to 11:45 am Alberta time" (so the Vault entries are found).
+  - **Reminders (Moose):** renew the token on Wed Sep 22, 2027, 7 pm (the Dashboard reminder follows from Sep 22, 21 days ahead). Tomorrow 9:00 am: expect Backup about 7:00 and Health check about 7:15, both "workflow_dispatch".
+- **Next:** Wed Oct 14, the first morning start. Dad says "check", and Claude runs the read-only queries (the GitHub outbox rows with `reply_status`, the backup and health records, open alerts). That evening is the last Stage 4 price check.
 
 **The morning start (Dad, 2026-10-12; option B, approved):**
 - **Migration `20261026000000_morning_start.sql`:**
