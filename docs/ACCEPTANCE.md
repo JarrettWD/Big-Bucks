@@ -8,9 +8,9 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Before any real money (in the test copy)**
 
-- [ ] All known-answer tests pass (interest, GIC maturity, broken GIC, trade units, rounding up)
-- [ ] The time machine runs a simulated year (rate changes, maturities, dividends, a crash, a missed week) with every balance correct
-- [ ] Security tests pass: one girl can’t see or change the other’s data, and no one can edit history
+- [x] All known-answer tests pass (interest, GIC maturity, broken GIC, trade units, rounding up) (2026-10-14: CI run #47, `bdfe365`, pgTAP Files=38, Tests=1816, Result: PASS; green on every push since)
+- [x] The time machine runs a simulated year (rate changes, maturities, dividends, a crash, a missed week) with every balance correct (2026-10-14: PASS 14 of 14, compared to the cent with the reference model; CI's timemachine job green on run #47 and every push since)
+- [x] Security tests pass: one girl can’t see or change the other’s data, and no one can edit history (2026-10-14: the RLS, grants and append-only checks are part of CI run #47's 1816 pgTAP checks, all passing)
 - [x] One backup has been restored into the local copy of Supabase, with balances matching (2026-10-10: production backup `2cc0fd4`, 39 of 39 tables, every balance; RUNBOOK "Restore drill")
 
 **Phase 1, live: accounts and logins**

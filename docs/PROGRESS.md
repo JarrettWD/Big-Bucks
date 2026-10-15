@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is now done; marking phase 1 complete and starting the solo beta is Dad's call (Stage 4 close-out).
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below) and Stage 9, Wish List and goals (plan first).
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -16,9 +16,63 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
     - Installing on Dad's S26 is still blocked by a stale record from its first, Play-Protect-blocked attempt (a Chrome shortcut works). A fresh Samsung tablet installed it as a proper app, so no TWA wrapper is needed (Stage 12 entry).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
-- Phase 1 complete: no
-- Solo beta started: no
+- Phase 1 complete: **yes (2026-10-14)**
+- Solo beta started: **from Thu Oct 15, 2026** (plan above)
 - Launched: no
+
+## Solo beta plan (from 2026-10-14)
+
+Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, requests, savings and GICs, funds, rates, live safeguards), with how and roughly when it's proven. Dad works through it with the test kid on production. Phase 2's boxes come with Stages 9–11; the launch boxes with Stage 12. Tick each box in ACCEPTANCE.md as it's proven, with the date and evidence.
+
+**Already proven (2026-10-14):** the three test-copy boxes (CI run #47: pgTAP 1816 of 1816, time machine 14 of 14, the RLS and append-only checks), the restore drill, Download backup, `check_time_rules()`, the test alert, real closes and history, and the health check green and red.
+
+**Week 1 (from Thu Oct 15), with the test kid:**
+- **Logs in with username and PIN:** the test kid on Dad's phone. "Each girl" is ticked at Stage 12, with their real logins.
+- **Five wrong PINs lock the login for 15 minutes and alert Dad:** 5 wrong PINs, the lock message, a try after 15 minutes works. A test account's alert is quiet: it's in the Dashboard's "Test accounts" fold. Acknowledge it.
+- **Dad's login requires the second factor:** already seen at every sign-in since Oct 10 (authenticator). Tick on Dad's word.
+- **Deposit request held, approved, lands in savings.** Make it a few hundred dollars, so October's interest (Nov 1) has a balance to work on.
+- **A declined request shows Dad's reason.**
+- **A deposit over the cap is blocked with a clear message.**
+- **A withdrawal waits 24 hours before Dad can approve it:** request one day, approve the next.
+- **Cashing out of a GIC or fund requires moving it to savings first.**
+- **"Something looks wrong?" sends Dad a question, and his reply shows in her history.**
+- **An unanswered request expires after 7 days and releases the held money:** a request on Oct 15, left alone, expires at the Oct 22 nightly run.
+- **Breaking a GIC early:** open a second GIC, break it a few days later: the warning, the principal back, no interest.
+
+**Funds (from Fri Oct 16):**
+- **A Friday-evening request settles Monday:** buy in each fund on Fri Oct 16 after the close; each settles at Mon Oct 19's close.
+- **Only one trade per fund per day.**
+- **Settlement times:** before Nov 1 they read 2:00 pm in Alberta; from Nov 1 (Toronto falls back, Alberta stays at UTC−6) 3:00 pm. A request at 2:30 pm on Mon Nov 2 settles that day.
+- **A partial sell works, and proceeds land in savings:** week 2.
+- **Each fund's value tracks its ETF to the cent:** after the first buys settle, Dad compares units × close with DIA, QQQ and XIC for a few days.
+- **The standard note on a day a fund moves more than 2%:** whenever it happens (usually within a few weeks). If none does during the beta, the time machine covers it.
+- **A quarterly dividend:** the first payment day is Mon Jan 4, 2027 (first business day of the quarter). Live if the beta (both phases) is still running then; otherwise the time machine, which already passes.
+
+**Rates (week 2, from about Oct 19):**
+- **A savings rate change:** the notice, the 7-day default, applied on its effective date (save it about Oct 19, effective about Oct 26).
+- **Existing GICs keep their locked-in rate after a GIC rate change:** with the 1-month GIC open.
+- **A special switches back to the regular rate on its end date:** a short special, for example Oct 20–27.
+- **A deposit-cap change reaches the kid with a notice.** "Both girls" is ticked at Stage 12.
+
+**On the calendar:**
+- **Savings interest posts on the 1st and matches "How was this calculated?":** Sun Nov 1 (October's interest), checked by hand once.
+- **A 1-month GIC matures on the right day with the right interest, rounded up:** open it Oct 15; it matures Nov 15.
+- **The maturity banner; with no choice for 7 days, the money moves to savings:** Nov 15, then about Nov 22.
+- **30 nights in a row with zero reconciliation mismatches:** reconcile has been ok every night since Oct 10, so the 30th is about Sun Nov 8. A deliberate skipped night (below) doesn't break it: the catch-up reconciles both days.
+- **The daily backup commits every day, and the copy on Dad's computer updates:** after a few clean mornings with the morning start and quiet 9:30 am syncs, about Mon Oct 19.
+- **The project has never paused:** at the end of the beta (the Supabase dashboard shows it active; the daily keep-alive runs).
+
+**Exercised on purpose, safely (each on a weekday Dad picks, never the 1st, a month-end, a GIC maturity day or a payment day; only the test kid's data is affected; Claude writes the steps on the day and Dad flips the switch):**
+- **A skipped night, caught up with no duplicate postings, and a price-service "outage":** before 4:00 pm, Dad switches the nightly timer off (Supabase → **Integrations** → **Cron** → `big-bucks-nightly` → off), with a test-kid buy requested that day. That evening nothing runs; the next morning's Health check goes red ("Nightly jobs haven't finished since …", GitHub emails Dad, expected). Before 4:00 pm the next day he switches it back on. The 4:30 pm run catches up both days. Check: one row per job and day, no posting twice (`posting_key`), reconcile ok, and the buy settled at its own day's real close, never an older one. Suggested Tue Oct 27 off, Wed Oct 28 on.
+- **The 9:00 pm missing-close alert, which clears itself when the close arrives:** another evening, the timer off before 4:00 pm and back on at about 9:05 pm. The 9:30 pm kick finds that day's closes missing and raises one `missing_price` alert per fund (on the Dashboard; the next morning's Health check would report any still open), then fetches the closes; each alert settles as its close is stored. Suggested Thu Oct 22.
+
+**Before Stage 12 (nothing lost):**
+- the daily-backup box above, after a few clean mornings;
+- the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`); until then, RUNBOOK says "stop and ask";
+- **the install check on a girl's phone** (Family Link; Stage 12 entry above);
+- **Dad's fresh read-only audit** of changes since the third pre-launch audit, before the girls' real accounts;
+- at Stage 12 itself: a fresh backup, `prelaunch_reset`, `launched_at`, the girls' accounts, and every phase 2 feature on for everyone (BUILD-PLAN).
+- **Parked:** the install on Dad's S26 (cosmetic; Chrome Beta or `adb logcat` remain, Dad's call).
 
 ## Stage log
 
