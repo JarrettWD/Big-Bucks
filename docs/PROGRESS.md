@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stage 5 done (2026-10-10): backups live, restore drill passed on a production backup** (follow-ups in its close-out). Stage 4 is live, waiting only on the multi-night price checks (Mon–Wed, Oct 12–14, 2026). Phase 1 is complete once those pass.
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is now done; marking phase 1 complete and starting the solo beta is Dad's call (Stage 4 close-out).
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -12,7 +12,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - Part B (production setup) done 2026-10-10: project `qcjplrvbpqdvmoundipw` is live, with the app at https://jarrettwd.github.io/Big-Bucks/. Steps 1–13 were checked; the test alert reached Dad's email and the Dashboard.
   - The three follow-up fixes are live: the plain-words health check (migration pushed, `health` redeployed), the manifest `id` with no orientation lock (Deploy to GitHub Pages green), and the clipboard option. Commit `a013ea4`, CI run 38080462474 passed.
   - **Still open:**
-    - RUNBOOK step 14: real closes for DIA and QQQ from Mon Oct 12 (Thanksgiving: the TSX is closed), and XIC from Tue Oct 13. Then green morning health checks.
+    - ~~RUNBOOK step 14: three nights of real closes~~ Done 2026-10-14 (Stage 4 close-out).
     - Installing on Dad's S26 is still blocked by a stale record from its first, Play-Protect-blocked attempt (a Chrome shortcut works). A fresh Samsung tablet installed it as a proper app, so no TWA wrapper is needed (Stage 12 entry).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
@@ -347,7 +347,24 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 **Dad to do by hand:** Part B, one step at a time: RUNBOOK "Backup setup (Stage 5)", steps 1–11.
 
-### Stage 4 — Live setup (live 2026-10-10; waiting only on the multi-night price checks, Mon–Wed)
+### Stage 4 — Live setup (done 2026-10-14)
+
+#### Stage 4 close-out (2026-10-14)
+
+**Done.** The last box, a few nights of real closes, passed Mon–Wed Oct 12–14, 2026 (Dad checked each evening; Claude confirmed on production, read-only, on Oct 14):
+- **Real daily closes:** DIA (dow) and QQQ (nasdaq100) for Oct 12, 13 and 14, stored at about 4:30 pm; XIC (tsx) for Oct 13 and 14, stored at about 5:00 pm. No TSX close for Oct 12: Thanksgiving, the TSX was closed, as the holiday table says.
+- **Price calls:** one each for DIA and QQQ every night; XIC twice on Oct 13 and 14 (all ok). Alpha Vantage hadn't published the TSX close by 4:30 pm, so the jobs waited on that one close (`notes` `retrying`) and the 5:00 pm kick fetched it. Nothing was guessed. 2 to 4 calls a night, of the 20-call budget.
+- **Every evening finished:** `nightly_status` done, `reconcile` ok for every day Oct 10–14, no mismatch alerts, no unsent outbox rows.
+- **Health check:** green on normal days (Oct 13 and 14), red with GitHub's email on Oct 12 while a `backup_failed` alert was open.
+- **ACCEPTANCE ticked (Phase 1, live):** `check_time_rules()` on production; the test alert (Dashboard and email); real closes plus two years of history; the morning health check green and red.
+- **XIC at 4:30 pm (Dad asked for Claude's view):** leave it. The extra call costs 1 of 20 a night; starting XIC at 5:00 pm would change the nightly function and its tests (and the time machine) to save it, and a 5:00 pm start would delay a night when the close *is* ready. Revisit only if the call budget gets tight (for example more funds).
+
+**Wed Oct 14: the first morning start, checked on production (read-only, 6:17 pm):**
+- outbox: Backup queued and sent at 7:00:00, Health check at 7:15:00, both `reply_status` 204, no `last_error`;
+- job_runs: backup ok at 7:01:26, health ok at 7:15:08; the backstop Health check recorded at 4:13 pm (harmless); the backstop Backup (3:54 pm) stopped in **fresh** after 9 s, so no second backup;
+- no open alerts; tonight done and reconciled; no unsent outbox row.
+
+#### Stage 4 live setup log (2026-10-10 to 10-14)
 
 - **Dad's rule (2026-10-04):** "Before creating real accounts or any real deposit: run an independent pre-launch audit of the whole money engine and security setup (fresh agent, read-only), fix findings, then proceed."
 - **Step 1: first audit (2026-10-08).** A fresh read-only agent audited every migration and function, RLS and grants, the money rules, notice rules, corrections, the parent log, previews, the demo's safeguards, and secrets. Findings:
@@ -809,7 +826,7 @@ Nothing touched production.
   - [x] `check_time_rules()` passes on production.
   - [x] Send test alert reaches Dad's email (and the Dashboard).
   - [x] Every suite and the time machine pass, CI is green, and PROGRESS is updated.
-  - [ ] **Production has a few nights of real closes for DIA, QQQ and XIC** (Mon–Wed, Oct 12–14). This is the only box left before Stage 4 is done.
+  - [x] **Production has a few nights of real closes for DIA, QQQ and XIC** (Mon–Wed, Oct 12–14, 2026; see the close-out).
 - **Dad to do by hand:** RUNBOOK step 14 each evening Mon–Wed, and check the morning Health check.
 
 ### Stage 8 — Parent screens, settings and onboarding, local only: complete (2026-10-07)

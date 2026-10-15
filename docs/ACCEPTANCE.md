@@ -55,14 +55,14 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 1, live: safeguards and backups**
 
-- [ ] `select * from public.check_time_rules();` on production shows no ok = false rows
+- [x] `select * from public.check_time_rules();` on production shows no ok = false rows (2026-10-10, RUNBOOK production setup step 6)
 - [ ] 30 nights in a row with zero reconciliation mismatches
 - [ ] A deliberately skipped night is caught up the next run, with no duplicate postings
 - [ ] A simulated price-service outage makes trades wait rather than settle on an old price
-- [ ] A test alert reaches Dad’s dashboard and email
-- [ ] Production has a few nights of real closes for DIA, QQQ and XIC, and about two years of history for the graphs
+- [x] A test alert reaches Dad’s dashboard and email (2026-10-10: Send test alert, email arrived, Dashboard alert acknowledged)
+- [x] Production has a few nights of real closes for DIA, QQQ and XIC, and about two years of history for the graphs (DIA and QQQ Oct 12–14, XIC Oct 13–14, 2026, the TSX closed for Thanksgiving on Oct 12; backfill: 100 daily closes and weekly closes back to Oct 11, 2024)
 - [ ] A close still missing at 9:00 pm Alberta time alerts Dad, and the alert clears itself when the close arrives
-- [ ] The morning health check is green on a normal day, and fails (emailing Dad) when anything is open
+- [x] The morning health check is green on a normal day, and fails (emailing Dad) when anything is open (green Oct 13 and 14, 2026; red with GitHub's email on Oct 12, when a `backup_failed` alert was open)
 - [ ] The daily backup commits to GitHub every day, and the copy on Dad’s computer updates
 - [x] The Download backup button produces a complete zip (2026-10-10, on Dad's phone: csv and json folders, manifest.json, README.txt)
 - [ ] The project has never paused
