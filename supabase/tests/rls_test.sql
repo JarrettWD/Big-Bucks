@@ -156,6 +156,9 @@ begin
     insert into public.wishlist_items (account_id, name, price_cents, stars) values (acct, 'Kite', 2500, 4)
       returning id into v_item;
     insert into public.wishlist_parent_marks (wishlist_item_id, note) values (v_item, 'Bought it');
+    -- Stage 9: her wish's photo (a made-up JPEG).
+    insert into public.wishlist_photos (wishlist_item_id, account_id, photo, thumb)
+      values (v_item, acct, decode('ffd8ff' || repeat('ab', 200), 'hex'), decode('ffd8ff' || repeat('ab', 200), 'hex'));
     insert into public.goals (account_id, name, target_cents) values (acct, 'Kite', 2500);
     insert into public.badges (account_id, badge) values (acct, 'first_gic');
     insert into public.notifications (account_id, type, title, body, related_gic_id)
@@ -249,7 +252,8 @@ select set_eq(
       join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = 'account_id' and t.table_type = 'BASE TABLE'$$,
   array['agreement_signatures', 'alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
-        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'whats_new_seen', 'wishlist_items'],
+        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'whats_new_seen', 'wishlist_items',
+        'wishlist_photos'],
   'the account-scoped tables are the ones this test seeds (update both when adding a table)');
 
 -- 2. Kid A ------------------------------------------------------------------
@@ -262,7 +266,7 @@ select is(tests.tables_showing_account('bbbbbbbb-0000-0000-0000-000000000002'), 
 select is(
   array(select t from unnest(array['agreement_signatures', 'badges', 'gic_holdings', 'goals', 'interest_accruals',
                                    'notifications', 'profiles', 'questions', 'requests', 'transactions',
-                                   'whats_new_seen', 'wishlist_items']) t
+                                   'whats_new_seen', 'wishlist_items', 'wishlist_photos']) t
          where t <> all (tests.tables_showing_account('aaaaaaaa-0000-0000-0000-000000000001'))),
   '{}'::text[],
   'kid A sees her own rows in every kid table');

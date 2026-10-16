@@ -35,6 +35,15 @@ export interface BalanceLine {
   amount: string;
 }
 
+/**
+ * Tables kept out of data.sql and restored from their own csv/<table>.csv instead
+ * (Stage 9, Dad 2026-10-16). data.sql changes every day (the ledger, job runs, …), so
+ * photos inside it would be stored again by git every day; their own file changes
+ * only when a photo does. counts.json still checks every row, and the restore drill
+ * loads them back from the CSV.
+ */
+export const OWN_FILE_TABLES = ['public.wishlist_photos'];
+
 /** One CSV field: empty for null, quoted when it holds a comma, a quote, a line break or edge spaces. */
 export function csvField(value: string | null): string {
   if (value === null) return '';

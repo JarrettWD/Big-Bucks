@@ -9,8 +9,9 @@
 // It never connects to production: it reads only the backup's files. It:
 //   1. starts a separate, throwaway local Supabase (scripts/local/restore-drill:
 //      its own name and ports, so the normal local copy isn't touched);
-//   2. loads the backup's schema.sql, auth.sql and data.sql into it, the way a
-//      restore into a new project does (RUNBOOK, "Rebuilding production");
+//   2. loads the backup's schema.sql, auth.sql and data.sql into it, then the photos
+//      from their own CSV (OWN_FILE_TABLES), the way a restore into a new project
+//      does (RUNBOOK, "Rebuilding production");
 //   3. runs after_restore(), which puts back what a dump leaves out;
 //   4. compares every table (rows and a checksum of every row), the logins, and
 //      every account's balances with what the backup recorded at the time;
@@ -26,6 +27,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   compareRestore,
+  OWN_FILE_TABLES,
   parseCsv,
   type BalanceLine,
   type Summary,
@@ -49,9 +51,25 @@ export function folderProblem(dir: string): string | null {
   const missing = FILES.filter((f) => !existsSync(join(dir, f)));
   if (missing.length)
     return `${dir} isn't a backup folder: it has no ${missing.join(', ')}. Give the backup/ folder of a backup.`;
+  const counts = JSON.parse(readFileSync(join(dir, 'counts.json'), 'utf8')) as Summary;
+  const noCsv = ownFileTables(counts).filter((t) => !existsSync(join(dir, 'csv', `${t}.csv`)));
+  if (noCsv.length)
+    return `${dir} has no ${noCsv.map((t) => `csv/${t}.csv`).join(', ')}, which holds rows data.sql leaves out. Stop and ask.`;
   if (readFileSync(join(dir, 'data.sql'), 'utf8').includes('\r\n'))
     return 'data.sql has Windows line endings, so git changed it on the way (the repo needs its .gitattributes). Stop and ask.';
   return null;
+}
+
+/** The tables this backup keeps in their own CSV (a backup from before Stage 9 has none). */
+export function ownFileTables(backup: Summary): string[] {
+  return OWN_FILE_TABLES.filter((t) => t in backup.tables);
+}
+
+/** psql's \copy that loads one of those CSVs (as toCsv writes it: a header line, empty for null). */
+export function copyCommand(table: string, columns: string[]): string {
+  const q = (n: string) => `"${n.replaceAll('"', '""')}"`;
+  const [schema, name] = table.split('.');
+  return `\\copy ${q(schema)}.${q(name)} (${columns.map(q).join(', ')}) from '/tmp/drill/${table}.csv' with (format csv, header true)`;
 }
 
 function run(cmd: string, args: string[], what: string, input?: string): string {
@@ -140,6 +158,13 @@ export async function drill(
     run('docker', ['exec', CONTAINER, 'mkdir', '-p', '/tmp/drill'], 'Preparing the drill copy');
     for (const f of ['schema.sql', 'auth.sql', 'data.sql'])
       run('docker', ['cp', resolve(dir, f), `${CONTAINER}:/tmp/drill/${f}`], `Copying ${f}`);
+    const own = ownFileTables(backup);
+    for (const t of own)
+      run(
+        'docker',
+        ['cp', resolve(dir, 'csv', `${t}.csv`), `${CONTAINER}:/tmp/drill/${t}.csv`],
+        `Copying csv/${t}.csv`,
+      );
     run(
       'docker',
       ['exec', '-i', CONTAINER, 'sh', '-c', 'cat > /tmp/drill/prelude.sql'],
@@ -147,7 +172,10 @@ export async function drill(
       PRELUDE,
     );
 
-    console.log('Restoring schema.sql, auth.sql and data.sql (one transaction)…');
+    const ownFiles = own.map((t) => `csv/${t}.csv`).join(', ');
+    console.log(
+      `Restoring schema.sql, auth.sql and data.sql${own.length ? `, then ${ownFiles}` : ''} (one transaction)…`,
+    );
     psql(
       [
         '-q',
@@ -162,6 +190,7 @@ export async function drill(
         '/tmp/drill/auth.sql',
         '-f',
         '/tmp/drill/data.sql',
+        ...own.flatMap((t) => ['-c', copyCommand(t, backup.tables[t].columns)]),
       ],
       'The restore',
     );

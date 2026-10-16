@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below) and Stage 9, Wish List and goals (plan first).
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is built and tested locally (2026-10-16); production waits for Dad's OK.**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -84,6 +84,67 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 9 — Wish List and goals (2026-10-16, built and tested locally; not yet in production)
+
+- **Plan:** `docs/plans/stage9-plan.md`, approved by Dad 2026-10-16 with A1 (photos in the database), B1 (one goal at a time) and C1 (savings-rate projection, 5-year limit), plus four conditions:
+  - backup growth measured over 30 days, with photos in their own file;
+  - no photo bytes in the list;
+  - a gentle line when funds drop;
+  - production outside 7:00–11:45 am and 4:00–5:00 pm, with a dry run first.
+- **Nothing touches money:**
+  - no writes to the ledger, rates or settings;
+  - no change to the nightly or morning jobs;
+  - nothing reaches outside the database.
+  - So the local time machine wasn't run; CI runs it on every push.
+- **Built:**
+  - **Migration `20261027000000_wishlist.sql`:**
+    - the `wishlist_photos` table (RLS: her own rows, or the parent);
+    - `wishlist_items.wait_from`, its limits, and one goal at a time; `goals.ended_at` and `ended_how`; `photo_url` dropped (nothing ever wrote to it);
+    - kid functions `wish_add`, `wish_update`, `wish_set_photo`, `wish_remove_photo`, `wish_reorder`, `wish_done`, `wish_make_goal` and `wish_stop_goal`, and the reads `kid_wishlist`, `kid_goal` and `wish_photo`;
+    - for Dad, `parent_wishlists` and `parent_wishlist_mark` (MFA, logged as `wishlist_mark`);
+    - `parent_view` reads `kid_goal` for "View as"; `prelaunch_reset` clears `wishlist_photos`.
+  - **The Wish List tab** (`src/kid/wishlist/`):
+    - add or change a wish, with stars, Move up / Move down, progress and the projected words;
+    - the "funds went down" line;
+    - a link shown as its site name, with Open link ↗;
+    - photos shrunk on the phone;
+    - "Still want this?" and switching goals;
+    - I got this / Remove, and the Done list.
+  - **Other screens:**
+    - Home's goal card;
+    - onboarding step 3, "Your first wish";
+    - Dad's **Wish lists** tab, with the "Got it" marker.
+  - **Docs:**
+    - the wording in MESSAGES §12;
+    - SPEC's "Wish List and goals (Stage 9)" section;
+    - BUILD-PLAN and SPEC updated for A1;
+    - RUNBOOK's rebuild step now loads the photos CSV.
+  - **Backups:**
+    - `OWN_FILE_TABLES` keeps `wishlist_photos` out of `data.sql`. The photos stay in `csv/public.wishlist_photos.csv`, and `counts.json` still checks every row.
+    - The restore drill loads them back with `\copy`.
+    - `npm run backup:growth` measures repo growth on the local copy.
+- **Tests (local, 2026-10-16):**
+  - **`supabase test db`:** 39 files, **1979 of 1979** pass.
+    - New: `wishlist_test.sql`, 162 checks: the 7-day rule, the switch, limits, links, photos, known answers for progress and the projection, the funds-drop line, one goal at a time, RLS on items, photos and marks, the marker invisible to kids, logging and grants.
+    - Updated: the rls, schema, parent_approvals and stage5_backups tests (the reset clears photos and marks).
+  - **`npm test`:** 26 files, **294 of 294** pass. New: the wording, links, photo shrinking, and the drill's photo file.
+  - **Playwright:** **96 of 96** pass.
+    - New: `wishlist.spec.ts`, 6 tests, with both wish list screens checked at 6 sizes, with normal and large text.
+    - Fixed: three older specs (approvals, settings, onboarding) read Dad's newest log row before his save landed. They now wait for the screen's "Done." first. This was a race in the tests, not an app bug.
+  - **Restore drill with 30 photos:** **PASS**. 40 of 40 tables match row for row, and every balance matches to the cent.
+  - **Backup growth** (30 daily backups, 30 photos, 10 photo changes):
+    - photos in their own file: 6.5 MB packed (bundle 6.5 MB, one day's folder 8.9 MB);
+    - photos inside `data.sql`, for comparison: 17.3 MB (one day's folder 16.6 MB).
+- **Known issues:** `supabase test db` expects a freshly reset local database, as in CI. After the end-to-end tests or the demo, run `supabase db reset` first.
+- **ACCEPTANCE:** tick "Wish list items can be added and reordered, and become goals only after 7 days" once Dad has proven it on production with the test kid. Day 7 is about Oct 23 for a wish added Oct 16.
+- **Dad to do by hand** (production, after his OK, never 7:00–11:45 am or 4:00–5:00 pm):
+  1. Copy the two backup scripts to big-bucks-backups.
+  2. The dry run.
+  3. `db push`.
+  4. Deploy to GitHub Pages.
+  5. Switch the Wish List on for test accounts only.
+  6. The next morning, check the Backup.
 
 ### Stage 12 — Launch prep (not started)
 

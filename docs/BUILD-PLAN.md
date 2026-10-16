@@ -188,7 +188,7 @@ Build these while the solo beta runs. Each feature ships switched to "test accou
 Stage 9 of the Big Bucks build: the Wish List tab and goals. Read CLAUDE.md, docs/SPEC.md (App layout & screens → Wish List; Learning features → Goals; Build decisions) and docs/PROGRESS.md. Start with a short plan and wait for my OK.
 
 Build, behind the feature switch feature:wishlist:
-1. The Wish List tab: add an item (name, rough price, optional link and photo, 1–5 stars), reorder, progress toward each item from her total worth ("You're 40% of the way there"), a projected date at current rates, a clear "Mom and Dad can see your wish list" line, and a Done list for removed or received items. Photos are stored in Supabase Storage, readable only by that kid and the parent.
+1. The Wish List tab: add an item (name, rough price, optional link and photo, 1–5 stars), reorder, progress toward each item from her total worth ("You're 40% of the way there"), a projected date at current rates, a clear "Mom and Dad can see your wish list" line, and a Done list for removed or received items. Photos are stored in the database (table wishlist_photos, decided by Dad 2026-10-16 so backups, the Download zip, the pre-launch reset and the restore drill cover them), readable only by that kid and the parent.
 2. Goals: an item can become a savings goal only after 7 days on the list, with a "Still want this?" prompt. A goal shows a progress bar and projected date on Home.
 3. The parent view of each wish list, with the parent-only "Got it" marker stored in wishlist_parent_marks and never visible to kids.
 4. Tests: the 7-day rule, RLS on items, photos and marks, and a Playwright flow.

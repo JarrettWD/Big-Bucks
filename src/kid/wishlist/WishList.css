@@ -1,0 +1,353 @@
+/* The Wish List. Sizes are in rem so Android's large-text setting scales everything;
+   nothing has a fixed height and long names wrap. One column on phones; the wishes
+   sit two across from 840 px (tablets in landscape, unfolded foldables, desktop). */
+
+.wish {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.wish__head {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: var(--bb-white);
+}
+.wish__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.8rem;
+  color: var(--bb-ink);
+}
+.wish__see {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.wish__add {
+  justify-self: start;
+}
+.wish__empty {
+  margin: 0;
+  line-height: 1.5;
+}
+.wish__problem {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: #fff4f7;
+  border: 2px solid var(--bb-pink);
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+
+.wish__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 840px) {
+  .wish__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.wish-card {
+  overflow-wrap: anywhere;
+}
+.wish-card--goal {
+  border: 3px solid var(--bb-gold);
+}
+.wish-card__top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.wish-card__what {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.wish-card__name {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.35rem;
+  color: var(--bb-ink);
+}
+.wish-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+  margin: 0;
+}
+.wish-card__price {
+  font-weight: 700;
+  color: var(--bb-ink);
+}
+.wish-card__line {
+  margin: 0;
+  font-weight: 700;
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+.wish__tag {
+  justify-self: start;
+  margin: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.wish__stars {
+  color: #8a5d00;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+}
+.wish__stars-off {
+  color: var(--bb-ink-soft);
+}
+
+.wish__bar {
+  height: 0.9rem;
+  border-radius: 999px;
+  background: var(--bb-purple-tint);
+  border: 1px solid var(--bb-outline);
+  overflow: hidden;
+}
+.wish__bar span {
+  display: block;
+  height: 100%;
+  min-width: 0.4rem;
+  border-radius: 999px;
+  background: var(--bb-purple);
+}
+
+.wish__dip {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+.wish__wait {
+  margin: 0;
+  color: var(--bb-ink-soft);
+  line-height: 1.45;
+}
+
+.wish__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+.wish__site {
+  font-weight: 700;
+  color: var(--bb-ink);
+  overflow-wrap: anywhere;
+}
+.wish__outside {
+  flex-basis: 100%;
+  color: var(--bb-ink-soft);
+  font-size: 0.95rem;
+}
+
+.wish__ask {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: #fff8e6;
+  border: 2px solid var(--bb-gold);
+}
+.wish__ask > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.wish__ask-title {
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--bb-ink);
+}
+
+.wish-card__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.wish-card__order {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Photos: a thumbnail button; the full photo over the screen when tapped. */
+.wish-photo {
+  flex: none;
+  width: 5rem;
+  height: 5rem;
+  padding: 0;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 14px;
+  background: var(--bb-purple-tint);
+  overflow: hidden;
+}
+.wish-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wish-photo--small {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+}
+.wish-photo__full {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(31 22 64 / 80%);
+}
+.wish-photo__frame {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  max-width: min(800px, 100%);
+  max-height: 100%;
+}
+.wish-photo__frame img {
+  max-width: 100%;
+  max-height: calc(100dvh - 7rem);
+  border-radius: 14px;
+  background: var(--bb-white);
+}
+.wish-photo__frame p {
+  color: var(--bb-white);
+}
+
+/* Add / change */
+.wish-form {
+  gap: 1rem;
+}
+.wish-form__input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 14px;
+  background: var(--bb-white);
+  color: var(--bb-ink);
+  font-size: 1.1rem;
+}
+.wish-form__input:focus-visible {
+  outline: 3px solid var(--bb-gold);
+  outline-offset: 2px;
+  border-color: var(--bb-purple);
+}
+.wish-form__input:disabled {
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink-soft);
+}
+.wish-form__file {
+  justify-self: start;
+  align-self: flex-start;
+}
+.wish-form__file:focus-within {
+  outline: 3px solid var(--bb-gold);
+  outline-offset: 2px;
+}
+.wish-form__preview {
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
+  border-radius: 14px;
+}
+.wish-form__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.wish__picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.wish__picker button {
+  min-width: 48px;
+  min-height: 48px;
+  border: 2px solid var(--bb-purple-soft);
+  border-radius: 12px;
+  background: var(--bb-white);
+  color: var(--bb-ink-soft);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.wish__picker button.on {
+  color: #8a5d00;
+  border-color: var(--bb-gold);
+  background: #fff8e6;
+}
+.wish__picker button[aria-checked='true'] {
+  border-color: var(--bb-purple);
+}
+
+/* Done */
+.wish-done__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wish-done__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--bb-purple-tint);
+}
+.wish-done__name {
+  font-weight: 700;
+  color: var(--bb-ink);
+  overflow-wrap: anywhere;
+}
+.wish-done__how {
+  color: var(--bb-ink-soft);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -26,6 +26,7 @@
     "check:emails": "node scripts/ci/check-commit-emails.ts",
     "backup:local": "node scripts/local/backup-local.ts",
     "restore:drill": "node scripts/local/restore-drill.ts",
+    "backup:growth": "node scripts/local/backup-growth.ts",
     "check:workflows": "node scripts/ci/check-workflows.ts"
   },
   "dependencies": {

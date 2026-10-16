@@ -6,7 +6,7 @@
 -- refuses after launch; after_restore() puts back what a dump leaves out.
 -- March 2027.
 begin;
-select plan(71);
+select plan(72);
 
 create schema tests;
 grant usage on schema tests to anon, authenticated, service_role, backup_reader;
@@ -272,6 +272,17 @@ select tests.fund('kid_s5', 500);
 select ok(tests.err('select public.prelaunch_reset(''clear the test history'')') like 'Something changed since the last backup (public.%',
   'it refuses when something changed since the backup');
 
+-- Stage 9: a wish, its photo and Dad's "Got it" marker are test history too.
+select tests.backup();
+insert into public.wishlist_items (id, account_id, name, price_cents, stars)
+values ('99999999-0000-0000-0000-000000000009', (select account_id from public.profiles where username = 'kid_s5'), 'Kite', 2500, 4);
+insert into public.wishlist_photos (wishlist_item_id, account_id, photo, thumb)
+values ('99999999-0000-0000-0000-000000000009', (select account_id from public.profiles where username = 'kid_s5'),
+        '\xffd8ff'::bytea || decode(repeat('ab', 200), 'hex'), '\xffd8ff'::bytea || decode(repeat('ab', 200), 'hex'));
+insert into public.wishlist_parent_marks (wishlist_item_id, note) values ('99999999-0000-0000-0000-000000000009', 'Got it');
+select ok(tests.err('select public.prelaunch_reset(''clear the test history'')') like 'Something changed since the last backup (public.wishlist_%',
+  'a wish or photo added since the backup counts as a change too');
+
 -- What must survive.
 select tests.backup();
 create temp table kept as
@@ -285,10 +296,10 @@ create temp table kept as
 create temp table before_counts as select tests.counts() as c;
 
 select alike(public.prelaunch_reset('clear the test history'),
-  'Test history cleared: % rows from 16 tables. Every account, rate, setting and price is kept, and every balance is now $0.00.',
+  'Test history cleared: % rows from 17 tables. Every account, rate, setting and price is kept, and every balance is now $0.00.',
   'with a fresh backup holding everything, it clears the test history');
 select is(tests.counts(), (select jsonb_object_agg(k, 0) from jsonb_object_keys((select c from before_counts)) k),
-  'every history table is empty: ledger, accruals, GICs, requests, notices, questions, goals, badges, wish list, signatures, What''s new seen, alerts, login attempts, outbox, PIN resets');
+  'every history table is empty: ledger, accruals, GICs, requests, notices, questions, goals, badges, wish list (photos and marks too), signatures, What''s new seen, alerts, login attempts, outbox, PIN resets');
 select is((select count(*) from public.transactions), 0::bigint, '...the ledger included');
 select is((select array[accounts, profiles, logins] from kept),
   array[(select count(*) from public.accounts), (select count(*) from public.profiles), (select count(*) from auth.users)],

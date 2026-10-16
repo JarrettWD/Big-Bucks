@@ -176,6 +176,9 @@ test('approving a withdrawal: summary first, then the ledger, her notice and the
   const shown = (await c.locator('.appr__notice').innerText()).replace(/\s+/g, ' ').trim();
   await c.getByRole('button', { name: 'Yes, approve $10.00' }).click();
 
+  // The log is read once the approval is saved (the screen says Done), so the newest
+  // row is this one, not an earlier test's (Stage 9's "Got it" marks are logged too).
+  await expect(page.getByRole('status')).toContainText("Done. Approved Robin's $10.00 withdrawal.");
   const [log] = await rows<{ summary: string; when: string }>(
     `select summary, public.fmt_moment(done_at) as when from public.parent_actions order by id desc limit 1`,
   );
@@ -315,6 +318,8 @@ test('changing how long you have to answer: preview, confirmation, the log and h
   const shown = (await card.locator('.set__notice').innerText()).replace(/\s+/g, ' ').trim();
   await card.getByRole('button', { name: 'Yes, change to 10 days' }).click();
 
+  // Read the log once the change is saved (the screen says Done), not before.
+  await expect(page.getByRole('status')).toContainText('Done. Request expiry set to 10 days');
   const [log] = await rows<{ summary: string; when: string }>(
     `select summary, public.fmt_moment(done_at) as when from public.parent_actions
       where action = 'set_setting' order by id desc limit 1`,

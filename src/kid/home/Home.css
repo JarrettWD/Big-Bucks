@@ -5,7 +5,7 @@
 .home {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'hero' 'banner' 'savings' 'gics' 'funds' 'activity';
+  grid-template-areas: 'hero' 'banner' 'goal' 'savings' 'gics' 'funds' 'activity';
   gap: 1rem;
   max-width: 1100px;
   margin: 0 auto;
@@ -16,6 +16,7 @@
     grid-template-areas:
       'hero hero'
       'banner banner'
+      'goal goal'
       'savings funds'
       'gics funds'
       'activity activity';
@@ -43,6 +44,9 @@
 }
 .hero {
   grid-area: hero;
+}
+.home__goal {
+  grid-area: goal;
 }
 .home__savings {
   grid-area: savings;

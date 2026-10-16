@@ -62,14 +62,19 @@ describe('onboarding wording (stage 8 B4)', () => {
     );
     expect(fill('{savings_rate}', { ...rules, savings_rate: '1.5%' })).toBe('1.5%');
   });
-  it('skips the steps whose features are not built yet, and lists the rest', () => {
+  it('skips the steps whose features are not built yet (Make it yours), and lists the rest', () => {
     const s = state({ steps: ['welcome', 'tour', 'personalise', 'wish', 'agreement', 'decision'] });
-    expect(shownSteps(s)).toEqual(['welcome', 'tour', 'agreement', 'decision']);
+    expect(shownSteps(s)).toEqual(['welcome', 'tour', 'wish', 'agreement', 'decision']);
     expect(stepList(shownSteps(s))).toEqual([
       'A quick look around',
+      'Your first wish',
       'Your Big Bucks agreement',
       'Your first decision',
     ]);
+  });
+  it('has no first-wish step when the Wish List is off for her (stage 9)', () => {
+    const s = state({ steps: ['welcome', 'tour', 'agreement', 'decision'] });
+    expect(shownSteps(s)).toEqual(['welcome', 'tour', 'agreement', 'decision']);
   });
   it('resumes where she left off, or at the agreement to sign again', () => {
     expect(firstStep(state({}))).toBe('welcome');

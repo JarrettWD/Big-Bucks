@@ -64,10 +64,10 @@ export interface SignedAgreement {
 export type Step = 'welcome' | 'tour' | 'personalise' | 'wish' | 'agreement' | 'decision';
 
 /**
- * Steps with screens in this app. "Make it yours" and "your first wish" arrive
- * with their features (stages 10 and 9); until then they're skipped.
+ * Steps with screens in this app. "Make it yours" arrives with its feature (stage
+ * 10); until then it's skipped. "Your first wish" came with the Wish List (stage 9).
  */
-export const BUILT_STEPS: Step[] = ['welcome', 'tour', 'agreement', 'decision'];
+export const BUILT_STEPS: Step[] = ['welcome', 'tour', 'wish', 'agreement', 'decision'];
 
 export function shownSteps(state: Pick<OnboardingState, 'steps'>): Step[] {
   return state.steps.filter((s) => BUILT_STEPS.includes(s));

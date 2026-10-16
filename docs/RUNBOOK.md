@@ -431,7 +431,7 @@ To practise without production: `npm run backup:local` backs up your local copy 
 Only if the production project is lost for good (deleted, or a pause that can't be restored). Stop and ask before starting: Claude walks through it with you. The outline:
 
 1. ✋ A new Supabase project (production setup steps 1 to 4). The Free plan allows two and the food inventory app uses the other, so the lost one must be gone first.
-2. Claude, with your OK, loads the newest backup into it with `psql`, with the same files in the same order as the drill (its prelude, `schema.sql`, `auth.sql`, `data.sql`). Not `db push`: the schema comes from the backup.
+2. Claude, with your OK, loads the newest backup into it with `psql`, with the same files in the same order as the drill (its prelude, `schema.sql`, `auth.sql`, `data.sql`, then the wish list photos from `csv/public.wishlist_photos.csv` with psql's `\copy`, since Stage 9 keeps them out of `data.sql`). Not `db push`: the schema comes from the backup.
 3. ✋ SQL Editor: `select * from public.after_restore();`. It puts back the login guard and the nightly and morning timers and makes a new login key. Then `select public.mark_production();` (harmless if already marked) and `select * from public.check_time_rules();` (production setup step 6).
 4. ✋ **Reset each girl's PIN** (Settings → Logins): Vault's old login key can't be read in a new project, so no old PIN works.
 5. ✋ Production setup step 7 (the nightly address and key in Vault) and step 4 (the function secrets). Then "The morning start", steps 7 and 8 (Vault can't be read in a new project, so the token goes in again; a new one if the old one is lost).

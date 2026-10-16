@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { kidBalances, kidHomeGics, kidRpc, kidUnreadNotices, type KidView } from '../kidView';
+import type { Goal } from '../wishlist/wishText';
 import type { ActivityRow } from './activityText';
 
 export type Cents = number | string;
@@ -69,13 +70,15 @@ export interface HomeData {
   rates: Rate[];
   notices: Notice[];
   updating: boolean;
+  /** Her savings goal (Stage 9), or null: none, or the Wish List is off for her. */
+  goal: Goal | null;
 }
 
 export const isWaiting = (g: Gic) => g.status === 'matured' && g.maturity_choice === null;
 
 export async function loadHome(view: KidView): Promise<HomeData> {
   const accountId = view.accountId;
-  const [today, bal, gics, funds, activity, rates, notices, updating] = await Promise.all([
+  const [today, bal, gics, funds, activity, rates, notices, updating, goal] = await Promise.all([
     kidRpc<string>(view, 'app_today'),
     kidBalances<Balances>(view),
     kidHomeGics<Gic>(view),
@@ -84,8 +87,11 @@ export async function loadHome(view: KidView): Promise<HomeData> {
     kidRpc<Rate[]>(view, 'current_rates'),
     kidUnreadNotices<Notice>(view),
     kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
+    kidRpc<Goal | null>(view, 'kid_goal', { p_account_id: accountId }),
   ]);
-  const failed = [today, bal, gics, funds, activity, rates, notices, updating].find((r) => r.error);
+  const failed = [today, bal, gics, funds, activity, rates, notices, updating, goal].find(
+    (r) => r.error,
+  );
   if (failed?.error) throw new Error(failed.error.message);
   return {
     today: today.data as string,
@@ -96,6 +102,7 @@ export async function loadHome(view: KidView): Promise<HomeData> {
     rates: (rates.data ?? []) as Rate[],
     notices: (notices.data ?? []) as Notice[],
     updating: updating.data === true,
+    goal: goal.data ?? null,
   };
 }
 

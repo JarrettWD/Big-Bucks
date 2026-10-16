@@ -1,10 +1,11 @@
 // Onboarding, together with Dad (SPEC "Onboarding"; wording in MESSAGES §11):
 //   welcome     what we'll do together, and one button: Let's get started
 //   tour        a quick look around (required; Back and Next)
+//   wish        her first wish (only when the Wish List is on for her; she may skip it)
 //   agreement   the house rules, which she signs; Dad countersigns on his phone
 //   decision    her first deposit (asked for right here; if Dad says no, she sees
 //               why and asks again), then what her money does
-// "Make it yours" and "your first wish" join when their features are built.
+// "Make it yours" joins when its feature is built (stage 10).
 // The rest of the app stays locked until both have signed and her first deposit
 // is in (KidShell); then a GIC or fund choice opens Buy / Sell. Her place is
 // saved as she goes (save_onboarding_step), so she resumes where she left off.
@@ -18,6 +19,8 @@ import { supabase } from '../../lib/supabase';
 import { parseAmount } from '../trade/moves';
 import { useKid } from '../KidShell';
 import { kidRpc } from '../kidView';
+import { StarPicker } from '../wishlist/StarPicker';
+import { TEXT as WISH } from '../wishlist/wishText';
 import { AgreementView } from './AgreementView';
 import {
   decisionChoices,
@@ -30,6 +33,8 @@ import {
   type Step,
 } from './onboardingText';
 import '../home/Home.css';
+import '../trade/Trade.css';
+import '../wishlist/WishList.css';
 import './Welcome.css';
 
 export default function Welcome() {
@@ -100,6 +105,7 @@ export default function Welcome() {
         .then(() => undefined);
   };
   const after = (s: Step) => steps[steps.indexOf(s) + 1] ?? 'decision';
+  const lastTourCard = tourCards(state.rules, state.steps.includes('wish')).length - 1;
 
   return (
     <div className="home home--single welcome">
@@ -115,10 +121,17 @@ export default function Welcome() {
           onNext={() => go(after('tour'))}
         />
       )}
+      {place.step === 'wish' && (
+        <WishStep
+          state={state}
+          onBack={() => go('tour', lastTourCard)}
+          onNext={() => go(after('wish'))}
+        />
+      )}
       {place.step === 'agreement' && (
         <AgreementStep
           state={state}
-          onBack={() => go('tour', tourCards(state.rules, state.steps.includes('wish')).length - 1)}
+          onBack={() => (steps.includes('wish') ? go('wish') : go('tour', lastTourCard))}
           onSigned={async () => {
             await load();
             summary.reload();
@@ -212,6 +225,120 @@ function TourStep({
           className="btn btn--soft"
           onClick={() => (i === 0 ? onBack() : onCard(i - 1))}
         >
+          {TEXT.back}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// Step 3 (MESSAGES §11): her first wish. Name, rough price (she may skip it) and stars;
+// the rest (a link, a photo) waits for her Wish List. She can skip the whole step.
+function WishStep({
+  state,
+  onBack,
+  onNext,
+}: {
+  state: OnboardingState;
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  const { view } = useKid();
+  const ref = useFocus<HTMLHeadingElement>();
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [stars, setStars] = useState(3);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [added, setAdded] = useState(false);
+  const ids = { name: useId(), price: useId() };
+
+  const add = async () => {
+    const amount = parseAmount(price);
+    if (amount.state === 'bad') return setError(amount.message);
+    setBusy(true);
+    setError('');
+    const { error: e } = await supabase.rpc('wish_add', {
+      p_name: name,
+      p_price_cents: amount.state === 'ok' ? amount.cents.toString() : null,
+      p_link: null,
+      p_stars: stars,
+    });
+    setBusy(false);
+    if (e) return setError(e.message);
+    setAdded(true);
+  };
+
+  return (
+    <section className="card welcome__card" aria-labelledby="wish-title">
+      <h1 id="wish-title" className="welcome__title" tabIndex={-1} ref={ref}>
+        {WISH.addTitle}
+      </h1>
+      {added ? (
+        <p role="status">{WISH.added(state.rules.goal_wait_days ?? '7')}</p>
+      ) : (
+        <>
+          <div className="field">
+            <label className="field__label" htmlFor={ids.name}>
+              {WISH.name}
+            </label>
+            <input
+              id={ids.name}
+              className="wish-form__input"
+              value={name}
+              maxLength={60}
+              disabled={view.viewing}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <div className="field">
+            <label className="field__label" htmlFor={ids.price}>
+              {WISH.price}
+            </label>
+            <span className="field__money">
+              <span aria-hidden="true">$</span>
+              <input
+                id={ids.price}
+                className="field__input"
+                inputMode="decimal"
+                value={price}
+                disabled={view.viewing}
+                onChange={(e) => setPrice(e.target.value)}
+                autoComplete="off"
+              />
+            </span>
+          </div>
+          <StarPicker value={stars} onChange={view.viewing ? () => undefined : setStars} />
+        </>
+      )}
+      <p className="muted">{WISH.seeLine}</p>
+      {error && (
+        <p className="wish__problem" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="welcome__buttons">
+        {added || view.viewing ? (
+          <button type="button" className="btn" onClick={onNext}>
+            {TEXT.next}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn--gold"
+              disabled={busy}
+              onClick={() => void add()}
+            >
+              {WISH.addIt}
+            </button>
+            <button type="button" className="btn btn--soft" onClick={onNext}>
+              {WISH.skip}
+            </button>
+          </>
+        )}
+        <button type="button" className="btn btn--soft" onClick={onBack}>
           {TEXT.back}
         </button>
       </div>

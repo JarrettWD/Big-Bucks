@@ -105,6 +105,8 @@ test('a rate change: preview, Back, then save; the notice reaches Sky word for w
   expect(shown[1].label).toBe(`On ${day.from_text}, every kid (${n} accounts) will see:`);
   await change.getByRole('button', { name: `Yes, save 2.75% from ${day.from_text}` }).click();
 
+  // Read the log once the change is saved (the screen says Done), not before.
+  await expect(page.getByRole('status')).toContainText('Done. 3-month GIC rate set to 2.75%');
   const log = await lastLog();
   expect(log.summary).toBe(`3-month GIC rate set to 2.75% from ${day.from_text}.`);
   await expect(page.getByRole('status')).toHaveText(

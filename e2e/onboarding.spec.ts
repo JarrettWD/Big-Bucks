@@ -300,6 +300,8 @@ test('Dad: a highlighted card at the top of the Dashboard, the Approvals badge, 
 
   await item.getByRole('button', { name: 'Read and sign' }).click();
   await item.getByRole('button', { name: "Yes, sign Wren's agreement" }).click();
+  // Read the log once it's saved (the screen says Done), not before.
+  await expect(page.locator('#agreements .appr__done')).toContainText('Done.');
   const log = await one<{ summary: string; when: string; who: string }>(
     `select pa.summary, public.fmt_moment(pa.done_at) as when, p.display_name as who
        from public.parent_actions pa join public.profiles p on p.user_id = pa.done_by

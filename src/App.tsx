@@ -14,12 +14,13 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
 import KidShell from './kid/KidShell';
-import { KidWishList } from './kid/KidScreens';
 import Notices from './kid/notices/Notices';
 import Trade from './kid/trade/Trade';
 import GicChoice from './kid/GicChoice';
 import History from './kid/History';
 import Home from './kid/home/Home';
+import WishList from './kid/wishlist/WishList';
+import ParentWishlists from './parent/wishlists/ParentWishlists';
 import { supabaseConfigured } from './lib/supabase';
 import KidLogin from './pages/KidLogin';
 import ParentLogin from './parent/ParentLogin';
@@ -144,7 +145,7 @@ export default function App() {
               }
             />
             <Route path="trade" element={<Trade />} />
-            <Route path="wishlist" element={<KidWishList />} />
+            <Route path="wishlist" element={<WishList />} />
             <Route path="notices" element={<Notices />} />
             <Route path="welcome" element={<Welcome />} />
           </Route>
@@ -190,6 +191,7 @@ export default function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="approvals" element={<Approvals />} />
+            <Route path="wishlists" element={<ParentWishlists />} />
             <Route path="settings" element={<Settings />} />
             <Route path="fix/:accountId" element={<FixMistake />} />
             <Route path="*" element={<Navigate to="/parent" replace />} />

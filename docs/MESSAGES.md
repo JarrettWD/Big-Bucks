@@ -791,3 +791,64 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 3. **Dad signs on his own phone**, with the authenticator code, logged like every parent action.
 4. **Fixed rules are read from the database** like the settings, so the wording can never disagree with a rule.
 5. **The crash example** is now Dad's wording (rule 9).
+
+## 12. Wish List and goals (stage 9)
+
+**Status:** built in Stage 9 (plan approved by Dad 2026-10-16). Source: `src/kid/wishlist/wishText.ts`. Numbers and dates come from the database.
+
+### The tab
+
+- **Title:** Wish List ⭐
+- **Always at the top:** 👀 Mom and Dad can see your wish list.
+- **Under it:** Things you'd love to have. Put the one you want most at the top.
+- **Empty:** Your wish list is empty. What would you love to save up for?
+- **Button:** + Add a wish
+
+### Adding or changing a wish
+
+- **Title:** What would you love to save up for? (changing: Change this wish)
+- **Fields:** What is it? · About how much? (you can skip this) · How much do you want it? (1 to 5 stars) · A link to it (you can skip this): "Copy the address from the shop's page and paste it here." · A photo (you can skip this): Add a photo / Change the photo / Remove the photo
+- **While the photo is made small:** Getting your photo ready…
+- **Buttons:** Add it (changing: Save) · Cancel
+- **A goal's name:** Stop saving for this goal first if you want to change its name.
+- **From the database:** Give your wish a name. · Keep the name to 60 letters or fewer. · A rough price needs to be at least $1.00. · A rough price can be at most $100,000.00. · Pick 1 to 5 stars. · A link needs to start with https:// or http:// · That link has a space in it. Copy it again from the shop's page. · That link has a hidden character in it. Copy it again from the shop's page. · That link is too long (more than 500 letters). · Your list is full (50 things). Remove one first. · That photo didn't work. Try another one or a screenshot. · That photo is too big. Try another one. · You've used all 30 photo spots. Remove a photo first.
+
+### Each wish
+
+- **Progress:** You're {percent}% of the way there. · No price: Add a rough price to see how close you are. · Enough: You have enough for this! Talk to Mom and Dad about it.
+- **Projected date (a guess, never a promise):** If your money keeps growing like your savings does now, and you add nothing, you could have enough around {Month Year}. That's a guess, not a promise. Adding money gets you there sooner.
+  - Past 5 years: Interest alone would take more than 5 years. Adding money, like birthday or allowance money, is the fastest way there.
+  - Nothing saved yet: Once you have some money saved, you'll see roughly when you could have enough.
+- **When her funds went down this week (Dad, 2026-10-16):** Your funds went down this week, so you're a bit further away. That's normal: funds go up and down.
+- **A link:** {site name} · Open link ↗ · This opens outside Big Bucks.
+- **Before day 7:** Still want this on {Fri Oct 23}? Then you can make it a savings goal.
+- **Buttons:** 🎯 Make it my goal (from day 7) · Stop saving for this (her goal) · Change · I got this · Remove · ▲ / ▼ ("Move {name} up / down")
+
+### "Still want this?" and goals
+
+- **Title:** Still want this?
+- **Under it:** A goal is something you really want, not just something you saw today. Is this still it?
+- **Buttons:** Yes, make it my goal · Not now
+- **No price:** Add a rough price first, so you can see how close you are.
+- **Too soon (from the database):** Still want this? You can make it a goal from {Fri Oct 23}.
+- **Switching:** You're saving for {goal}. Switch your goal to {wish}? · {goal} stays on your wish list. · Yes, switch · Keep my goal
+- **Tag:** 🎯 Your goal
+
+### Done
+
+- **Remove:** Remove {name} from your list? · It moves to your Done list, so you can still see it. · Yes, remove it · Cancel
+- **I got this:** You got {name}? Hooray! · It moves to your Done list. · Yes, I got it · Cancel
+- **The list:** Done · Things you got, or took off your list. · 🎉 You got it! · {date} / Removed · {date}
+
+### Home: her goal
+
+- 🎯 Your goal · {name} · {price} · the progress bar · the progress, projected-date and "funds went down" lines above · See your Wish List
+
+### Dad's Wish lists (parent only)
+
+- **Title:** Wish lists
+- **Intro:** What each girl would love to have. "Got it" is only for Mom and Dad: she never sees it, and she can still save for or remove the item.
+- The Wish List is off for {name}. · {name}'s wish list is empty. · Test account · 🎯 Her goal
+- Mark "Got it" · Note for the other parent (you can skip this) · Save "Got it" · Cancel · ✓ Got it · {date} · {note} · Clear "Got it"
+- Done list ({n}) · She got it · She removed it · Open link ↗ · Opens outside Big Bucks.
+- **Logged as:** Marked {kid}'s "{wish}" as Got it. · Cleared Got it on {kid}'s "{wish}".

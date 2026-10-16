@@ -51,6 +51,12 @@ export default function ParentShell() {
             )}
           </span>
         </NavLink>
+        <NavLink to="/parent/wishlists">
+          <span className="parent__tab-icon" aria-hidden="true">
+            🎁
+          </span>
+          Wish lists
+        </NavLink>
         <NavLink to="/parent/settings">
           <span className="parent__tab-icon" aria-hidden="true">
             ⚙️

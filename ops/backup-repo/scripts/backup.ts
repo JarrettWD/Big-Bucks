@@ -11,9 +11,10 @@
 //
 // take writes, all from the same moment:
 //   backup/schema.sql    every table, function, rule and permission (pg_dump)
-//   backup/data.sql      every row in public and private (pg_dump)
+//   backup/data.sql      every row in public and private (pg_dump), except the photos
 //   backup/auth.sql      the logins a restore needs (users, identities, MFA factors)
-//   backup/csv/*.csv     each table as CSV, easy to open
+//   backup/csv/*.csv     each table as CSV, easy to open; the photos are restored from
+//                        theirs (OWN_FILE_TABLES), which changes only when a photo does
 //   backup/counts.json   rows and a checksum per table, for the restore drill
 //   backup/balances.csv  every account's balances, worked out by the database
 //   backup/manifest.json when, and with which pg_dump
@@ -31,6 +32,7 @@ import {
   backupProblems,
   restorableSchema,
   countsForRecord,
+  OWN_FILE_TABLES,
   toCsv,
   type BalanceLine,
   type Summary,
@@ -175,7 +177,15 @@ export async function take(
     );
     pgDump(
       url,
-      [...common, '--data-only', '-t', 'public.*', '-t', 'private.*'],
+      [
+        ...common,
+        '--data-only',
+        '-t',
+        'public.*',
+        '-t',
+        'private.*',
+        ...OWN_FILE_TABLES.map((t) => `--exclude-table-data=${t}`),
+      ],
       join(tmp, 'data.sql'),
     );
     writeFileSync(
@@ -190,8 +200,12 @@ export async function take(
   const data = readFileSync(join(tmp, 'data.sql'), 'utf8');
   for (const name of Object.keys(summary.tables)) {
     const [s, t] = name.split('.');
-    if (!data.includes(`COPY "${s}"."${t}" (`))
-      problems.push(`data.sql has no rows section for ${name}.`);
+    const inData = data.includes(`COPY "${s}"."${t}" (`);
+    if (OWN_FILE_TABLES.includes(name)) {
+      if (inData) problems.push(`data.sql holds ${name}, which belongs in its own file.`);
+      if (!existsSync(join(tmp, 'csv', `${name}.csv`)))
+        problems.push(`csv/${name}.csv is missing.`);
+    } else if (!inData) problems.push(`data.sql has no rows section for ${name}.`);
   }
   if (
     !readFileSync(join(tmp, 'schema.sql'), 'utf8').includes('CREATE TABLE "public"."transactions"')
