@@ -897,7 +897,7 @@ Shown once, the first time she opens the app after Dad switches a feature on for
   - GIC ladder · Have 3 GICs of $10 or more that finish on different days.
   - First dollar of interest · Let your money earn $1.00 of interest.
   - Goal reached · Save enough for your goal.
-- **? GIC ladder (glossary):** A ladder is a few GICs that finish on different days. Some of your money frees up every so often, while the rest keeps earning.
+- **? GIC ladder (glossary):** the existing glossary entry (since stage 1, editable in Settings): Having several GICs that finish at different times, like the steps of a ladder. Some of your money is always close to being free.
 
 ### The notices (the bell, type `badge`)
 

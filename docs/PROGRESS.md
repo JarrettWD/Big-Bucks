@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is built and tested locally (2026-10-16): every suite and the time machine pass; waiting for Dad's review of the wording and the avatar sheet, then production.**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Still to do: the restore drill on a backup with badges (step 9) and the next evening's badge check (step 10).**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -85,7 +85,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
-### Stage 10 — Make it yours and badges (2026-10-16, built and tested locally; not in production yet)
+### Stage 10 — Make it yours and badges (2026-10-16, in production for test accounts only since 2026-10-17)
 
 - **Plan:** `docs/plans/stage10-plan.md`, approved by Dad 2026-10-16 with A1, B, C, D, E (top hat and bow, for now), F (Dashboard alert only), G (retroactive) and H, plus one change:
   - **No event checks inside money functions.** After a money call succeeds, the app makes a separate call: `kid_check_my_badges()` after her GIC purchase or renewal, and `parent_check_badges()` after Dad approves a deposit or changes the Badges switch.
@@ -154,7 +154,25 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   1. MESSAGES §13 (all the wording).
   2. The avatar sheet (`test-results/avatar-sheet.png`, sent in chat).
   3. Grape and Forest a little deeper, and the lion instead of the otter (above).
-- **Production steps (each after Dad's OK; never 7:00–11:45 am, or from 4:00 pm until that evening's nightly run shows done):**
+- **Production, Sat Oct 17, 2026** (each step after Dad's OK, all between about 1:40 and 3:00 pm Alberta time):
+  1. **Last night, from backup `280522f`** (Backup 2026-10-17: 35 tables, 962 rows, 8 ledger rows):
+     - every Oct 16 job was OK; the market-move note waited one round and was OK at 5:00 pm;
+     - Oct 16's interest was waiting for the day to end, as normal; Oct 15's was OK;
+     - the last nightly call went out at 5:00 pm Oct 16;
+     - all 31 outbox rows were sent (today's two morning starts got 204); no open alerts.
+  2. **Backup by hand:** green (the one above).
+  3. **Dry run:** listed only `20261028000000_badges.sql`.
+  4. **`db push`** applied it at 2:16 pm; a second dry run said "Remote database is up to date."
+  5. **`functions deploy nightly`** at 2:17 pm.
+  6. **Deploy to GitHub Pages run #7** (`b2c8179`) at 2:19 pm. The live site serves the pictures, the licence, both badge checks and the $10 ladder wording.
+  7. **Backup by hand** `1bf8d06` (36 tables, 969 rows, 8 ledger rows): `badge_kinds` 6, `badges` 0, `goals.first_target_cents` present. "GIC ladder" was already in the glossary (since Stage 1), so its existing wording is the badge's **?**; MESSAGES §13 now quotes it.
+  8. **The switches:** Theme colours and avatars, then Badges, both "Test accounts only". **Dad's phone test as test_kid passed:**
+     - the picker (puppy and party hat; her colour on the header and buttons, never on the option colours);
+     - the bell: First GIC, "You earned this on Oct 15. Badges just arrived!";
+     - her Badges screen: the date, five still to discover, no counts;
+     - "View as" read-only; the Dashboard card with her avatar and badge;
+     - the GIC ladder after a $10 3-month and a $10 6-month GIC, with its top hat wearable.
+- **The planned production steps** (kept for the record):
   1. Check tonight's nightly run is finished (Dashboard) and the outbox is empty.
   2. Take a backup by hand (big-bucks-backups → Actions → Backup → Run workflow). It must be green.
   3. `supabase db push --dry-run` lists only `20261028000000_badges.sql`.
