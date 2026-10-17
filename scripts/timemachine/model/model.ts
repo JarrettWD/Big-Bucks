@@ -17,6 +17,7 @@ import {
   at,
   diffDays,
   dayOf,
+  daysFrom,
   daysInYear,
   parts,
   torontoToEdmonton,
@@ -147,6 +148,9 @@ interface Gic {
   toldAt?: Moment;
   status: 'active' | 'matured' | 'broken' | 'closed';
   balance: bigint;
+  /** When she bought it (or renewed into it), and when she broke it (stage 10 badges). */
+  createdAt: Moment;
+  brokenAt?: Moment;
 }
 
 interface Req {
@@ -924,7 +928,7 @@ export class Model {
         if (a.cents < MIN_GIC_OR_FUND) return no('under the $10 minimum');
         if (a.cents > this.available(a.kid)) return no('more than available');
         this.kid(a.kid).savings -= a.cents;
-        this.newGic(a.label, a.kid, a.cents, a.term, today);
+        this.newGic(a.label, a.kid, a.cents, a.term, today, t);
         this.postings.push({
           kid: a.kid,
           day: today,
@@ -948,6 +952,7 @@ export class Model {
         });
         g.balance = 0n;
         g.status = 'broken';
+        g.brokenAt = t;
         return { ok: true };
       }
       case 'choose': {
@@ -963,7 +968,7 @@ export class Model {
         const amount = g.balance;
         g.balance = 0n;
         g.status = 'closed';
-        this.newGic(a.newLabel!, g.kid, amount, term, today);
+        this.newGic(a.newLabel!, g.kid, amount, term, today, t);
         this.postings.push({
           kid: g.kid,
           day: today,
@@ -1120,7 +1125,14 @@ export class Model {
     }
   }
 
-  private newGic(label: string, kid: string, cents: bigint, term: number, start: Day): void {
+  private newGic(
+    label: string,
+    kid: string,
+    cents: bigint,
+    term: number,
+    start: Day,
+    createdAt: Moment,
+  ): void {
     if (this.gics.has(label)) throw new Error(`duplicate GIC label ${label}`);
     this.gics.set(label, {
       label,
@@ -1132,6 +1144,7 @@ export class Model {
       maturity: addMonths(start, term),
       status: 'active',
       balance: cents,
+      createdAt,
     });
   }
 
@@ -1195,5 +1208,108 @@ export class Model {
   settlementOf(label: string): { day: Day; at: Moment } | undefined {
     const r = this.reqs.get(label);
     return r?.settleAt ? { day: r.settleDay!, at: r.settleAt } : undefined;
+  }
+
+  /**
+   * Stage 10: the badges a kid has earned by the end of a day, and the day each was earned,
+   * worked out here independently from the plan's definitions (docs/plans/stage10-plan.md).
+   * There are no goals in the scripted year, so Goal reached never appears.
+   */
+  expectedBadges(kid: string, through: Day): Map<string, Day> {
+    const out = new Map<string, Day>();
+    const end = at(addDays(through, 1), '00:00');
+    const gics = [...this.gics.values()].filter((g) => g.kid === kid && g.createdAt < end);
+    const minDay = (ds: Day[]) => ds.sort()[0];
+
+    // First GIC: the first one she bought.
+    if (gics.length) out.set('first_gic', minDay(gics.map((g) => g.start)));
+    // Kept it to the end: the first that matured (never a broken one).
+    const matured = gics.filter(
+      (g) => (g.status === 'matured' || g.status === 'closed') && g.maturity <= through,
+    );
+    if (matured.length) out.set('gic_to_end', minDay(matured.map((g) => g.maturity)));
+    // GIC ladder: when a GIC was bought, 3 different maturity dates among her GICs of 0 or
+    // more that were bought, not broken, and not yet at their maturity day.
+    for (const c of [...gics].sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))) {
+      const dates = new Set(
+        gics
+          .filter(
+            (g) =>
+              g.principal >= MIN_GIC_OR_FUND &&
+              g.createdAt <= c.createdAt &&
+              (!g.brokenAt || g.brokenAt > c.createdAt) &&
+              dayOf(c.createdAt) < g.maturity,
+          )
+          .map((g) => g.maturity),
+      );
+      if (dates.size >= 3) {
+        out.set('gic_ladder', dayOf(c.createdAt));
+        break;
+      }
+    }
+    // First dollar of interest: savings, GIC and late interest add up to .00.
+    let total = 0n;
+    for (const p of [...this.postings]
+      .filter((x) => x.kid === kid && x.day <= through)
+      .filter(
+        (x) =>
+          x.kind === 'savings_interest' || x.kind === 'gic_interest' || x.kind === 'late_interest',
+      )
+      .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))) {
+      total += p.cents;
+      if (total >= 100n) {
+        out.set('first_dollar', p.day);
+        break;
+      }
+    }
+    // Cool in a drop: a close at least 10% below the highest close on a day she held the fund
+    // (after-split terms; per holding period; one chance per high), holding 0 or more; then
+    // 30 days with no sale and no sell request waiting.
+    let best: Day | undefined;
+    for (const f of FUNDS) {
+      const changes = this.kid(kid).unitChanges.filter((u) => u.fund === f);
+      if (!changes.length) continue;
+      const first = minDay(changes.map((u) => dayOf(u.at)));
+      let period = 0;
+      let high: Q | null = null;
+      const tried = new Set<string>();
+      for (const d of daysFrom(first, through)) {
+        const c = this.closes.get(`${f}|${d}`);
+        if (!c) continue;
+        const units = this.unitsAt(kid, f, at(d, '23:59'));
+        if (units.sign() <= 0) {
+          period++;
+          high = null;
+          continue;
+        }
+        let adj = c.close;
+        for (const s of this.splits)
+          if (s.fund === f && s.day > d) adj = adj.mul(Q.of(s.from, s.to));
+        if (!high || adj.cmp(high) > 0) high = adj;
+        const key = `${period}|${high.toFixed(8)}`;
+        if (tried.has(key)) continue;
+        if (adj.cmp(high.mul(Q.dec('0.9'))) > 0 || units.mul(c.close).cmp(Q.of(10)) < 0) continue;
+        tried.add(key);
+        const last = addDays(d, 30);
+        if (last > through) continue;
+        const sold = this.postings.some(
+          (p) => p.kid === kid && p.kind === 'sell' && p.fund === f && p.day >= d && p.day <= last,
+        );
+        const asked = [...this.reqs.values()].some(
+          (r) =>
+            r.kid === kid &&
+            r.fund === f &&
+            (r.kind === 'sell' || r.kind === 'sell_all') &&
+            r.createdAt < at(addDays(d, 31), '00:00') &&
+            (r.status === 'pending' || (r.settleAt !== undefined && r.settleAt >= at(d, '00:00'))),
+        );
+        if (!sold && !asked) {
+          if (!best || last < best) best = last;
+          break;
+        }
+      }
+    }
+    if (best) out.set('drop_held', best);
+    return out;
   }
 }

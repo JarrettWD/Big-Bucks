@@ -5,7 +5,7 @@
 .home {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'hero' 'banner' 'goal' 'savings' 'gics' 'funds' 'activity';
+  grid-template-areas: 'hero' 'me' 'banner' 'goal' 'savings' 'gics' 'funds' 'activity';
   gap: 1rem;
   max-width: 1100px;
   margin: 0 auto;
@@ -15,6 +15,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       'hero hero'
+      'me me'
       'banner banner'
       'goal goal'
       'savings funds'
@@ -44,6 +45,9 @@
 }
 .hero {
   grid-area: hero;
+}
+.home__me {
+  grid-area: me;
 }
 .home__goal {
   grid-area: goal;
@@ -608,4 +612,10 @@
 }
 .home__activity .btn {
   align-self: flex-start;
+}
+/* Stage 10: her avatar beside her question. */
+.question__asked {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
 }

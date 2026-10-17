@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Big Bucks party hat, drawn for Big Bucks in the style of Fluent Emoji "Color" (not from Microsoft's set). -->
+<defs>
+<linearGradient id="ph-cone" x1="9" y1="28" x2="23" y2="6" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E63A73"/><stop offset="0.55" stop-color="#FF4F87"/><stop offset="1" stop-color="#FF8AB0"/>
+</linearGradient>
+<linearGradient id="ph-stripe" x1="10" y1="20" x2="22" y2="20" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F5B83D"/><stop offset="0.5" stop-color="#FFD166"/><stop offset="1" stop-color="#F5B83D"/>
+</linearGradient>
+<radialGradient id="ph-pom" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(15 4) rotate(50) scale(4)">
+<stop stop-color="#FFF6D9"/><stop offset="0.6" stop-color="#FFD166"/><stop offset="1" stop-color="#E9A93A"/>
+</radialGradient>
+<linearGradient id="ph-brim" x1="6" y1="28" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+<stop stop-color="#4A2FB5"/><stop offset="0.5" stop-color="#7A62E6"/><stop offset="1" stop-color="#4A2FB5"/>
+</linearGradient>
+<clipPath id="ph-clip"><path d="M16 5L26 28H6L16 5Z"/></clipPath>
+</defs>
+<path d="M16 5L26 28H6L16 5Z" fill="url(#ph-cone)"/>
+<g clip-path="url(#ph-clip)">
+<path d="M4 17.5L28 13.5V16.5L4 20.5V17.5Z" fill="url(#ph-stripe)"/>
+<path d="M4 24.5L28 20.5V23.5L4 27.5V24.5Z" fill="url(#ph-stripe)"/>
+<circle cx="15" cy="11" r="1" fill="#FFFFFF" fill-opacity="0.85"/>
+<circle cx="18.5" cy="19.5" r="0.9" fill="#FFFFFF" fill-opacity="0.85"/>
+<circle cx="12" cy="23" r="0.9" fill="#FFFFFF" fill-opacity="0.85"/>
+</g>
+<path d="M16 5L11 16.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1" stroke-linecap="round"/>
+<rect x="5" y="26.5" width="22" height="3" rx="1.5" fill="url(#ph-brim)"/>
+<circle cx="16" cy="4.5" r="3" fill="url(#ph-pom)"/>
+</svg>

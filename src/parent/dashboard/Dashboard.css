@@ -298,3 +298,21 @@
   font-weight: 700;
   text-decoration: none;
 }
+
+/* Stage 10: her avatar and badges on her card. */
+.dash__kid {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dash__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0;
+  line-height: 1.4;
+}
+.dash__badge {
+  display: inline-flex;
+  gap: 0.25rem;
+}

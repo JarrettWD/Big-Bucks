@@ -116,6 +116,11 @@ async function main(): Promise<void> {
       );
     }
     const kidOfAccount = new Map(Object.entries(accounts).map(([k, id]) => [id, k]));
+    // Stage 10: badges and "Make it yours" on for both kids, so the year exercises the badge checks.
+    await db.q(
+      `insert into public.settings (key, value, effective_date)
+       values ('feature:badges', 'everyone', '2027-01-01'), ('feature:personalisation', 'everyone', '2027-01-01')`,
+    );
 
     // Prices ----------------------------------------------------------------
     const closes = generateCloses(holidays, '2027-06-01', END_DAY);
@@ -165,6 +170,10 @@ async function main(): Promise<void> {
     let reconcileProblems = 0;
     const reconcileProblemList: string[] = [];
     let lastReconciled: Day | null = null;
+    // Stage 10: the badge checks (the nightly one after reconcile, and the app's own calls).
+    let badgeNights = 0;
+    let badgeCalls = 0;
+    const badgeCallFailures: string[] = [];
 
     // One scripted step, on both sides.
     const doStep = async (s: Step) => {
@@ -180,6 +189,24 @@ async function main(): Promise<void> {
       const action: Action = typeof s.do === 'function' ? s.do(model) : (s.do as Action);
       const m = model.act(s.at, action);
       const d = await dbAction(action);
+      // Stage 10: after a money call succeeds, the app makes its own badge check (Dad's change:
+      // never inside a money function).
+      if (d.ok && (action.kind === 'buy_gic' || action.kind === 'choose')) {
+        const kid = action.kind === 'buy_gic' ? action.kid : kidOfGic(action.gic);
+        const b = await db.call(kidWho(kid), 'select public.kid_check_my_badges()');
+        badgeCalls++;
+        if (!b.ok) badgeCallFailures.push(`${s.at} kid_check_my_badges: ${b.error}`);
+      } else if (d.ok && action.kind === 'approve') {
+        const [row] = await db.q<{ account_id: string }>(
+          `select account_id from public.requests where id = $1`,
+          [reqId.get(action.label)],
+        );
+        const b = await db.call(PARENT, `select public.parent_check_badges($1, 'deposit')`, [
+          row.account_id,
+        ]);
+        badgeCalls++;
+        if (!b.ok) badgeCallFailures.push(`${s.at} parent_check_badges: ${b.error}`);
+      }
       if (m.ok === d.ok) actionsAgreed++;
       else
         differ(
@@ -480,6 +507,13 @@ async function main(): Promise<void> {
           }
         }
         lastReconciled = day;
+        // Badges last, in their own call, as the nightly function does.
+        const bc = await db.call(SERVER, 'select public.check_badges_through($1)', [day]);
+        badgeNights++;
+        if (!bc.ok || (bc.value as { status: string }).status !== 'ok')
+          badgeCallFailures.push(
+            `${day} check_badges_through: ${bc.ok ? JSON.stringify(bc.value) : bc.error}`,
+          );
         if (complete) await compareSnapshot(day);
       }
 
@@ -492,6 +526,45 @@ async function main(): Promise<void> {
     await comparePostings(db, model, accounts, kidOfAccount, gicLabel);
     await compareAccruals(db, model, accounts);
     await compareGraphs(db, model, accounts);
+
+    // Stage 10: badges. Each kid's badges and the day each was earned, against the model.
+    const dbBadges = await db.q<{
+      account_id: string;
+      badge: string;
+      earned_on: string;
+      notices: string;
+    }>(
+      `select b.account_id, b.badge, b.earned_on::text,
+              (select count(*) from public.notifications n where n.dedupe_key = b.award_key)::text as notices
+         from public.badges b order by b.account_id, b.badge`,
+    );
+    const badgeLines: string[] = [];
+    let badgesAgree = true;
+    for (const k of KIDS) {
+      const want = model.expectedBadges(k, END_DAY);
+      const have = new Map(
+        dbBadges.filter((b) => b.account_id === accounts[k]).map((b) => [b.badge, b.earned_on]),
+      );
+      for (const key of new Set([...want.keys(), ...have.keys()])) {
+        const ok = want.get(key) === have.get(key);
+        if (!ok) badgesAgree = false;
+        badgeLines.push(
+          `kid ${k} ${key}: database ${have.get(key) ?? 'none'}, model ${want.get(key) ?? 'none'}${ok ? '' : ' ✗'}`,
+        );
+      }
+    }
+    record(
+      'Badges match the model, each once, with one notice',
+      badgesAgree && dbBadges.every((b) => b.notices === '1'),
+      `${dbBadges.length} badges: ${badgeLines.join('; ')}`,
+    );
+    record(
+      'Every badge check ran without a failure',
+      badgeCallFailures.length === 0,
+      badgeCallFailures.length === 0
+        ? `${badgeNights} nightly checks after reconcile, ${badgeCalls} checks after a GIC purchase, renewal or approval`
+        : badgeCallFailures.slice(0, 5).join('; '),
+    );
 
     record(
       'Actions accepted or refused the same way',

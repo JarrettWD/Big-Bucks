@@ -26,7 +26,7 @@ export default defineConfig({
     {
       name: 'android-chrome',
       testIgnore:
-        /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding|nightly).spec.ts/,
+        /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding|nightly|look).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -65,6 +65,13 @@ export default defineConfig({
       name: 'nightly',
       testMatch: /nightly.spec.ts/,
       dependencies: ['onboarding'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Stage 10: Sky's look, badges and three GICs (a GIC ladder). Last, as it changes her money.
+    {
+      name: 'look',
+      testMatch: /look.spec.ts/,
+      dependencies: ['nightly'],
       use: { ...devices['Pixel 7'] },
     },
   ],

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { describeActivity } from '../../kid/home/activityText';
 import { formatDate } from '../../lib/format';
+import { parentCheckBadges } from '../../lib/badgeCheck';
 import { supabase } from '../../lib/supabase';
 import type { Inbox, InboxState, OpenQuestion, WaitingRequest } from '../useInbox';
 import {
@@ -26,6 +27,8 @@ import {
 } from './approvalsText';
 import { AgreementsToSign } from './Agreements';
 import { waitingForDad } from './useAgreements';
+import type { Look } from '../../components/Avatar';
+import { KidAvatar, useParentLooks } from '../kidLook';
 import './Approvals.css';
 
 type Kind = 'approve' | 'decline' | 'answer';
@@ -51,6 +54,7 @@ function useNow(ms: number): number {
 
 export default function Approvals() {
   const { inbox, error, loadedAt, reload } = useOutletContext<InboxState>();
+  const looks = useParentLooks();
   const [open, setOpen] = useState<Open | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const doneRef = useRef<HTMLParagraphElement>(null);
@@ -149,6 +153,7 @@ export default function Approvals() {
                   <QuestionCard
                     key={q.id}
                     q={q}
+                    looks={looks}
                     open={open?.kind === 'answer' && open.id === q.id}
                     onOpen={() => openFor('answer', q.id)}
                     onClose={() => setOpen(null)}
@@ -285,7 +290,11 @@ function RequestCard({
           required={false}
           confirm={TEXT.yesApprove(r)}
           onCancel={onClose}
-          onDone={onDone}
+          onDone={async () => {
+            // Stage 10: a deposit can reach her goal; the badge check is a separate call.
+            if (r.type === 'deposit') await parentCheckBadges(r.account_id, 'deposit');
+            await onDone();
+          }}
         />
       ) : (
         <Decision
@@ -307,12 +316,14 @@ function RequestCard({
 
 function QuestionCard({
   q,
+  looks,
   open,
   onOpen,
   onClose,
   onDone,
 }: {
   q: OpenQuestion;
+  looks: Record<string, Look>;
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -326,6 +337,7 @@ function QuestionCard({
           💬
         </span>
         <h3 className="appr__what">
+          <KidAvatar look={looks[q.account_id]} size={32} />
           {q.kid}
           {q.is_test && <TestTag />}
           <span className="appr__kid">{TEXT.asked(q.asked)}</span>

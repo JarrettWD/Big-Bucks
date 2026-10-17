@@ -191,3 +191,12 @@
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
 }
+
+/* Stage 10: her theme colour ("Make it yours"). Only the brand purple and its shades
+   follow her colour; every theme colour keeps white text at 4.5 : 1 or more (look.test.ts). */
+.kid[data-themed] {
+  --bb-purple: var(--kid-theme);
+  --bb-purple-deep: color-mix(in srgb, var(--kid-theme) 80%, black);
+  --bb-purple-soft: color-mix(in srgb, var(--kid-theme) 40%, white);
+  --bb-purple-tint: color-mix(in srgb, var(--kid-theme) 10%, white);
+}

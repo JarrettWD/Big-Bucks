@@ -1,11 +1,11 @@
 // Onboarding, together with Dad (SPEC "Onboarding"; wording in MESSAGES §11):
 //   welcome     what we'll do together, and one button: Let's get started
 //   tour        a quick look around (required; Back and Next)
+//   personalise "Make it yours": her colour and animal (only when it's on for her; stage 10)
 //   wish        her first wish (only when the Wish List is on for her; she may skip it)
 //   agreement   the house rules, which she signs; Dad countersigns on his phone
 //   decision    her first deposit (asked for right here; if Dad says no, she sees
 //               why and asks again), then what her money does
-// "Make it yours" joins when its feature is built (stage 10).
 // The rest of the app stays locked until both have signed and her first deposit
 // is in (KidShell); then a GIC or fund choice opens Buy / Sell. Her place is
 // saved as she goes (save_onboarding_step), so she resumes where she left off.
@@ -21,6 +21,8 @@ import { useKid } from '../KidShell';
 import { kidRpc } from '../kidView';
 import { StarPicker } from '../wishlist/StarPicker';
 import { TEXT as WISH } from '../wishlist/wishText';
+import { LookPicker } from '../look/MakeItYours';
+import { TEXT as LOOK } from '../look/lookText';
 import { AgreementView } from './AgreementView';
 import {
   decisionChoices,
@@ -106,6 +108,11 @@ export default function Welcome() {
   };
   const after = (s: Step) => steps[steps.indexOf(s) + 1] ?? 'decision';
   const lastTourCard = tourCards(state.rules, state.steps.includes('wish')).length - 1;
+  // Back: the step before, or the tour's last card.
+  const back = (s: Step) => {
+    const p = steps[steps.indexOf(s) - 1] ?? 'welcome';
+    return p === 'tour' ? go('tour', lastTourCard) : go(p);
+  };
 
   return (
     <div className="home home--single welcome">
@@ -121,17 +128,19 @@ export default function Welcome() {
           onNext={() => go(after('tour'))}
         />
       )}
-      {place.step === 'wish' && (
-        <WishStep
-          state={state}
-          onBack={() => go('tour', lastTourCard)}
-          onNext={() => go(after('wish'))}
+      {place.step === 'personalise' && (
+        <PersonaliseStep
+          onBack={() => back('personalise')}
+          onNext={() => go(after('personalise'))}
         />
+      )}
+      {place.step === 'wish' && (
+        <WishStep state={state} onBack={() => back('wish')} onNext={() => go(after('wish'))} />
       )}
       {place.step === 'agreement' && (
         <AgreementStep
           state={state}
-          onBack={() => (steps.includes('wish') ? go('wish') : go('tour', lastTourCard))}
+          onBack={() => back('agreement')}
           onSigned={async () => {
             await load();
             summary.reload();
@@ -151,6 +160,30 @@ export default function Welcome() {
         />
       )}
     </div>
+  );
+}
+
+/** Step 2, "Make it yours" (stage 10): the same picker as Home's, saved as she goes on. */
+function PersonaliseStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const { view } = useKid();
+  const ref = useFocus<HTMLHeadingElement>();
+  return (
+    <section className="card welcome__card" aria-labelledby="p-title">
+      <h1 id="p-title" className="welcome__title" tabIndex={-1} ref={ref}>
+        {LOOK.lookTitle}
+      </h1>
+      <LookPicker onSaved={onNext} />
+      <div className="welcome__buttons">
+        <button type="button" className="btn btn--soft" onClick={onBack}>
+          {TEXT.back}
+        </button>
+        {view.viewing && (
+          <button type="button" className="btn" onClick={onNext}>
+            {TEXT.next}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 

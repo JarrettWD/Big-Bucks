@@ -197,7 +197,9 @@ select is(
                                                                  -- Stage 5: Download backup, logged by itself.
                                                                  'parent_backup_export',
                                                                  -- Stage 9: the "Got it" marker, logged by itself.
-                                                                 'parent_wishlist_mark'))))
+                                                                 'parent_wishlist_mark',
+                                                                 -- Stage 10: Dad's badge check, logged by itself.
+                                                                 'parent_check_badges'))))
          order by 1),
   '{}'::text[],
   'nothing in the database calls an original except its own logging wrapper (so no path skips the log)');

@@ -9,6 +9,8 @@
 //   2. Splits: the provider's split list, once a week per fund.
 //   3. Jobs: run_daily through tonight's day (today from 4:30 pm, else yesterday).
 //   4. Check: reconcile every day not yet checked.
+//   5. Badges (stage 10): check_badges_through, after 3 and 4, in its own call. A failure
+//      there is caught here and never changes the money jobs, the check or "done".
 // All the rules (which days are missing, whether a close may be stored, what a split
 // means) are in the database; this only fetches and hands over.
 //
@@ -234,6 +236,16 @@ async function nightly(db: SupabaseClient, prices: Prices) {
   });
   const status = await rpc<Record<string, unknown>>(db, 'nightly_status', { p_date: plan.target });
 
+  // 5. Badges (stage 10), only after the money jobs and the check have committed. Its own call,
+  // so its own transaction; a failure here never changes tonight's result or "done".
+  let badges: string;
+  try {
+    const b = await rpc<{ status: string }>(db, 'check_badges_through', { p_through: plan.target });
+    badges = b.status;
+  } catch {
+    badges = 'failed';
+  }
+
   return {
     mode: 'nightly',
     target: plan.target,
@@ -246,6 +258,7 @@ async function nightly(db: SupabaseClient, prices: Prices) {
     },
     reconciled,
     done: status.done,
+    badges,
   };
 }
 

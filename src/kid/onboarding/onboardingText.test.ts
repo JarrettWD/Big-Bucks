@@ -62,11 +62,19 @@ describe('onboarding wording (stage 8 B4)', () => {
     );
     expect(fill('{savings_rate}', { ...rules, savings_rate: '1.5%' })).toBe('1.5%');
   });
-  it('skips the steps whose features are not built yet (Make it yours), and lists the rest', () => {
+  it('shows every step the database lists, Make it yours included (stage 10)', () => {
     const s = state({ steps: ['welcome', 'tour', 'personalise', 'wish', 'agreement', 'decision'] });
-    expect(shownSteps(s)).toEqual(['welcome', 'tour', 'wish', 'agreement', 'decision']);
+    expect(shownSteps(s)).toEqual([
+      'welcome',
+      'tour',
+      'personalise',
+      'wish',
+      'agreement',
+      'decision',
+    ]);
     expect(stepList(shownSteps(s))).toEqual([
       'A quick look around',
+      'Make it yours',
       'Your first wish',
       'Your Big Bucks agreement',
       'Your first decision',

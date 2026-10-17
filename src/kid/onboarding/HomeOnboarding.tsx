@@ -70,6 +70,9 @@ interface NewThing {
   link: string | null;
 }
 
+// Stage 10: the screens behind features whose What's new row has no link of its own.
+const SCREENS: Record<string, string> = { personalisation: '/kid/look', badges: '/kid/badges' };
+
 export function WhatsNew() {
   const view = useKidView();
   const navigate = useNavigate();
@@ -79,7 +82,10 @@ export function WhatsNew() {
     if (view.viewing) return; // Dad's "View as" never marks anything as seen.
     let live = true;
     void supabase.rpc('whats_new').then(({ data }) => {
-      if (live && Array.isArray(data)) setItems(data as NewThing[]);
+      if (live && Array.isArray(data))
+        setItems(
+          (data as NewThing[]).map((n) => ({ ...n, link: n.link ?? SCREENS[n.feature] ?? null })),
+        );
     });
     return () => {
       live = false;

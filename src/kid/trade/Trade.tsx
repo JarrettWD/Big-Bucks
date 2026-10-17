@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Explain } from '../../components/Glossary';
 import { formatDate, formatRate, termLabel, termWords } from '../../lib/format';
 import { formatCents } from '../../lib/money';
+import { checkMyBadges } from '../../lib/badgeCheck';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
 import {
@@ -215,6 +216,8 @@ export default function Trade() {
     const year = Number(opts!.today.slice(0, 4));
     setDone(doneText({ kind: move.kind, amount, fund, gic, quote, preview: current!, year }));
     setStep('done');
+    // Stage 10: her own badge check, separate from the purchase (it never touches money).
+    if (move.kind === 'buy_gic') await checkMyBadges();
     summary.reload();
     setTick((t) => t + 1);
   };

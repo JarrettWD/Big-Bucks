@@ -1,0 +1,209 @@
+/* "Make it yours" and her badges (stage 10). Sizes in rem so Android's large-text
+   setting scales everything; grids wrap, so nothing is cut off from 360 px up. */
+
+.look {
+  display: grid;
+  gap: 1rem;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.look__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  color: var(--bb-purple);
+  font-size: 1.6rem;
+}
+.look__picker {
+  display: grid;
+  gap: 1rem;
+}
+.look__preview {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+.look__group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.look__legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--bb-ink);
+}
+
+.look__swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+  gap: 0.5rem;
+}
+.look__swatch,
+.look__animal,
+.look__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.4rem 0.6rem;
+  border: 2px solid var(--bb-purple-tint);
+  border-radius: 14px;
+  background: var(--bb-white);
+  color: var(--bb-ink);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.look__swatch[aria-pressed='true'],
+.look__animal[aria-pressed='true'],
+.look__item[aria-pressed='true'] {
+  border-color: var(--bb-ink);
+  box-shadow: 0 0 0 2px var(--bb-gold);
+}
+.look__dot {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+}
+
+.look__animals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+  gap: 0.5rem;
+}
+.look__animal {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+
+.look__wear {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: 0.5rem;
+}
+.look__item {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+.look__item-pic {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.look__item-name {
+  font-weight: 600;
+}
+.look__item--locked {
+  background: var(--bb-page);
+  border-style: dashed;
+}
+.look__item--locked .look__item-pic {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.look__item-how {
+  font-size: 0.9rem;
+  color: var(--bb-ink-soft);
+}
+
+.look__msg {
+  margin: 0;
+  min-height: 1.4em;
+  color: var(--bb-up);
+  font-weight: 600;
+}
+.look__msg--err {
+  color: #a3123a;
+}
+
+/* Her badges */
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.badge__emoji {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--bb-purple-tint);
+  font-size: 1.6rem;
+}
+.badge__words {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.badge__name {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-size: 1.15rem;
+  color: var(--bb-ink);
+}
+.badge__date,
+.badge__line,
+.badge__wearing {
+  margin: 0;
+  line-height: 1.4;
+}
+.badge__date {
+  color: var(--bb-ink-soft);
+  font-size: 0.95rem;
+}
+.badge__wearing {
+  color: var(--bb-up);
+  font-weight: 600;
+}
+.badge--todo .badge__emoji {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+.badge--todo .badge__name {
+  color: var(--bb-ink-soft);
+}
+
+/* Home: her avatar card */
+.card.me {
+  flex-direction: row;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+.me__avatar {
+  display: inline-flex;
+  border-radius: 50%;
+  text-decoration: none;
+}
+.me__words {
+  flex: 1 1 10rem;
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+.me .me__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.me .me__links .btn {
+  flex: 0 1 auto;
+}

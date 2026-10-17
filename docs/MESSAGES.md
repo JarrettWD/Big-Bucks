@@ -854,3 +854,87 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 - Mark "Got it" · Note for the other parent (you can skip this) · Save "Got it" · Cancel · ✓ Got it · {date} · {note} · Clear "Got it"
 - Done list ({n}) · She got it · She removed it · Open link ↗ · Opens outside Big Bucks.
 - **Logged as:** Marked {kid}'s "{wish}" as Got it. · Cleared Got it on {kid}'s "{wish}".
+
+## 13. Make it yours and badges (stage 10, draft for Dad's review)
+
+**Status:** draft. Nothing here is switched on until Dad has reviewed it. Badges reward decisions, never activity: no streaks, no counts, nothing for opening the app or trading.
+
+### Make it yours (the picker)
+
+- **Opened by:** tapping her avatar on Home (label for screen readers: "Change your colour and animal"), and onboarding step 2.
+- **Title:** Make it yours
+- **Pick your colour:** the eight swatches, each with its name: Big Bucks purple · Grape · Magenta · Blueberry · Navy · Teal · Forest · Cocoa
+- **Pick your animal:** the sixteen animals, each with its name: Fox · Panda · Koala · Bunny · Cat · Puppy · Owl · Penguin · Unicorn · Tiger · Frog · Hedgehog · Bear · Hamster · Lion · Moose
+- **Something to wear** (only when badges are on for her): None · then each accessory she has earned. One she hasn't earned yet shows softly, with how to earn it:
+  - Party hat · Buy your first GIC.
+  - Graduation cap · Keep a GIC until it finishes.
+  - Sunglasses · Stay calm and keep a fund when it drops.
+  - Top hat · Build a GIC ladder (3 GICs, $10 or more each).
+  - Bow · Earn your first dollar of interest.
+  - Crown · Reach your savings goal.
+- **Under them:** You can change these any time.
+- **Button:** Looks great!
+- **Saved:** Saved! (in the page, a few seconds)
+
+### Her badges
+
+- **On Home, next to her avatar:** 🏅 Your badges
+- **Title:** Your badges
+- **Intro:** Badges are for smart money choices. Each one unlocks something fun for your animal to wear.
+- **Earned:** {badge name} · Earned {date} · its one line (below) · Wear it (when personalisation is on and she isn't wearing it) / Wearing it ✓
+- **Still to discover:** the rest, softly, each with its name and its one line. No count, no bar.
+- **The six, with their lines:**
+  - 🎉 **First GIC** · You locked money in a GIC to grow.
+  - 🎓 **Kept it to the end** · You kept a GIC until it finished and got all its interest.
+  - 😎 **Cool in a drop** · A fund fell more than 10%, and you stayed calm and kept it.
+  - 🪜 **GIC ladder** **?** · You had 3 GICs that finish on different days.
+  - 💰 **First dollar of interest** · Your money earned $1.00 of interest.
+  - 👑 **Goal reached** · You saved enough for your goal.
+- **Still to discover, the lines:**
+  - First GIC · Buy a GIC and let your money grow.
+  - Kept it to the end · Keep a GIC until it finishes.
+  - Cool in a drop · When a fund drops a lot, stay calm and keep it for 30 days.
+  - GIC ladder · Have 3 GICs of $10 or more that finish on different days.
+  - First dollar of interest · Let your money earn $1.00 of interest.
+  - Goal reached · Save enough for your goal.
+- **? GIC ladder (glossary):** A ladder is a few GICs that finish on different days. Some of your money frees up every so often, while the rest keeps earning.
+
+### The notices (the bell, type `badge`)
+
+The last line is added only when "Make it yours" is on for her.
+
+- **First GIC**
+  - 🎉 Badge: First GIC!
+  - You locked money in a GIC to grow. That's planning ahead!
+  - Your animal can wear a party hat now.
+- **Kept it to the end**
+  - 🎓 Badge: Kept it to the end!
+  - You waited until your GIC finished, so you got all its interest. Patience pays!
+  - Your animal can wear a graduation cap now.
+- **Cool in a drop**
+  - 😎 Badge: Cool in a drop!
+  - The {fund} fund fell more than 10%, and you stayed calm and kept it. That's hard, and you did it. ({fund} is Dow Jones, Nasdaq-100 or TSX.)
+  - Your animal can wear sunglasses now.
+- **GIC ladder**
+  - 🪜 Badge: GIC ladder!
+  - You have 3 GICs that finish on different days, so some money frees up sooner. Smart thinking!
+  - Your animal can wear a top hat now.
+- **First dollar of interest**
+  - 💰 Badge: Your first dollar of interest!
+  - Your money has earned $1.00 just by sitting and growing.
+  - Your animal can wear a bow now.
+- **Goal reached**
+  - 👑 Badge: Goal reached!
+  - You have enough for {goal}. You kept your eye on the prize!
+  - Your animal can wear a crown now.
+- **Given late** (the day she earned it is more than a day before the day it's given; a badge for yesterday, from the nightly run, reads as normal):
+  - earned before the Badges switch went on for her: the same title, then "You earned this on {date}. Badges just arrived!" instead of the first line;
+  - earned since then (a check missed it, say): the same title, then "You earned this on {date}." before the first line.
+  - {date} is like "Dec 10" (the database's own date words).
+
+### Dad's side
+
+- **Dashboard, each kid card (when badges are on for her):** her avatar beside her name · 🏅 {n} badges: then each badge's icon, name and date, for example "🎉 First GIC (Jul 19)". With none yet: No badges yet. Approvals' question cards show her avatar too.
+- **"View as":** exactly her screens, read-only. The picker shows her choice, with "View as" can't change anything. in place of Looks great!, and her Badges screen has no Wear it buttons.
+- **Alert (Dashboard only, never the health check):** Badges couldn't be checked for {name} on {date}. No money is affected; the next evening's run tries again. · Test accounts: in the quiet fold.
+- **Logged as (`check_badges`):** Checked {kid}'s badges after approving a deposit: gave {badges} / nothing new. · Checked every kid's badges after changing a feature switch: gave {badges} to {kid}; {badges} to {kid} / nothing new.

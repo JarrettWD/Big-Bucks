@@ -2,6 +2,7 @@
 //
 //   hero        total worth
 //   banner      a matured GIC to choose for, and the newest unread notice ("Got it")
+//   me          her avatar, "Make it yours" and her badges (Stage 10, when switched on)
 //   goal        her savings goal from the Wish List, when she has one (Stage 9)
 //   savings     with what's on hold and free to use, and today's rate
 //   GICs        each one, with its locked rate and when it's ready
@@ -18,6 +19,7 @@ import { formatCents } from '../../lib/money';
 import { useKid } from '../KidShell';
 import { kidMarkRead, useKidView } from '../kidView';
 import { SetupBanner, WhatsNew } from '../onboarding/HomeOnboarding';
+import { MeCard } from '../look/MeCard';
 import { GoalCard } from '../wishlist/GoalCard';
 import { ActivityList } from './ActivityList';
 import { Sparkline } from './Sparkline';
@@ -66,6 +68,7 @@ export default function Home() {
         <WhatsNew />
         <Banner data={data} year={year} onChange={refreshAll} />
       </div>
+      <MeCard />
       {data.goal && <GoalCard goal={data.goal} />}
       <SavingsCard data={data} year={year} />
       <GicCard data={data} year={year} />

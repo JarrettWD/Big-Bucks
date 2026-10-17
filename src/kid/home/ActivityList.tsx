@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
 import { useKidView } from '../kidView';
 import { useQuestions, type Question } from '../useQuestions';
+import { Avatar } from '../../components/Avatar';
 import { describeActivity, type ActivityLine, type ActivityRow } from './activityText';
 
 /** Lines whose note is the database's working ("$100.00 × 5.0% × 12/12 = $5.00"). */
@@ -131,12 +132,25 @@ function LineDetails(p: {
 }
 
 export function QuestionList({ questions, thisYear }: { questions: Question[]; thisYear: number }) {
+  // Stage 10: her avatar next to her questions, when "Make it yours" is on for her.
+  const look = useKid().summary.look;
   return (
     <ul className="questions">
       {questions.map((q) => (
         <li key={q.id} className="question">
-          <p>
-            <strong>You asked</strong> ({formatDate(q.asked_on, thisYear)}): {q.message}
+          <p className={look?.on ? 'question__asked' : undefined}>
+            {look?.on && (
+              <Avatar
+                theme={look.theme}
+                animal={look.animal}
+                accessory={look.accessory}
+                size={36}
+                label=""
+              />
+            )}
+            <span>
+              <strong>You asked</strong> ({formatDate(q.asked_on, thisYear)}): {q.message}
+            </span>
           </p>
           {q.answered && q.reply ? (
             <p className="question__reply">

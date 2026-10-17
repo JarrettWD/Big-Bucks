@@ -1,0 +1,38 @@
+/* Her avatar: a circle in her colour (sized in rem, so it grows with large text). */
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--avatar-size, 3.5rem);
+  height: var(--avatar-size, 3.5rem);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.6);
+  overflow: visible;
+}
+.avatar__inner {
+  position: relative;
+  width: 74%;
+  height: 74%;
+}
+.avatar__animal {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.avatar__acc {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+.avatar__none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--bb-white);
+  font-family: var(--bb-font-heading);
+  font-size: calc(var(--avatar-size, 3.5rem) * 0.45);
+}

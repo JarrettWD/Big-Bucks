@@ -8,6 +8,7 @@
 //   CancelChange:  cancel a rate or setting change that hasn't started
 
 import { useId, useState, type ReactNode } from 'react';
+import { parentCheckBadges } from '../../lib/badgeCheck';
 import { ChangeActions, PreviewBox } from './Preview';
 import { runAction, useFocusOnOpen, usePreview } from './usePreview';
 import { TEXT, parsePercent, type Parsed, type RateRow, type SettingsData } from './settingsText';
@@ -78,6 +79,8 @@ export function SettingChange({
       setFailed(problem);
       return;
     }
+    // Stage 10: switching Badges on finds what each kid already did (a separate call).
+    if (args.key === 'feature:badges') await parentCheckBadges(null, 'switch');
     await onDone();
   };
 

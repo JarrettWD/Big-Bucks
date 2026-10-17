@@ -154,10 +154,17 @@ Stage 4 is done when production has a few nights of real closes for DIA, QQQ and
   1. fetches each fund's missing closes (one Alpha Vantage call per fund covers every missing day; at most 20 calls a day);
   2. once a week, checks each fund for splits;
   3. runs the daily jobs through today, catching up any missed days;
-  4. reconciles every day not yet checked.
+  4. reconciles every day not yet checked;
+  5. last, in its own call, checks badges (stage 10). It never touches money, and its failure never stops or changes steps 1 to 4.
 - A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on.
 - At 9:00 pm, a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
 - Every morning, once the backup is in (about 7:15 am Alberta time, see "The daily backup"), **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
+
+## A badge alert ("Badges couldn't be checked for …")
+
+- **No money is affected.** Badges only read the history; the money jobs and reconcile finished before the badge check started. This alert is on the Dashboard only and never turns the health check red.
+- The next evening's run tries again by itself. When it works, the alert settles and the badge arrives, dated the day she earned it.
+- If it's still there after two evenings, **stop and ask** (copy the alert's words). Don't change anything in the SQL Editor.
 
 ## A close is missing
 

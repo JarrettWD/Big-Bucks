@@ -12,6 +12,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Explain } from '../components/Glossary';
 import { formatDate, formatRate, termLabel, termWords } from '../lib/format';
 import { formatCents } from '../lib/money';
+import { checkMyBadges } from '../lib/badgeCheck';
 import { supabase } from '../lib/supabase';
 import { useKid } from './KidShell';
 import { isWaiting, type Gic, type Rate } from './home/useHome';
@@ -111,6 +112,8 @@ export default function GicChoice() {
       .eq('type', 'gic_maturity')
       .is('read_at', null);
     if (n?.length) await supabase.rpc('mark_notices_read', { p_ids: n.map((x) => x.id) });
+    // Stage 10: a renewal is a GIC she chose; her badge check is a separate call.
+    if (choice !== 'to_savings') await checkMyBadges();
     setBusy(false);
     summary.reload();
     setStep('done');

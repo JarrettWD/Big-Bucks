@@ -30,11 +30,14 @@ import Dashboard from './parent/dashboard/Dashboard';
 import Settings from './parent/settings/Settings';
 import FixMistake from './parent/fix/FixMistake';
 import Welcome from './kid/onboarding/Welcome';
+import MakeItYours from './kid/look/MakeItYours';
+import Badges from './kid/look/Badges';
 import ParentViewAs from './parent/viewas/ParentViewAs';
 import Approvals from './parent/approvals/Approvals';
 
 // Graphs carries Recharts, so it loads only when the Graphs tab opens.
 const Graphs = lazy(() => import('./kid/graphs/Graphs'));
+const AvatarSheet = lazy(() => import('./pages/AvatarSheet'));
 
 function Splash() {
   return <main className="splash" aria-busy="true" aria-label="Loading" />;
@@ -118,6 +121,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Root />} />
           <Route
+            path="/avatar-sheet"
+            element={
+              <Suspense fallback={null}>
+                <AvatarSheet />
+              </Suspense>
+            }
+          />
+          <Route
             path="/login"
             element={
               <SignedOutOnly>
@@ -147,6 +158,8 @@ export default function App() {
             <Route path="trade" element={<Trade />} />
             <Route path="wishlist" element={<WishList />} />
             <Route path="notices" element={<Notices />} />
+            <Route path="look" element={<MakeItYours />} />
+            <Route path="badges" element={<Badges />} />
             <Route path="welcome" element={<Welcome />} />
           </Route>
           <Route
@@ -178,6 +191,8 @@ export default function App() {
               }
             />
             <Route path="notices" element={<Notices />} />
+            <Route path="look" element={<MakeItYours />} />
+            <Route path="badges" element={<Badges />} />
             <Route path="welcome" element={<Welcome />} />
             <Route path="*" element={<ToHerHome />} />
           </Route>

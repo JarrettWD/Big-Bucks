@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is built and tested locally (2026-10-16): every suite and the time machine pass; waiting for Dad's review of the wording and the avatar sheet, then production.**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -84,6 +84,99 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 10 — Make it yours and badges (2026-10-16, built and tested locally; not in production yet)
+
+- **Plan:** `docs/plans/stage10-plan.md`, approved by Dad 2026-10-16 with A1, B, C, D, E (top hat and bow, for now), F (Dashboard alert only), G (retroactive) and H, plus one change:
+  - **No event checks inside money functions.** After a money call succeeds, the app makes a separate call: `kid_check_my_badges()` after her GIC purchase or renewal, and `parent_check_badges()` after Dad approves a deposit or changes the Badges switch.
+- **Changes from the plan, found while building (for Dad's OK):**
+  - **Grape and Forest are a little deeper:** #8E24AA and #1B5E20, not #9C27B0 and #2E7D32. The gold "Watch your bucks grow." on her colour failed 4.5 : 1 with the planned shades (4.37 and 3.56); now 4.88 and 5.46.
+  - **The lion replaces the otter:** Fluent's otter lies on its back, so no hat sat on it.
+  - **No moose drawing was needed:** Fluent Emoji has one. Only the party hat is ours (Fluent has none).
+  - **A finished GIC stops counting as a ladder rung on its maturity day**, even while its money waits for her choice.
+  - **The pictures aren't minified** (no new tool): 620 KB in all, compressed by GitHub Pages and cached for offline use.
+  - **`goals.reached_at` is left alone:** the crown's badge row holds the goal and the day instead.
+- **Built:**
+  - **Migration `20261028000000_badges.sql`:**
+    - `badge_kinds` (the six badges, their accessories and words; append-only reference data);
+    - `badges`: `award_key` (unique, like `posting_key`), `earned_on`, links to the GIC, goal or fund; append-only;
+    - `goals.first_target_cents` (the price when set; a trigger keeps it);
+    - the allowed colours and animals, checked on `accounts`;
+    - the rules (`badge_rules`), `award_badges`, `check_badges_through` (server only), `kid_check_my_badges`, `parent_check_badges` (MFA, logged as `check_badges`), `kid_look`, `kid_set_look`, `kid_badges`, `parent_looks`;
+    - "View as" reads `kid_look` and `kid_badges`;
+    - the health check skips `badge_check_failed`;
+    - the glossary's "GIC ladder".
+  - **No money function changed** (Dad's condition). The migration creates or replaces no money function and writes no money table. Its only two replacements are read-only, and their diffs are just these lines:
+    - `health_check`: `and al.kind::text <> 'badge_check_failed'` added to the alert query;
+    - `parent_view`: the `kid_look` and `kid_badges` reads added.
+    - `badges_test.sql` also checks that none of 25 money functions mentions badges.
+  - **The nightly function** calls `check_badges_through` last, after `nightly_status`, in its own call inside a try/catch (step 5).
+  - **Screens:**
+    - Home's avatar card ("Make it yours", "Your badges");
+    - the picker (`/kid/look`) and her Badges screen (`/kid/badges`), both in "View as" too, read-only;
+    - onboarding step "Make it yours";
+    - What's new "Show me" for both features;
+    - her avatar next to her questions;
+    - Dad's Dashboard (avatars and badges) and Approvals (avatars on question cards);
+    - the avatar sheet (`/avatar-sheet`, pictures only, no data).
+  - **Pictures:** `public/avatars/` (16 animals, 6 accessories, Microsoft's MIT licence, `ATTRIBUTION.md`).
+  - **Docs:** MESSAGES §13 (draft for Dad's review), SPEC "Make it yours and badges (Stage 10)", RUNBOOK (the badge alert, nightly step 5).
+  - **Local tools:** the demo switches both features on for test accounts and runs the badge check in its nightly. The time machine does the same, plus the app's own checks after GIC purchases and approvals.
+- **Tests (local, 2026-10-16):**
+  - **`supabase test db`:** 40 files, **2093 of 2093** pass.
+    - New: `badges_test.sql`, 114 checks:
+      - each badge rule, with the cases that must not award one (9.9%, a partial sell, a sell request waiting, under $10, weekly closes, a split, 3 GICs on one date, a broken rung, $0.99, dividends and corrections, a goal already reached or reached by lowering its price, an ended goal);
+      - once only; previews; the switches; history counting when Badges goes on;
+      - "Updating…" making a kid wait; a forced failure that leaves money and other kids alone and is caught the next night; the health check ignoring the badge alert;
+      - no money function mentioning badges; her look; RLS, grants and append-only.
+    - Updated: `rls_test`, `schema_test`, `parent_approvals_test` (the new table, the new logged function).
+  - **`npm test`:** 27 files, **363 of 363** pass. New: `look.test.ts`, 65 checks:
+    - every colour's contrast (white text, the gold tagline, on the page);
+    - the lists match the database's; every picture and the licence exist;
+    - every accessory on every animal stays inside the circle, with a margin (each corner of what you see of it, rotation included);
+    - nothing shrinks below 70% to fit, and the moose wears everything at full size. Updated: the onboarding steps test.
+  - **Playwright:** **107 of 107** pass.
+    - New: `look.spec.ts`, 11 tests:
+      - the avatar sheet;
+      - the picker;
+      - her badges;
+      - three GICs through the real Buy / Sell screens giving the GIC ladder;
+      - "View as";
+      - every size with large text (6 tests).
+    - `settings.spec.ts` now also checks that switching Badges on gives Sky her July First GIC, logged once.
+  - **Time machine:** **PASS, 16 of 16** (the simulated year, run locally on the final code). Money still matches the reference model to the cent. Two new checks: the 9 badges given over the year match an independent model of the rules, each on the expected day, once, with one notice ("Cool in a drop" came from the crash); and every badge check ran without a failure (360 nightly checks after reconcile, 21 checks after a GIC purchase, renewal or approval). Report: `docs/TIMEMACHINE-REPORT.md`.
+- **Dad's sheet review (2026-10-17), fixed:**
+  - **Moose:** hats bigger and on top of its head in front of the antlers; the bow by the ear at an antler's base; sunglasses sized to its eye.
+  - **Hedgehog:** everything bigger, on top of its head; the sunglasses clearly visible.
+  - **Clearance:** an accessory that would touch the circle's edge is drawn a little smaller from its base, so it still sits on the head. It shrinks to 72–78% at most, for the tall party hat and top hat on the owl and frog. A test checks every combination (above).
+  - The sheet page takes `?animals=moose,hedgehog` for a closer look.
+- **Dad to review before any switch goes on in production:**
+  1. MESSAGES §13 (all the wording).
+  2. The avatar sheet (`test-results/avatar-sheet.png`, sent in chat).
+  3. Grape and Forest a little deeper, and the lion instead of the otter (above).
+- **Production steps (each after Dad's OK; never 7:00–11:45 am, or from 4:00 pm until that evening's nightly run shows done):**
+  1. Check tonight's nightly run is finished (Dashboard) and the outbox is empty.
+  2. Take a backup by hand (big-bucks-backups → Actions → Backup → Run workflow). It must be green.
+  3. `supabase db push --dry-run` lists only `20261028000000_badges.sql`.
+  4. `supabase db push`, then the dry run again: "Remote database is up to date."
+  5. `supabase functions deploy nightly`.
+  6. Push to `main`: CI green, then Deploy to GitHub Pages green.
+  7. Take a backup by hand: `counts.json` lists `badge_kinds` (6) and `badges` (0).
+  8. Settings: Make it yours → Test accounts only; then Badges → Test accounts only. Then the phone test below.
+  9. Take a backup by hand, then `npm run restore:drill -- <that backup>`. It must PASS.
+  10. The next evening: `job_runs` has a `badges` row, ok, after `reconcile`; every money job is ok as before.
+- **Phone test as test_kid (after step 8):**
+  1. Sign in as test_kid. Two What's new cards ("Make it yours", "Badges"): Show me opens each screen.
+  2. The bell: "🎉 Badge: First GIC!" saying "You earned this on Oct 15. Badges just arrived!"
+  3. Home → tap the avatar circle. Try each colour (the header and buttons change; savings, GIC and fund colours don't). Pick an animal and the party hat → Looks great!
+  4. Large text (Android Settings → Display → Font size and style → largest), then landscape: nothing cut off. Put the text size back.
+  5. Home → 🏅 Your badges: First GIC with its date; five "Still to discover".
+  6. GIC ladder: Buy / Sell → $10.00 into a 3-month GIC, then $10.00 into a 6-month GIC. With the Oct 15 one-month GIC, that's three dates: the top hat arrives right after.
+  7. Goal reached (from about Oct 23): set the Oct 16 wish's price to her total + $5, make it her goal, ask for a $10.00 deposit, and approve it on your phone: the crown.
+  8. "Something looks wrong?" on any line: her avatar next to it, and on your Approvals card.
+  9. Your phone → View as test_kid: same colour, animal, hat and badges; nothing can be changed. Your Dashboard card shows her avatar and badges.
+  10. By themselves: Kept it to the end on Nov 15's evening; First dollar of interest probably with Dec 1's interest. Cool in a drop needs a real 10% fall: proven by the tests and the time machine.
+- **Known issues:** none open. `supabase test db` still expects a freshly reset local database.
 
 ### Stage 9 — Wish List and goals (2026-10-16, in production for test accounts only)
 

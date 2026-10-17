@@ -13,9 +13,10 @@
 // deposit is in, so her first decision can open Buy / Sell. Dad's "View as" isn't
 // locked.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { themeOf } from '../lib/look';
 import { getRememberedKid, rememberKid } from '../auth/remember';
 import { kidRpc, KidViewContext, type KidView } from './kidView';
 import { TEXT as ONBOARDING } from './onboarding/onboardingText';
@@ -101,7 +102,17 @@ export default function KidShell({ viewing }: { viewing?: KidView }) {
 
   return (
     <KidViewContext.Provider value={view}>
-      <div className={view.viewing ? 'kid kid--viewing' : 'kid'}>
+      <div
+        className={view.viewing ? 'kid kid--viewing' : 'kid'}
+        // Stage 10: her own colour on her app's frame and buttons ("Make it yours"). The
+        // option colours, gains and losses and every graph keep their fixed colours.
+        data-themed={summary.look?.on ? '' : undefined}
+        style={
+          summary.look?.on
+            ? ({ '--kid-theme': themeOf(summary.look.theme).hex } as CSSProperties)
+            : undefined
+        }
+      >
         <div className="kid__head">
           {view.viewing && (
             <div className="kid__viewing" role="note" id="viewing-banner">

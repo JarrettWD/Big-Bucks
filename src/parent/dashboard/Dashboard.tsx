@@ -17,6 +17,7 @@ import {
   type Dashboard as Dash,
 } from './dashboardText';
 import { AgreementsNeedYou, AgreementsWaitingCard } from '../approvals/Agreements';
+import { KidAvatar, KidBadges, useParentLooks } from '../kidLook';
 import './Dashboard.css';
 
 async function fetchDashboard(): Promise<{ data: Dash | null; error: string | null }> {
@@ -33,6 +34,7 @@ async function fetchDashboard(): Promise<{ data: Dash | null; error: string | nu
 }
 
 export default function Dashboard() {
+  const looks = useParentLooks();
   const [dash, setDash] = useState<Dash | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -165,7 +167,10 @@ export default function Dashboard() {
           <ul className="dash__kids">
             {real.map((k) => (
               <li key={k.account_id}>
-                <span className="dash__kid">{k.kid}</span>
+                <span className="dash__kid">
+                  <KidAvatar look={looks[k.account_id]} />
+                  {k.kid}
+                </span>
                 <span className="dash__worth">{formatCents(k.total_worth_cents)}</span>
                 <dl className="dash__facts">
                   <div>
@@ -185,6 +190,7 @@ export default function Dashboard() {
                     <dd>{formatCents(k.net_deposits_cents)}</dd>
                   </div>
                 </dl>
+                <KidBadges accountId={k.account_id} look={looks[k.account_id]} />
                 <Link className="dash__btn dash__btn--quiet" to={`/parent/view/${k.account_id}`}>
                   {TEXT.viewAs(k.kid)}
                 </Link>
@@ -202,9 +208,11 @@ export default function Dashboard() {
               <ul className="dash__plain">
                 {test.map((k) => (
                   <li key={k.account_id}>
-                    <span>
+                    <span className="dash__kid">
+                      <KidAvatar look={looks[k.account_id]} size={32} />
                       {k.kid} <span className="dash__test">Test</span>
                     </span>
+                    <KidBadges accountId={k.account_id} look={looks[k.account_id]} />
                     <span>{formatCents(k.total_worth_cents)}</span>
                     <Link
                       className="dash__btn dash__btn--quiet"

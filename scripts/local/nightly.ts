@@ -1,5 +1,6 @@
 // The nightly run, as the time machine does it: run_daily through a date, then
-// reconcile every date since the last check. Shared by the demo and jobs:local.
+// reconcile every date since the last check, then (stage 10) the badge check in its
+// own call, as the nightly function does. Shared by the demo and jobs:local.
 
 import type { LocalDb, Who } from '../timemachine/db.ts';
 import { addDays, daysFrom, type Day } from '../timemachine/model/calendar.ts';
@@ -13,6 +14,8 @@ export interface NightlyResult {
   reconciled: Day[];
   /** Plain descriptions of anything reconcile found. Empty means clean. */
   problems: string[];
+  /** The badge check's status (stage 10): ok or failed. Never affects the rest. */
+  badges: string;
 }
 
 export async function nightly(db: LocalDb, day: Day): Promise<NightlyResult> {
@@ -33,5 +36,13 @@ export async function nightly(db: LocalDb, day: Day): Promise<NightlyResult> {
     const v = rc.value as { status: string; problems: unknown[] };
     if (v.status !== 'ok') problems.push(`${d}: ${JSON.stringify(v.problems).slice(0, 600)}`);
   }
-  return { status: res.status, completedThrough: res.completed_through, reconciled, problems };
+  const b = await db.call(SERVER, 'select public.check_badges_through($1)', [day]);
+  const badges = b.ok ? (b.value as { status: string }).status : 'failed';
+  return {
+    status: res.status,
+    completedThrough: res.completed_through,
+    reconciled,
+    problems,
+    badges,
+  };
 }

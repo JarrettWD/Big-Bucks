@@ -232,6 +232,18 @@ test('a feature switch, a note and a ? explanation', async ({ page }) => {
     `select public.setting_on('feature:badges', public.app_today()) as v`,
   );
   expect(badges.v).toBe('test');
+  // Stage 10: after the switch, Dad's screen checks badges (a separate call): Sky's GIC
+  // from July gives her First GIC, dated then, and the check is logged.
+  const [given] = await rows<{ earned: string; logged: string }>(
+    `select (select count(*)::text from public.badges b join public.profiles p on p.account_id = b.account_id
+              where p.username = 'demo_sky' and b.badge = 'first_gic' and b.earned_on < public.app_today()) as earned,
+            (select summary from public.parent_actions where action = 'check_badges'
+              order by id desc limit 1) as logged`,
+  );
+  expect(given).toEqual({
+    earned: '1',
+    logged: "Checked every kid's badges after changing a feature switch: gave First GIC to Sky.",
+  });
 
   // Reword the note already written (the demo's big Nasdaq-100 day).
   const notes = page.getByRole('region', { name: 'Market-move notes' });

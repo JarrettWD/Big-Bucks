@@ -215,6 +215,15 @@ async function main(): Promise<void> {
       `select public.set_setting('feature:wishlist', 'test')`,
       [],
     );
+    // Stage 10: "Make it yours" for test accounts only (Sky). Badges stay off: the
+    // Settings test switches them on, which finds what Sky already did.
+    act(
+      on(0, '08:31'),
+      'Make it yours on for test accounts',
+      P,
+      `select public.set_setting('feature:personalisation', 'test')`,
+      [],
+    );
     // Robin and Sky did their welcome screens on day 0: each signs the agreement, Dad
     // countersigns, and each finishes onboarding. (Wren hasn't started.)
     for (const [who, name, account] of [

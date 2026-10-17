@@ -160,7 +160,8 @@ begin
     insert into public.wishlist_photos (wishlist_item_id, account_id, photo, thumb)
       values (v_item, acct, decode('ffd8ff' || repeat('ab', 200), 'hex'), decode('ffd8ff' || repeat('ab', 200), 'hex'));
     insert into public.goals (account_id, name, target_cents) values (acct, 'Kite', 2500);
-    insert into public.badges (account_id, badge) values (acct, 'first_gic');
+    insert into public.badges (account_id, badge, award_key, earned_on)
+      values (acct, 'first_gic', 'badge:first_gic:' || acct, date '2026-10-16');
     insert into public.notifications (account_id, type, title, body, related_gic_id)
       values (acct, 'gic_maturity', 'Your GIC is ready', 'Choose what happens next.', v_gic);
     insert into public.alerts (kind, account_id, message) values ('test', acct, 'Test alert');
