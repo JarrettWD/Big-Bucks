@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is built and tested locally (2026-10-16); production waits for Dad's OK.**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -85,7 +85,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
-### Stage 9 — Wish List and goals (2026-10-16, built and tested locally; not yet in production)
+### Stage 9 — Wish List and goals (2026-10-16, in production for test accounts only)
 
 - **Plan:** `docs/plans/stage9-plan.md`, approved by Dad 2026-10-16 with A1 (photos in the database), B1 (one goal at a time) and C1 (savings-rate projection, 5-year limit), plus four conditions:
   - backup growth measured over 30 days, with photos in their own file;
@@ -138,13 +138,27 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
     - photos inside `data.sql`, for comparison: 17.3 MB (one day's folder 16.6 MB).
 - **Known issues:** `supabase test db` expects a freshly reset local database, as in CI. After the end-to-end tests or the demo, run `supabase db reset` first.
 - **ACCEPTANCE:** tick "Wish list items can be added and reordered, and become goals only after 7 days" once Dad has proven it on production with the test kid. Day 7 is about Oct 23 for a wish added Oct 16.
-- **Dad to do by hand** (production, after his OK, never 7:00–11:45 am or 4:00–5:00 pm):
-  1. Copy the two backup scripts to big-bucks-backups.
-  2. The dry run.
-  3. `db push`.
-  4. Deploy to GitHub Pages.
-  5. Switch the Wish List on for test accounts only.
-  6. The next morning, check the Backup.
+- **Production, done 2026-10-16** (each step after Dad's OK, all between about 6:00 and 7:30 pm Alberta time). Times below are Alberta time; the backup names use the UTC date (Oct 17).
+  1. **Backup scripts:** big-bucks-backups `dcac7e0`, only `scripts/backup.ts` and `scripts/guards.ts` (+28 −5). They were pushed as Dad from a scratch clone, not his sync clone. Checked first: the repo's old copies matched Big-Bucks before Stage 9, so there was no drift. Dad reviewed them; nothing to install on his PC (`sync-backup.ps1` is unchanged).
+  2. **Backup #11 by hand:** green. "Backup 2026-10-17: 34 tables, 941 rows, 8 ledger rows". This proved the new script on a database with no photo table yet.
+  3. **Dry run:** listed only `20261027000000_wishlist.sql`.
+  4. **Before the push, read from Backup #11 (6:14 pm):**
+     - every Oct 16 job was OK, plus Oct 15's interest; the market-move note waited one round and was OK at 5:00 pm;
+     - the last nightly call went out at 5:00 pm;
+     - all 29 outbox rows were sent.
+     Then `db push` applied the migration, and a second dry run said "Remote database is up to date."
+  5. **Backup by hand:** green, 35 tables. `counts.json` lists `public.wishlist_photos` (0 rows), its CSV holds just the header, and `data.sql` has no photo rows.
+  6. **Deploy to GitHub Pages:**
+     - run #5 deployed `e854155`;
+     - Dad's phone test then found that a card showed no goal option before day 7, and showed a goal date on a wish with no price;
+     - fixed screen-only in `f38a6c9` (each card says when it can be her goal, "Edit", "See photo"; CI #53 green; no migration);
+     - Deploy run #6 shipped it, and the live bundle has the new wording.
+  7. **The switch:** Dad switched the Wish List on for test accounts only in Settings, then tested on his phone as the test kid.
+  8. **Backup with photos, by hand:** "Backup 2026-10-17: 35 tables, 957 rows, 8 ledger rows" (`1bc18f4`).
+     - `csv/public.wishlist_photos.csv` holds **2** rows: Dad's new photo (7:20 pm) and one from his first test (6:37 pm, on a wish now in the Done list). Both are JPEGs: 72 KB and 73 KB, with 6 KB and 7 KB thumbnails.
+     - `counts.json` agrees (2 rows), and `data.sql` has no photo rows.
+     - **Restore drill on this real backup: PASS.** 40 of 40 tables match row for row (photos included, checked by each row's checksum, so the bytes match), and the test kid's 6 balances match to the cent and unit. `after_restore()` reported the usual lines for a new project: Vault keys to set again, and the PINs to reset.
+- **Still to do:** the ACCEPTANCE tick above, about Oct 23 (day 7). The girls get the Wish List at Stage 12, when every phase 2 feature goes on for everyone.
 
 ### Stage 12 — Launch prep (not started)
 
