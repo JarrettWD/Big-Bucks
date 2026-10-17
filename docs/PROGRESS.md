@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Still to do: the restore drill on a backup with badges (step 9) and the next evening's badge check (step 10).**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Restore drill on a real backup with badges: PASS (step 9). Still to do: the next evening's badge check (step 10).**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -172,6 +172,13 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
      - her Badges screen: the date, five still to discover, no counts;
      - "View as" read-only; the Dashboard card with her avatar and badge;
      - the GIC ladder after a $10 3-month and a $10 6-month GIC, with its top hat wearable.
+  9. **Backup by hand** `d8a6e14` (Backup 2026-10-17: 36 tables, 990 rows, 10 ledger rows):
+     - `badges` has 2 rows: First GIC (earned Oct 10, her $20 3-month GIC; given 2:26 pm by Dad's check after the switch) and GIC ladder (earned and given 2:32 pm, 0.2 s after her $10 6-month GIC, by her app's own check). The 6-month made the third date, after Nov 15 and Jan 10.
+     - Their notices: "You earned this on Oct 10. Badges just arrived! Your animal can wear a party hat now." and the ladder's usual words.
+     - The log: the two switch rows and one `check_badges` row ("…gave First GIC to Test Kid.").
+     - Only one GIC was bought today (the 6-month); a 3-month buy, if tried, didn't go through. No money was affected.
+     - **Restore drill on this backup: PASS.** 41 of 41 tables match row for row, and the test kid's 6 balances match to the cent and unit. `after_restore()` gave the usual lines for a new project (Vault keys, PINs).
+  10. **Still to do:** after tonight's run (Sat Oct 17), check in the next backup that `job_runs` has a `badges` row, ok, after `reconcile`, and that every money job is ok as before.
 - **The planned production steps** (kept for the record):
   1. Check tonight's nightly run is finished (Dashboard) and the outbox is empty.
   2. Take a backup by hand (big-bucks-backups → Actions → Backup → Run workflow). It must be green.
