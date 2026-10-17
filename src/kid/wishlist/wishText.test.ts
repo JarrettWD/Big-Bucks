@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DIP_LINE, progressLine, projectionLine, safeHref, showDip, siteName } from './wishText';
+import {
+  DIP_LINE,
+  goalLine,
+  progressLine,
+  projectionLine,
+  safeHref,
+  showDip,
+  siteName,
+} from './wishText';
 
 const wish = (over: Partial<Parameters<typeof projectionLine>[0]> = {}) => ({
   percent: 40,
@@ -53,6 +61,33 @@ describe('wish list wording (stage 9)', () => {
     expect(showDip(false, wish())).toBe(false);
     expect(showDip(true, wish({ enough: true, percent: 100 }))).toBe(false);
     expect(showDip(true, wish({ percent: null }))).toBe(false);
+  });
+});
+
+describe('what each card says about becoming her goal (Dad, 2026-10-16)', () => {
+  const card = (over: Partial<Parameters<typeof goalLine>[0]> = {}) => ({
+    status: 'wanted' as const,
+    price_cents: '2500',
+    can_goal: false,
+    goal_from: 'Fri Oct 23',
+    ...over,
+  });
+  it('no price: add one', () => {
+    expect(goalLine(card({ price_cents: null }))).toEqual({
+      kind: 'needs_price',
+      text: 'Add a price to make this a goal.',
+    });
+    // ...even after day 7: a goal needs a price.
+    expect(goalLine(card({ price_cents: null, can_goal: true })).kind).toBe('needs_price');
+  });
+  it('before day 7: the day it can be her goal, up front', () => {
+    expect(goalLine(card())).toEqual({ kind: 'wait', text: 'Can be your goal from Fri Oct 23.' });
+  });
+  it('from day 7: "Still want this?" opens on the card', () => {
+    expect(goalLine(card({ can_goal: true }))).toEqual({ kind: 'ready' });
+  });
+  it('her goal: just its tag', () => {
+    expect(goalLine(card({ status: 'goal', can_goal: false }))).toEqual({ kind: 'goal' });
   });
 });
 

@@ -17,6 +17,7 @@ test.describe.configure({ mode: 'serial' });
 
 const KITE = 'Blue kite (e2e)';
 const TENT = 'Tent (e2e)';
+const GUM = 'Gum (e2e)';
 
 async function sql<T = Record<string, string>>(q: string): Promise<T[]> {
   const db = await LocalDb.connect();
@@ -87,9 +88,30 @@ test('she adds wishes with a link and a photo, and reorders them', async ({ page
   expect(sizes.jpeg).toBe(true);
   expect(sizes.photo).toBeLessThanOrEqual(153600);
   expect(sizes.thumb).toBeLessThanOrEqual(20480);
-  // Not a goal on day 0.
+  // Not a goal on day 0, and the card says up front from which day it can be.
   await expect(kite.getByRole('button', { name: /Make it my goal/ })).toHaveCount(0);
-  await expect(kite.locator('.wish__wait')).toContainText('Still want this on');
+  await expect(kite.getByText('Still want this?')).toHaveCount(0);
+  const [from] = await sql<{ d: string }>(
+    `select to_char(wait_from + 7, 'Dy Mon FMDD') as d from public.wishlist_items where name = '${KITE}'`,
+  );
+  await expect(kite.locator('.wish__goal-line')).toHaveText(`🎯 Can be your goal from ${from.d}.`);
+  // Edit opens the form; See photo opens the full photo.
+  await kite.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('heading', { name: 'Change this wish' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await card(page, KITE).getByRole('button', { name: 'See photo' }).click();
+  const photo = page.getByRole('dialog', { name: `Photo of ${KITE}` });
+  await expect(photo.getByRole('img')).toBeVisible();
+  await photo.getByRole('button', { name: 'Close' }).click();
+  await expect(photo).toHaveCount(0);
+
+  // A wish with no price says to add one.
+  await page.getByRole('button', { name: '+ Add a wish' }).click();
+  await page.getByLabel('What is it?').fill(GUM);
+  await page.getByRole('button', { name: 'Add it' }).click();
+  await expect(card(page, GUM).locator('.wish__goal-line')).toHaveText(
+    '🎯 Add a price to make this a goal.',
+  );
 
   await page.getByRole('button', { name: '+ Add a wish' }).click();
   await page.getByLabel('What is it?').fill(TENT);
@@ -126,6 +148,11 @@ test('a week later, "Still want this?" makes it her goal, shown on Home', async 
   await sql(`update public.wishlist_items set wait_from = wait_from - 7 where name = '${KITE}'`);
   await openWishList(page);
   const kite = card(page, KITE);
+  // Day 7: "Still want this?" is already open on the card. Not now folds it away.
+  await expect(kite.getByText('Still want this?')).toBeVisible();
+  await expect(kite.locator('.wish__goal-line')).toHaveCount(0);
+  await kite.getByRole('button', { name: 'Not now' }).click();
+  await expect(kite.getByText('Still want this?')).toHaveCount(0);
   await kite.getByRole('button', { name: /Make it my goal/ }).click();
   await expect(kite.getByText('Still want this?')).toBeVisible();
   await kite.getByRole('button', { name: 'Yes, make it my goal' }).click();

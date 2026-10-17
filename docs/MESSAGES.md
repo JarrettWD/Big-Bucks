@@ -821,15 +821,17 @@ Shown once, the first time she opens the app after Dad switches a feature on for
   - Nothing saved yet: Once you have some money saved, you'll see roughly when you could have enough.
 - **When her funds went down this week (Dad, 2026-10-16):** Your funds went down this week, so you're a bit further away. That's normal: funds go up and down.
 - **A link:** {site name} · Open link ↗ · This opens outside Big Bucks.
-- **Before day 7:** Still want this on {Fri Oct 23}? Then you can make it a savings goal.
-- **Buttons:** 🎯 Make it my goal (from day 7) · Stop saving for this (her goal) · Change · I got this · Remove · ▲ / ▼ ("Move {name} up / down")
+- **Becoming her goal, always said up front** (Dad, 2026-10-16, after his phone test):
+  - No price: 🎯 Add a price to make this a goal.
+  - Priced, before day 7: 🎯 Can be your goal from {Fri Oct 23}.
+  - Priced, from day 7: the "Still want this?" box (below) is open on the card. *Not now* folds it into a 🎯 Make it my goal button for this visit.
+- **Buttons:** Stop saving for this (her goal) · Edit · See photo (with a photo; tapping the thumbnail works too) · I got this · Remove · ▲ / ▼ ("Move {name} up / down"). Tapping the card itself does nothing.
 
 ### "Still want this?" and goals
 
 - **Title:** Still want this?
 - **Under it:** A goal is something you really want, not just something you saw today. Is this still it?
 - **Buttons:** Yes, make it my goal · Not now
-- **No price:** Add a rough price first, so you can see how close you are.
 - **Too soon (from the database):** Still want this? You can make it a goal from {Fri Oct 23}.
 - **Switching:** You're saving for {goal}. Switch your goal to {wish}? · {goal} stays on your wish list. · Yes, switch · Keep my goal
 - **Tag:** 🎯 Your goal

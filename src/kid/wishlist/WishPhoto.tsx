@@ -28,18 +28,25 @@ export function WishPhoto({
   version,
   name,
   className,
+  open: shown,
+  onOpenChange,
 }: {
   id: string;
   version: string | null;
   name: string;
   className?: string;
+  /** The full photo's view, when the card opens it too (its "See photo" button). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const box = useRef<HTMLButtonElement>(null);
   // Without IntersectionObserver (very old browsers), it loads straight away.
   const [near, setNear] = useState(() => !('IntersectionObserver' in window));
   const [thumb, setThumb] = useState<string | null>(null);
   const [full, setFull] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = shown ?? ownOpen;
+  const setOpen = onOpenChange ?? setOwnOpen;
 
   useEffect(() => {
     const el = box.current;
@@ -76,7 +83,7 @@ export function WishPhoto({
       alive = false;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, id, version]);
+  }, [open, id, version, setOpen]);
 
   return (
     <>

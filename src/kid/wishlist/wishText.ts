@@ -95,20 +95,21 @@ export const TEXT = {
   addIt: 'Add it',
   skip: 'Skip for now',
   cancel: 'Cancel',
-  edit: 'Change',
+  edit: 'Edit',
+  seePhoto: 'See photo',
   moveUp: (name: string) => `Move ${name} up`,
   moveDown: (name: string) => `Move ${name} down`,
   added: (days: string) =>
     `Added to your Wish List! If you still want it in ${days} days, you can make it a savings goal.`,
   goalTag: 'Your goal',
-  waitLine: (day: string) => `Still want this on ${day}? Then you can make it a savings goal.`,
+  goalFrom: (day: string) => `Can be your goal from ${day}.`,
+  goalNeedsPrice: 'Add a price to make this a goal.',
   makeGoal: 'Make it my goal',
   stillWant: 'Still want this?',
   stillWantWhy:
     'A goal is something you really want, not just something you saw today. Is this still it?',
   yesGoal: 'Yes, make it my goal',
   notNow: 'Not now',
-  needPrice: 'Add a rough price first, so you can see how close you are.',
   switchTitle: (current: string, next: string) =>
     `You're saving for ${current}. Switch your goal to ${next}?`,
   switchWhy: (current: string) => `${current} stays on your wish list.`,
@@ -138,6 +139,26 @@ export const TEXT = {
   seeWishList: 'See your Wish List',
   starsLabel: (n: number) => (n === 1 ? '1 star' : `${n} stars`),
 };
+
+/**
+ * What a card says about becoming her goal (Dad, 2026-10-16: always say it up front).
+ * From the database's facts: no price → add one; before day 7 → the day it can;
+ * from day 7 → "Still want this?" opens on the card; her goal → its tag.
+ */
+export type GoalLine =
+  | { kind: 'goal' }
+  | { kind: 'needs_price'; text: string }
+  | { kind: 'wait'; text: string }
+  | { kind: 'ready' };
+
+export function goalLine(
+  w: Pick<Wish, 'status' | 'price_cents' | 'can_goal' | 'goal_from'>,
+): GoalLine {
+  if (w.status === 'goal') return { kind: 'goal' };
+  if (w.price_cents === null) return { kind: 'needs_price', text: TEXT.goalNeedsPrice };
+  if (!w.can_goal) return { kind: 'wait', text: TEXT.goalFrom(w.goal_from) };
+  return { kind: 'ready' };
+}
 
 /** "You're 40% of the way there." (or why there's no percent). */
 export function progressLine(w: Pick<Wish, 'percent' | 'enough' | 'price_cents'>): string {

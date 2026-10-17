@@ -20,6 +20,7 @@ import { StarPicker } from './StarPicker';
 import { WishPhoto } from './WishPhoto';
 import {
   DIP_LINE,
+  goalLine,
   progressLine,
   projectionLine,
   safeHref,
@@ -239,8 +240,13 @@ function WishCard({
   const [editing, setEditing] = useState(false);
   const [asking, setAsking] = useState<Asking>(null);
   const [busy, setBusy] = useState(false);
+  // From day 7 "Still want this?" is open on the card; Not now folds it for this visit.
+  const [notNow, setNotNow] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const titleId = useId();
   const isGoal = w.status === 'goal';
+  const line = goalLine(w);
+  const askGoal = asking === 'goal' || (line.kind === 'ready' && !notNow && asking === null);
   const projection = projectionLine(w, list.worth_cents);
 
   const run = async (fn: string, args: Record<string, unknown>) => {
@@ -291,7 +297,15 @@ function WishCard({
       aria-labelledby={titleId}
     >
       <div className="wish-card__top">
-        {w.has_photo && <WishPhoto id={w.id} version={w.photo_at} name={w.name} />}
+        {w.has_photo && (
+          <WishPhoto
+            id={w.id}
+            version={w.photo_at}
+            name={w.name}
+            open={photoOpen}
+            onOpenChange={setPhotoOpen}
+          />
+        )}
         <div className="wish-card__what">
           {isGoal && <p className="wish__tag">🎯 {TEXT.goalTag}</p>}
           <h2 id={titleId} className="wish-card__name">
@@ -312,27 +326,34 @@ function WishCard({
       {showDip(list.funds_dipped, w) && <p className="wish__dip">{DIP_LINE}</p>}
       <LinkRow link={w.link} />
 
-      {!isGoal && !w.can_goal && <p className="wish__wait">{TEXT.waitLine(w.goal_from)}</p>}
+      {(line.kind === 'wait' || line.kind === 'needs_price') && (
+        <p className="wish__goal-line">
+          <span aria-hidden="true">🎯</span> {line.text}
+        </p>
+      )}
 
-      {asking === 'goal' && (
+      {askGoal && (
         <div className="wish__ask" role="group" aria-label={TEXT.stillWant}>
           <p className="wish__ask-title">{TEXT.stillWant}</p>
           <p className="muted">{TEXT.stillWantWhy}</p>
-          {w.price_cents === null ? (
-            <p>{TEXT.needPrice}</p>
-          ) : (
-            <button
-              type="button"
-              className="btn btn--gold"
-              disabled={busy}
-              onClick={() =>
-                goal ? setAsking('switch') : void run('wish_make_goal', { p_item: w.id })
-              }
-            >
-              {TEXT.yesGoal}
-            </button>
-          )}
-          <button type="button" className="btn btn--soft" onClick={() => setAsking(null)}>
+          <button
+            type="button"
+            className="btn btn--gold"
+            disabled={busy}
+            onClick={() =>
+              goal ? setAsking('switch') : void run('wish_make_goal', { p_item: w.id })
+            }
+          >
+            {TEXT.yesGoal}
+          </button>
+          <button
+            type="button"
+            className="btn btn--soft"
+            onClick={() => {
+              setNotNow(true);
+              setAsking(null);
+            }}
+          >
             {TEXT.notNow}
           </button>
         </div>
@@ -349,7 +370,14 @@ function WishCard({
           >
             {TEXT.yesSwitch}
           </button>
-          <button type="button" className="btn btn--soft" onClick={() => setAsking(null)}>
+          <button
+            type="button"
+            className="btn btn--soft"
+            onClick={() => {
+              setNotNow(true);
+              setAsking(null);
+            }}
+          >
             {TEXT.keepGoal}
           </button>
         </div>
@@ -376,11 +404,11 @@ function WishCard({
 
       {asking === null && (
         <div className="wish-card__buttons">
-          {!isGoal && w.can_goal && (
+          {line.kind === 'ready' && notNow && (
             <button
               type="button"
               className="btn btn--gold btn--small"
-              onClick={() => setAsking('goal')}
+              onClick={() => setNotNow(false)}
             >
               🎯 {TEXT.makeGoal}
             </button>
@@ -402,6 +430,15 @@ function WishCard({
           >
             {TEXT.edit}
           </button>
+          {w.has_photo && (
+            <button
+              type="button"
+              className="btn btn--soft btn--small"
+              onClick={() => setPhotoOpen(true)}
+            >
+              {TEXT.seePhoto}
+            </button>
+          )}
           <button
             type="button"
             className="btn btn--soft btn--small"

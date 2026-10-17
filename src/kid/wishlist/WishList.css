@@ -146,9 +146,14 @@
   color: var(--bb-ink);
   line-height: 1.45;
 }
-.wish__wait {
+/* When it can become her goal: always said up front (Dad, 2026-10-16). */
+.wish__goal-line {
   margin: 0;
-  color: var(--bb-ink-soft);
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: #fff8e6;
+  color: var(--bb-ink);
+  font-weight: 700;
   line-height: 1.45;
 }
 

@@ -164,7 +164,7 @@ The database works it out from the regular savings rate in force today, compound
    - the link shows only the site's name.
 4. Tap **Open link ↗**. It opens in Chrome, outside Big Bucks. Come back to Big Bucks.
 5. Add two more items (one with no price: it says "Add a rough price…"). Use **Move up / Move down** to reorder, then close and reopen the app: the order is kept.
-6. Try to make the first item a goal today. It says which day you can (7 days from today).
+6. Check each card says when it can be your goal: "🎯 Can be your goal from {day}" (7 days after you added it), or "🎯 Add a price to make this a goal" for a wish with no price. (Changed 2026-10-16 after Dad's phone test: before, a card showed no goal option until day 7.)
 7. **Remove** one item and mark another **I got this**. Both are in the **Done** list.
 8. **As Dad:** open **Wish lists**, mark an item **Got it** with a note. Check that **View as** test kid doesn't show the marker. Back as the test kid, nothing looks different.
 9. **On day 7** (about Oct 23 if you add it Oct 16): "Still want this?" → **Yes, make it my goal**. Home shows the goal card with its bar and words.
