@@ -162,6 +162,8 @@ begin
     insert into public.goals (account_id, name, target_cents) values (acct, 'Kite', 2500);
     insert into public.badges (account_id, badge, award_key, earned_on)
       values (acct, 'first_gic', 'badge:first_gic:' || acct, date '2026-10-16');
+    -- Stage 11: why she sold (any request does for the table; the function checks it's a sale).
+    insert into public.sell_reflections (request_id, account_id, reflection) values (v_req, acct, 'Test reason.');
     insert into public.notifications (account_id, type, title, body, related_gic_id)
       values (acct, 'gic_maturity', 'Your GIC is ready', 'Choose what happens next.', v_gic);
     insert into public.alerts (kind, account_id, message) values ('test', acct, 'Test alert');
@@ -253,8 +255,8 @@ select set_eq(
       join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
      where c.table_schema = 'public' and c.column_name = 'account_id' and t.table_type = 'BASE TABLE'$$,
   array['agreement_signatures', 'alerts', 'badges', 'gic_holdings', 'goals', 'interest_accruals', 'notifications',
-        'parent_actions', 'profiles', 'questions', 'requests', 'transactions', 'whats_new_seen', 'wishlist_items',
-        'wishlist_photos'],
+        'parent_actions', 'profiles', 'questions', 'requests', 'sell_reflections', 'transactions', 'whats_new_seen',
+        'wishlist_items', 'wishlist_photos'],
   'the account-scoped tables are the ones this test seeds (update both when adding a table)');
 
 -- 2. Kid A ------------------------------------------------------------------
@@ -266,8 +268,8 @@ select is(tests.tables_showing_account('bbbbbbbb-0000-0000-0000-000000000002'), 
   'kid A sees none of kid B''s rows in any account-scoped table');
 select is(
   array(select t from unnest(array['agreement_signatures', 'badges', 'gic_holdings', 'goals', 'interest_accruals',
-                                   'notifications', 'profiles', 'questions', 'requests', 'transactions',
-                                   'whats_new_seen', 'wishlist_items', 'wishlist_photos']) t
+                                   'notifications', 'profiles', 'questions', 'requests', 'sell_reflections',
+                                   'transactions', 'whats_new_seen', 'wishlist_items', 'wishlist_photos']) t
          where t <> all (tests.tables_showing_account('aaaaaaaa-0000-0000-0000-000000000001'))),
   '{}'::text[],
   'kid A sees her own rows in every kid table');

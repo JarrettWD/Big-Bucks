@@ -9,8 +9,8 @@ select tables_are('public', array[
   'interest_accruals', 'job_runs', 'login_attempts', 'market_holidays', 'notes', 'notifications',
   'cancellations', 'parent_actions', 'profiles', 'questions', 'rates', 'requests', 'settings', 'transactions', 'wishlist_items',
   'wishlist_parent_marks', 'agreement_versions', 'agreement_signatures', 'whats_new_features', 'whats_new_seen',
-  'fund_price_corrections', 'outbox', 'price_calls', 'prelaunch_resets', 'wishlist_photos', 'badge_kinds'
-], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions, cancellations and the onboarding tables, stage 8; fund_price_corrections and outbox, pre-launch audit; price_calls, stage 4; prelaunch_resets, stage 5; wishlist_photos, stage 9; badge_kinds, stage 10)');
+  'fund_price_corrections', 'outbox', 'price_calls', 'prelaunch_resets', 'wishlist_photos', 'badge_kinds', 'sell_reflections'
+], 'public has exactly the Data model tables plus the Build decisions additions (and fund_splits, stage 2; parent_actions, cancellations and the onboarding tables, stage 8; fund_price_corrections and outbox, pre-launch audit; price_calls, stage 4; prelaunch_resets, stage 5; wishlist_photos, stage 9; badge_kinds, stage 10; sell_reflections, stage 11)');
 
 select hasnt_column('public', 'wishlist_items', 'parent_got_it',
   'the "Got it" marker is not a wish-list column (it lives in wishlist_parent_marks)');

@@ -296,7 +296,7 @@ create temp table kept as
 create temp table before_counts as select tests.counts() as c;
 
 select alike(public.prelaunch_reset('clear the test history'),
-  'Test history cleared: % rows from 17 tables. Every account, rate, setting and price is kept, and every balance is now $0.00.',
+  'Test history cleared: % rows from 18 tables. Every account, rate, setting and price is kept, and every balance is now $0.00.',
   'with a fresh backup holding everything, it clears the test history');
 select is(tests.counts(), (select jsonb_object_agg(k, 0) from jsonb_object_keys((select c from before_counts)) k),
   'every history table is empty: ledger, accruals, GICs, requests, notices, questions, goals, badges, wish list (photos and marks too), signatures, What''s new seen, alerts, login attempts, outbox, PIN resets');

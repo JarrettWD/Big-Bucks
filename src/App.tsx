@@ -32,6 +32,7 @@ import FixMistake from './parent/fix/FixMistake';
 import Welcome from './kid/onboarding/Welcome';
 import MakeItYours from './kid/look/MakeItYours';
 import Badges from './kid/look/Badges';
+import Statements from './kid/learn/Statements';
 import ParentViewAs from './parent/viewas/ParentViewAs';
 import Approvals from './parent/approvals/Approvals';
 
@@ -160,6 +161,7 @@ export default function App() {
             <Route path="notices" element={<Notices />} />
             <Route path="look" element={<MakeItYours />} />
             <Route path="badges" element={<Badges />} />
+            <Route path="statements" element={<Statements />} />
             <Route path="welcome" element={<Welcome />} />
           </Route>
           <Route
@@ -193,6 +195,7 @@ export default function App() {
             <Route path="notices" element={<Notices />} />
             <Route path="look" element={<MakeItYours />} />
             <Route path="badges" element={<Badges />} />
+            <Route path="statements" element={<Statements />} />
             <Route path="welcome" element={<Welcome />} />
             <Route path="*" element={<ToHerHome />} />
           </Route>

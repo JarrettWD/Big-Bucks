@@ -15,6 +15,7 @@ import { Explain } from '../../components/Glossary';
 import { formatDate, formatRate, termLabel, termWords } from '../../lib/format';
 import { formatCents } from '../../lib/money';
 import { checkMyBadges } from '../../lib/badgeCheck';
+import { Reflection } from '../learn/Reflection';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
 import {
@@ -70,6 +71,7 @@ export default function Trade() {
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [done, setDone] = useState<{ title: string; text: string } | null>(null);
+  const [soldRequest, setSoldRequest] = useState<number | null>(null);
 
   // What she has ------------------------------------------------------------------------------
   useEffect(() => {
@@ -206,12 +208,14 @@ export default function Trade() {
           p_sell_all: sellAll,
         }),
     }[move.kind];
-    const { error } = await call();
+    const { data, error } = await call();
     setBusy(false);
     if (error) {
       setSubmitError(error.message);
       return;
     }
+    // Stage 11: after a fund sale, "Why did you sell?" (a separate, optional call).
+    setSoldRequest(move.kind === 'sell_fund' && typeof data === 'number' ? data : null);
     // Worded now: reloading her holdings below can remove the GIC or change the choices.
     const year = Number(opts!.today.slice(0, 4));
     setDone(doneText({ kind: move.kind, amount, fund, gic, quote, preview: current!, year }));
@@ -324,7 +328,14 @@ export default function Trade() {
           />
         )}
 
-        {step === 'done' && done && <Done {...done} onAnother={reset} />}
+        {step === 'done' && done && (
+          <>
+            <Done {...done} onAnother={reset} />
+            {soldRequest !== null && summary.features.reflection && (
+              <Reflection requestId={soldRequest} />
+            )}
+          </>
+        )}
       </section>
 
       <WaitingList opts={opts} />

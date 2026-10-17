@@ -16,7 +16,15 @@ import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { LocalDb, type Who } from './db.ts';
 import { Q } from './model/rational.ts';
-import { NIGHTLY_RUN, addDays, at, dayOf, daysFrom, type Day } from './model/calendar.ts';
+import {
+  NIGHTLY_RUN,
+  addDays,
+  addMonths,
+  at,
+  dayOf,
+  daysFrom,
+  type Day,
+} from './model/calendar.ts';
 import {
   FUNDS,
   Model,
@@ -119,7 +127,8 @@ async function main(): Promise<void> {
     // Stage 10: badges and "Make it yours" on for both kids, so the year exercises the badge checks.
     await db.q(
       `insert into public.settings (key, value, effective_date)
-       values ('feature:badges', 'everyone', '2027-01-01'), ('feature:personalisation', 'everyone', '2027-01-01')`,
+       values ('feature:badges', 'everyone', '2027-01-01'), ('feature:personalisation', 'everyone', '2027-01-01'),
+              ('feature:statements', 'everyone', '2027-01-01'), ('feature:whatif', 'everyone', '2027-01-01')`,
     );
 
     // Prices ----------------------------------------------------------------
@@ -564,6 +573,89 @@ async function main(): Promise<void> {
       badgeCallFailures.length === 0
         ? `${badgeNights} nightly checks after reconcile, ${badgeCalls} checks after a GIC purchase, renewal or approval`
         : badgeCallFailures.slice(0, 5).join('; '),
+    );
+
+    // Stage 11: every kid's statement for every month of the year, and the what-if on the last
+    // day, against the model's own working (to the cent).
+    const months: Day[] = [];
+    for (let d = dayOf(START).slice(0, 8) + '01'; d < END_DAY; d = addMonths(d, 1)) months.push(d);
+    const statementDiffs: string[] = [];
+    let statementsChecked = 0;
+    for (const k of KIDS)
+      for (const month of months) {
+        // As Dad reads them ("View as"): the kid reads are for signed-in people, never the server role.
+        const r = await db.call(PARENT, 'select public.kid_statement($1, $2)', [
+          accounts[k],
+          month,
+        ]);
+        const s = (r.ok ? r.value : null) as Record<string, string | boolean> | null;
+        const want = model.expectedStatement(k, month);
+        statementsChecked++;
+        if (!s || s.ready !== true || s.balanced !== true) {
+          statementDiffs.push(`kid ${k} ${month}: database ${r.ok ? JSON.stringify(s) : r.error}`);
+          continue;
+        }
+        const pairs: [string, bigint][] = [
+          ['start_cents', want.start],
+          ['money_in_cents', want.moneyIn],
+          ['money_out_cents', want.moneyOut],
+          ['interest_cents', want.interest],
+          ['dividends_cents', want.dividends],
+          ['fund_gains_cents', want.fundGains],
+          ['fixes_cents', want.fixes],
+          ['end_cents', want.end],
+        ];
+        for (const [key, v] of pairs)
+          if (BigInt(String(s[key])) !== v)
+            statementDiffs.push(`kid ${k} ${month} ${key}: database ${s[key]}, model ${v}`);
+        const identity =
+          want.start +
+          want.moneyIn -
+          want.moneyOut +
+          want.interest +
+          want.dividends +
+          want.fundGains +
+          want.fixes;
+        if (identity !== want.end)
+          statementDiffs.push(`kid ${k} ${month}: the model's own lines don't add up`);
+      }
+    record(
+      'Monthly statements match the model, every kid and month (to the cent)',
+      statementDiffs.length === 0,
+      statementDiffs.length === 0
+        ? `${statementsChecked} statements (${KIDS.length} kids × ${months.length} months), every line and the identity`
+        : statementDiffs.slice(0, 6).join('; '),
+    );
+    const whatIfDiffs: string[] = [];
+    const whatIfLines: string[] = [];
+    for (const k of KIDS) {
+      const r = await db.call(PARENT, 'select public.kid_what_if($1)', [accounts[k]]);
+      const w = (r.ok ? r.value : null) as Record<string, string | number> | null;
+      const want = model.expectedWhatIf(k, END_DAY);
+      if (!w || !want) {
+        whatIfDiffs.push(
+          `kid ${k}: database ${r.ok ? JSON.stringify(w) : r.error}, model ${JSON.stringify(want, (_, v) => (typeof v === 'bigint' ? v.toString() : v))}`,
+        );
+        continue;
+      }
+      const pairs: [string, bigint | number][] = [
+        ['savings_cents', want.savings],
+        ['gic_cents', want.gic],
+        ['gics_growing', want.gicsGrowing],
+        ['nasdaq_cents', want.nasdaq],
+        ['nasdaq_dividends_cents', want.dividends],
+      ];
+      for (const [key, v] of pairs)
+        if (String(w[key]) !== String(v))
+          whatIfDiffs.push(`kid ${k} ${key}: database ${w[key]}, model ${v}`);
+      whatIfLines.push(
+        `kid ${k}: savings ${cents(BigInt(want.savings))}, 1-year GICs ${cents(want.gic)} (${want.gicsGrowing} growing), Nasdaq-100 ${cents(want.nasdaq)}`,
+      );
+    }
+    record(
+      'What-if matches the model (savings, 1-year GICs, the Nasdaq-100)',
+      whatIfDiffs.length === 0,
+      whatIfDiffs.length === 0 ? whatIfLines.join('; ') : whatIfDiffs.slice(0, 6).join('; '),
     );
 
     record(

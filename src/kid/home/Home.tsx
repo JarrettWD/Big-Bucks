@@ -21,6 +21,15 @@ import { kidMarkRead, useKidView } from '../kidView';
 import { SetupBanner, WhatsNew } from '../onboarding/HomeOnboarding';
 import { MeCard } from '../look/MeCard';
 import { GoalCard } from '../wishlist/GoalCard';
+import {
+  FundInflation,
+  GicInflation,
+  InflationProvider,
+  SavingsInflation,
+  TotalInflation,
+} from '../learn/Inflation';
+import { TEXT as LEARN } from '../learn/learnText';
+import { ModeSwitch } from '../learn/ModeSwitch';
 import { ActivityList } from './ActivityList';
 import { Sparkline } from './Sparkline';
 import { isWaiting, useHome, type Cents, type Fund, type Gic, type HomeData } from './useHome';
@@ -49,20 +58,99 @@ export default function Home() {
   };
   const year = Number(data.today.slice(0, 4));
 
+  // Stage 11: the simpler view (big numbers, fewer cards), when she has chosen it.
+  if (summary.viewMode === 'basic')
+    return <BasicHome data={data} year={year} refreshAll={refreshAll} />;
+
   return (
-    <div className="home">
-      <section className="hero" aria-labelledby="h-total">
+    <InflationProvider year={year}>
+      {(toggle) => (
+        <div className="home">
+          <section className="hero" aria-labelledby="h-total">
+            <h1 id="h-total" className="hero__label">
+              Total worth <Explain term="Total worth" light />
+            </h1>
+            <Money
+              cents={data.balances.total_worth_cents}
+              updating={data.updating}
+              className="hero__amount"
+            />
+            <p className="hero__tag">Watch your bucks grow.</p>
+            {toggle}
+            <TotalInflation />
+          </section>
+          {/* Everything that needs her, stacked in the banner's place. */}
+          <div className="home__top">
+            <SetupBanner />
+            <WhatsNew />
+            <Banner data={data} year={year} onChange={refreshAll} />
+          </div>
+          <MeCard />
+          {data.goal && <GoalCard goal={data.goal} />}
+          <SavingsCard data={data} year={year} />
+          <GicCard data={data} year={year} />
+          <FundsCard data={data} year={year} />
+          <section className="card home__activity" aria-labelledby="h-activity">
+            <div className="card__head">
+              <h2 id="h-activity" className="card__title">
+                Recent activity
+              </h2>
+            </div>
+            <ActivityList rows={data.activity} thisYear={year} />
+            {data.activity.length > 0 && (
+              <Link className="btn btn--soft" to={`${view.base}/history`}>
+                See all
+              </Link>
+            )}
+          </section>
+          <LearnFooter />
+        </div>
+      )}
+    </InflationProvider>
+  );
+}
+
+/** Stage 11: her statements link and the view switch, at the bottom of Home (both modes). */
+function LearnFooter() {
+  const { view, summary } = useKid();
+  if (!summary.features.statements && !summary.features.viewmodes) return null;
+  return (
+    <div className="home__learn">
+      {summary.features.statements && (
+        <Link className="btn btn--soft" to={`${view.base}/statements`}>
+          {LEARN.statementsLink}
+        </Link>
+      )}
+      <ModeSwitch />
+    </div>
+  );
+}
+
+/** Stage 11: the simpler view. Big numbers, her three options as three big lines, fewer cards. */
+function BasicHome({
+  data,
+  year,
+  refreshAll,
+}: {
+  data: HomeData;
+  year: number;
+  refreshAll: () => void;
+}) {
+  const view = useKidView();
+  const b = data.balances;
+  const lines: [string, string, Cents][] = [
+    ['🐷', 'Savings', b.savings_cents],
+    ['🔒', 'GICs', b.gic_cents],
+    ['📈', 'Stock funds', b.stock_value_cents],
+  ];
+  return (
+    <div className="home home--single home--basic">
+      <section className="hero hero--basic" aria-labelledby="h-total">
         <h1 id="h-total" className="hero__label">
           Total worth <Explain term="Total worth" light />
         </h1>
-        <Money
-          cents={data.balances.total_worth_cents}
-          updating={data.updating}
-          className="hero__amount"
-        />
-        <p className="hero__tag">Watch your bucks grow.</p>
+        <Money cents={b.total_worth_cents} updating={data.updating} className="hero__amount" />
       </section>
-      {/* Everything that needs her, stacked in the banner's place. */}
       <div className="home__top">
         <SetupBanner />
         <WhatsNew />
@@ -70,22 +158,36 @@ export default function Home() {
       </div>
       <MeCard />
       {data.goal && <GoalCard goal={data.goal} />}
-      <SavingsCard data={data} year={year} />
-      <GicCard data={data} year={year} />
-      <FundsCard data={data} year={year} />
-      <section className="card home__activity" aria-labelledby="h-activity">
-        <div className="card__head">
-          <h2 id="h-activity" className="card__title">
-            Recent activity
-          </h2>
-        </div>
-        <ActivityList rows={data.activity} thisYear={year} />
+      <section className="card" aria-labelledby="h-basic-money">
+        <h2 id="h-basic-money" className="card__title">
+          Your money
+        </h2>
+        <ul className="basic__lines">
+          {lines.map(([icon, name, cents]) => (
+            <li key={name} className="basic__line">
+              <span className="basic__name">
+                <span aria-hidden="true">{icon} </span>
+                {name}
+              </span>
+              <span className="basic__amount">
+                {data.updating ? 'Updating…' : formatCents(cents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="card" aria-labelledby="h-activity">
+        <h2 id="h-activity" className="card__title">
+          Recent activity
+        </h2>
+        <ActivityList rows={data.activity.slice(0, 3)} thisYear={year} />
         {data.activity.length > 0 && (
           <Link className="btn btn--soft" to={`${view.base}/history`}>
             See all
           </Link>
         )}
       </section>
+      <LearnFooter />
     </div>
   );
 }
@@ -225,6 +327,7 @@ function SavingsCard({ data, year }: { data: HomeData; year: number }) {
           </div>
         </dl>
       )}
+      <SavingsInflation />
       {rate && (
         <p className="card__note">
           Earning <strong>{formatRate(rate.rate)}</strong> a year <Explain term="Interest rate" />
@@ -332,6 +435,7 @@ function GicRow({
             <br />
             Earns {formatCents(g.interest_at_maturity_cents)} by then
           </p>
+          <GicInflation gicId={g.gic_id} />
         </>
       )}
     </li>
@@ -386,6 +490,9 @@ function FundsCard({ data, year }: { data: HomeData; year: number }) {
           <FundRow key={f.fund_id} f={f} updating={data.updating} />
         ))}
       </ul>
+      {owned.map((f) => (
+        <FundInflation key={f.fund_id} fundId={f.fund_id} />
+      ))}
     </section>
   );
 }

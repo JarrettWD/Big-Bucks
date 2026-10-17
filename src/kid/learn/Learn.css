@@ -1,0 +1,243 @@
+/* The learning features (stage 11). Sizes in rem so Android's large-text setting scales
+   everything; nothing has a fixed height, and long numbers wrap rather than overflow. */
+
+/* Inflation */
+.infl__toggle {
+  margin-top: 0.75rem;
+  min-height: 44px;
+  padding: 0.35rem 1rem;
+  border: 2px solid rgb(255 255 255 / 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bb-white);
+  font: inherit;
+  font-weight: 600;
+}
+.infl__toggle[aria-pressed='true'] {
+  background: var(--bb-white);
+  color: var(--bb-purple);
+}
+.infl__total {
+  margin: 0.5rem 0 0;
+  line-height: 1.45;
+}
+.infl__line {
+  margin: 0.25rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bb-purple-tint);
+  color: var(--bb-ink);
+  line-height: 1.45;
+}
+
+/* Home's footer and the mode switch */
+.home__learn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+.mode {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+.mode__note {
+  max-width: 28rem;
+}
+
+/* Basic mode */
+.hero--basic .hero__amount {
+  font-size: clamp(2.6rem, 11vw, 4rem);
+}
+.basic__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.basic__line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--bb-purple-tint);
+}
+.basic__name {
+  font-size: 1.25rem;
+}
+.basic__amount {
+  font-family: var(--bb-font-heading);
+  font-size: 1.6rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* What-if */
+.whatif {
+  display: grid;
+  gap: 0.75rem;
+}
+.whatif__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.whatif__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--bb-white);
+  border: 2px solid var(--bb-purple-tint);
+}
+.whatif__row--yours {
+  border-color: var(--bb-purple);
+}
+.whatif__name {
+  font-weight: 600;
+}
+.whatif__amount {
+  font-family: var(--bb-font-heading);
+  font-size: 1.35rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.whatif__note {
+  width: 100%;
+  margin: 0;
+  color: var(--bb-ink-soft);
+  font-size: 0.95rem;
+}
+.whatif__how summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--bb-purple);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.whatif__how ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+/* Statements */
+.stmt {
+  display: grid;
+  gap: 1rem;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.stmt__title {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  color: var(--bb-purple);
+}
+.stmt__months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.stmt__month[aria-pressed='true'] {
+  background: var(--bb-purple);
+  color: var(--bb-white);
+}
+.stmt__lines {
+  margin: 0;
+  display: grid;
+}
+.stmt__line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--bb-purple-tint);
+}
+.stmt__line dt {
+  min-width: 0;
+}
+.stmt__line dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.stmt__line--total {
+  font-family: var(--bb-font-heading);
+  font-size: 1.2rem;
+  border-bottom: 0;
+}
+.stmt__funds {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--bb-ink-soft);
+}
+
+/* Reflection */
+.reflect {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--bb-white);
+  border: 2px solid var(--bb-purple-soft);
+}
+.reflect h2 {
+  margin: 0;
+  font-family: var(--bb-font-heading);
+  font-size: 1.2rem;
+}
+.reflect textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.6rem;
+  border: 2px solid var(--bb-outline);
+  border-radius: 12px;
+  font: inherit;
+  box-sizing: border-box;
+}
+.reflect__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.why {
+  margin: 0.25rem 0 0;
+  font-style: italic;
+  color: var(--bb-ink-soft);
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .kid__head,
+  .kid__tabs,
+  .stmt__months,
+  .stmt__print,
+  .kid__viewing {
+    display: none !important;
+  }
+  .stmt {
+    max-width: none;
+  }
+}
+.reflect__err {
+  margin: 0;
+  color: #a3123a;
+  font-weight: 600;
+}
+
+/* Basic mode is one plain column: every card flows in order (Home's named areas are for
+   the detailed layout only; without them, named cards would pile into one cell). */
+.home.home--basic > * {
+  grid-area: auto;
+}

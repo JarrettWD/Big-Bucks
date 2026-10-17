@@ -224,7 +224,8 @@ select results_eq(
   'each fund''s dividend yield');
 select results_eq(
   $$select f ->> 'name', f -> 'card' ->> 'text' from jsonb_array_elements(public.parent_settings() -> 'features') f$$,
-  $$values ('wishlist'::text, 'Off'::text), ('personalisation', 'Off'), ('badges', 'Off')$$,
+  $$values ('wishlist'::text, 'Off'::text), ('personalisation', 'Off'), ('badges', 'Off'), ('inflation', 'Off'),
+            ('whatif', 'Off'), ('markets', 'Off'), ('reflection', 'Off'), ('statements', 'Off'), ('viewmodes', 'Off')$$,
   'each feature switch, off unless switched on');
 select is(public.parent_settings() -> 'inflation' ->> 'text', '2.0%', 'the inflation rate');
 select is(public.parent_settings() -> 'recent' -> 0,

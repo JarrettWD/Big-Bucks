@@ -7,8 +7,35 @@
 import { OPTION } from '../../lib/colours';
 import { toCents, type Cents } from '../../lib/money';
 
-export type GraphTab = 'worth' | 'growth' | 'money' | 'mix' | 'gics' | 'funds';
-export const GRAPH_TABS: GraphTab[] = ['worth', 'growth', 'money', 'mix', 'gics', 'funds'];
+export type GraphTab =
+  'worth' | 'growth' | 'money' | 'mix' | 'gics' | 'funds' | 'whatif' | 'markets';
+export const GRAPH_TABS: GraphTab[] = [
+  'worth',
+  'growth',
+  'money',
+  'mix',
+  'gics',
+  'funds',
+  'whatif',
+  'markets',
+];
+
+/**
+ * The tabs she sees (stage 11): the simpler view keeps three graphs (and the what-if); the
+ * what-if and Compare the markets appear when their switches are on (markets in detailed only).
+ */
+export function visibleTabs(
+  mode: 'basic' | 'detailed',
+  features: Record<string, boolean>,
+): GraphTab[] {
+  const base: GraphTab[] =
+    mode === 'basic'
+      ? ['worth', 'mix', 'money']
+      : ['worth', 'growth', 'money', 'mix', 'gics', 'funds'];
+  if (features.whatif) base.push('whatif');
+  if (features.markets && mode === 'detailed') base.push('markets');
+  return base;
+}
 
 export type WorthRange = '1M' | '3M' | '1Y' | 'All';
 export type FundRange = '1M' | '3M' | '6M' | 'first';

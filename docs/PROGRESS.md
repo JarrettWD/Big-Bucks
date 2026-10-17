@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Restore drill on a real backup with badges: PASS (step 9). Still to do: the next evening's badge check (step 10).**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Restore drill on a real backup with badges: PASS (step 9). Still to do: the next evening's badge check (step 10).** **Stage 11 (learning features) is built and tested locally (2026-10-17): every suite and the time machine (18 of 18) pass; waiting for Dad's review, then production after Stage 10's step 10.**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -84,6 +84,60 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Stage 11 — Learning features, statements and view modes (2026-10-17, built and tested locally; not in production yet)
+
+- **Plan:** `docs/plans/stage11-plan.md`, approved by Dad 2026-10-17 with A–H as recommended, plus five additions:
+  1. Fund gains worked out on their own; the identity tested against the graph; a mutation test.
+  2. The interest-timing rule stated and tested.
+  3. "GIC interest is paid when each GIC finishes" on the what-if.
+  4. "Mom and Dad can see this." on the reflection box.
+  5. No What's new for features already on when a girl signs up.
+- **Production waits for Stage 10's step 10** (tonight's badge job, read from tomorrow morning's backup).
+- **Found while building (no decision needed, each noted in the plan or MESSAGES):**
+  - "Inflation" and "GIC ladder" were already in the glossary (Stage 1); their existing wording is used.
+  - Selling by amount takes exactly that amount's worth of units (units rounded down, Dad's Stage 2 decision), so a $40.00 sale pays exactly $40.00. My first hand-worked test answer ($40.01) was wrong; the engine was right.
+  - October's savings interest is dated Nov 1, so it belongs to November's statement. A statement is ready once its month is over and its jobs are done, so October's is ready on Nov 1.
+- **Built:**
+  - **Migration `20261029000000_learning.sql`:**
+    - six switches (`feature_list`) and six What's new rows;
+    - `sell_reflections` (append-only; RLS her rows or the parent; cleared by the pre-launch reset) with `kid_save_reflection` and `kid_reflections`;
+    - `kid_features` (all switches in one call), `kid_view_mode`, `kid_set_view_mode`;
+    - statements: `statement_fund_gains` (on its own), `statement_figures`, `statement_ready`, `kid_statement_months`, `kid_statement` (never shows numbers that don't add up);
+    - `kid_what_if`, `kid_market_compare`, `kid_inflation`;
+    - "View as" reads (`parent_view`).
+  - **No money function changed** (Dad's condition, checked by `learning_test.sql` and `statements_test.sql`). Only three existing functions are replaced, and their diffs are additions:
+    - `feature_list` (the six names);
+    - `prelaunch_tables` (`public.sell_reflections`);
+    - `parent_view` (the new reads).
+  - **Screens:**
+    - Home: "What will it buy? 💡" with a line on each option, the basic view, and "Your statements" plus the view switch at the bottom;
+    - Graphs: What if? and Markets tabs; the basic view shows three graphs (plus What if?);
+    - the Statements page with print;
+    - "Why did you sell?" after a fund sale, and "Why I sold" in her history;
+    - all of it in "View as", read-only.
+  - **Docs:** MESSAGES §14 (draft for Dad's review), the plan.
+  - **Local tools:** the demo switches the six features on for test accounts. The time machine checks every statement and the what-if against the reference model, which got an independent statement and what-if.
+- **Tests (local, 2026-10-17):**
+  - **`supabase test db`:** 42 files, **2199 of 2199** pass.
+    - New: `statements_test.sql` (40 checks):
+      - a real October and November through the engine, with known answers for every line;
+      - the interest timing (Home, the graph and the statement agree; accruing interest is never in total worth; October's interest is on November's statement);
+      - the identity for every account and month, and against `daily_balances`;
+      - a ledger line from nowhere caught; numbers never shown when they don't add up;
+      - RLS; and **the mutation test** (a Fund gains that forgets sales fails the identity check).
+    - New: `learning_test.sql` (66 checks):
+      - the what-if's known answers (savings, a special, a renewal, a split, a dividend, a withdrawal);
+      - markets (a split isn't a fall); inflation; the reflection (refusals, once only, the sell untouched, RLS, append-only);
+      - view modes; the switches;
+      - What's new for a girl who signs up with features on (none) and for one switched on later (once);
+      - no money function mentions any of it.
+    - Updated: `rls_test`, `schema_test`, `settings_screen_test` and `stage5_backups_test` (the reset clears 18 tables).
+  - **`npm test`:** 28 files, **383 of 383** pass. New: `learnText.test.ts` (20 checks): wording that never scolds (each check also proves it would catch the word), the GIC "still growing" line, the reflection's notes, statements and inflation wording (including Dad's 2026-10-17 note under each statement: "Your October interest is paid on Nov 1, so it shows on your November statement."), and which graphs each view shows.
+  - **Time machine:** **PASS, 18 of 18**. Money is unchanged and matches to the cent. New: all 24 statements (2 kids × 12 months) match the model's own statements, every line and the identity, to the cent; the what-if matches for both kids (all three cases).
+  - **Playwright:** **126 of 126** pass. New: `learn.spec.ts` (19 tests): the inflation toggle, What if? (gentle wording), Markets, a statement against the graph and its print layout, "Why did you sell?" after a real sell then in her history, the basic view (three graphs plus What if?, the simple statement) and back, "View as", and every new screen at 6 sizes in both views with large text. One fix came from it: basic mode now lays its cards out in one plain column (Home's named areas had squashed a card).
+- **Production:** not started. Waiting for Stage 10's step 10, then the plan's steps 1–10 with Dad's OK at each.
+- **Phone test, then Nov 1:** in the plan (section 11). On Nov 1, October's statement appears.
 
 ### Stage 10 — Make it yours and badges (2026-10-16, in production for test accounts only since 2026-10-17)
 

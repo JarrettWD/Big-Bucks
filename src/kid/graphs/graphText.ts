@@ -14,6 +14,8 @@ export const TAB_LABEL: Record<GraphTab, string> = {
   mix: 'Mix',
   gics: 'GICs',
   funds: 'Funds',
+  whatif: 'What if?',
+  markets: 'Markets',
 };
 
 export const HEADING: Record<GraphTab, string> = {
@@ -23,6 +25,8 @@ export const HEADING: Record<GraphTab, string> = {
   mix: 'My mix today',
   gics: 'GIC ladder',
   funds: 'Stock fund detail',
+  whatif: 'What if? 🤔',
+  markets: 'Compare the markets 🌎',
 };
 
 /** One sentence on what each graph shows. */
@@ -35,6 +39,9 @@ export const WHAT: Record<GraphTab, string> = {
   mix: 'Where your money is today.',
   gics: 'When each of your GICs is ready, so you can see when your money unlocks.',
   funds: 'The price of one unit of a fund, with your buys and sells marked.',
+  whatif:
+    "Here's what would have happened if all the money you put in had gone into just one place.",
+  markets: 'Same time, different markets. Each fund follows a different group of companies.',
 };
 
 /** The **?** words on each graph, each shown beside its **?**. */
@@ -46,6 +53,8 @@ export const TERMS: Record<GraphTab, string[]> = {
   mix: ['Diversification'],
   gics: ['GIC ladder', 'Maturity'],
   funds: ['Unit price', 'Volatility', 'Rate of return'],
+  whatif: ['Savings account', 'GIC', 'Stock fund'],
+  markets: ['Stock fund', 'Diversification'],
 };
 
 /** A short lesson under each graph. */

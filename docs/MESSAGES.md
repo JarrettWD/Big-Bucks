@@ -938,3 +938,77 @@ The last line is added only when "Make it yours" is on for her.
 - **"View as":** exactly her screens, read-only. The picker shows her choice, with "View as" can't change anything. in place of Looks great!, and her Badges screen has no Wear it buttons.
 - **Alert (Dashboard only, never the health check):** Badges couldn't be checked for {name} on {date}. No money is affected; the next evening's run tries again. · Test accounts: in the quiet fold.
 - **Logged as (`check_badges`):** Checked {kid}'s badges after approving a deposit: gave {badges} / nothing new. · Checked every kid's badges after changing a feature switch: gave {badges} to {kid}; {badges} to {kid} / nothing new.
+
+## 14. The learning features (stage 11, draft for Dad's review)
+
+**Status:** draft. Each feature is behind its own switch; nothing here is switched on until Dad has reviewed it. Every amount is the database's; these are only the words around them.
+
+### What's new cards (the bell too)
+
+- **What will it buy? 💡**: Prices slowly go up over time. That's called inflation. · Turn on "What will it buy?" on Home to see what your money will buy later. · **Show me** opens Home.
+- **What if? 🤔**: See what would have happened if all your money had gone into just one place. · It's a look back, not a scorecard. · **Show me** opens Graphs → What if?
+- **Compare the markets 🌎**: See how the three funds did over the same time. · Different markets go up and down differently. · **Show me** opens Graphs → Markets.
+- **Why did you sell? ✏️**: After you sell part of a fund, you can write down why. · Later, you can look back and see what you were thinking.
+- **Your monthly statement 📄**: Each month, see where your money started, what came in and went out, what it earned, and where it ended. · **Show me** opens Statements.
+- **A simpler view 👀**: Like big numbers and fewer graphs? Tap "Simpler view" at the bottom of Home. · You can switch back any time. · **Show me** opens Home.
+
+### Basic and detailed views
+
+- **At the bottom of Home:** 👀 Simpler view (in detailed) · 🔎 More detail (in basic). Under "Simpler view": Big numbers and fewer graphs. You can switch back any time.
+- **Basic Home:** Total worth (very large) · Your money: 🐷 Savings · 🔒 GICs · 📈 Stock funds, each with its amount · Recent activity (3 lines) and See all.
+- **Basic Graphs:** Total worth, Mix, Money in, and What if? (when on).
+
+### What will it buy? (detailed only)
+
+- **The toggle (in Total worth):** 💡 What will it buy?
+- **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
+- **Each GIC:** When it finishes on {date}, it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
+- **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} fund went up {x}% (or went down {x}%), while prices went up about {inflation}%.
+- **Under her total:** That's normal. It's one reason people use GICs and funds too.
+- **? Inflation:** the existing glossary entry (since stage 1): Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
+
+### What if? (Graphs)
+
+- **Intro:** Here's what would have happened if all the money you put in had gone into just one place.
+- **Rows:** What you have · All in savings · All in 1-year GICs · All in the Nasdaq-100 fund, each with its amount.
+- **Under the GICs row, while any is still growing:** GIC interest is paid when each GIC finishes. {n} is / are still growing.
+- **Then:** Different choices do better at different times. Nobody can know ahead of time.
+- **Nothing in yet:** Once you've put money in, you'll see what would have happened with it here.
+- **How was this calculated? (detailed only):**
+  - Each case uses your real deposits and withdrawals, on the days they happened.
+  - Savings: the savings rate on each day, with interest paid on the 1st, like your real savings.
+  - 1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one finishes, all of it goes into a new one. (The $10 smallest GIC is left out.)
+  - The Nasdaq-100 fund: each deposit buys at the next market close. Dividends are paid like your real ones.
+  - A withdrawal comes out the way it really would: from savings, by selling units, or by breaking a GIC early (which pays no interest).
+  - Interest counts when it would really be paid, just like your real money.
+- **Never:** "you lost", "you could have", "wrong", "mistake" (a test checks).
+
+### Compare the markets (Graphs, detailed only)
+
+- **Intro:** Same time, different markets. Each fund follows a different group of companies.
+- **Ranges:** 1M · 3M · 1Y · 2Y · Since you started
+- **Legend:** {fund}: +{x}% / −{x}% (each line starts at 0%).
+
+### Why did you sell? (after a fund sale, on Buy / Sell's Done screen)
+
+- **Title:** Why did you sell? ✏️
+- **Under it:** Mom and Dad can see this. You can skip this.
+- **Box:** her words, at most 300 letters, with "{n} letters left".
+- **Buttons:** Save · Skip
+- **Saved:** Saved. You can find it in your history.
+- **From the database:** Type why, or tap Skip. · Keep it to 300 letters or fewer. · You already said why you sold.
+- **In her history, on that sale's line:** Why I sold: {her words}
+
+### Statements
+
+- **On Home:** 📄 Your statements
+- **Title:** Your statements 📄
+- **Intro:** Each month: where your money started, what came in and went out, what it earned, and where it ended.
+- **Months:** a button per month ("October 2026").
+- **Not ready yet:** Your {October} statement will be ready on {Nov 1}.
+- **Detailed lines:** Starting balance (first month: "Starting balance (Oct 10, when your account opened)") · Money in · Money out · Interest · Dividends · Fund gains or losses · Fixes from Dad (only when there are any) · Ending balance
+- **Basic lines:** Starting balance · Money in · Money out · Earned · Ending balance
+- **Under every ready statement:** Your {October} interest is paid on {Nov} 1, so it shows on your {November} statement. (Savings interest is dated the 1st of the next month; Dad, 2026-10-17.)
+- **One that doesn't add up (never shown with numbers):** This statement is being checked. It'll be here soon.
+- **Button:** 🖨️ Print or save as PDF
+- **None yet:** Your first statement comes at the end of your first month.

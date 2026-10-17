@@ -224,6 +224,15 @@ async function main(): Promise<void> {
       `select public.set_setting('feature:personalisation', 'test')`,
       [],
     );
+    // Stage 11: the six learning features, for test accounts only (Sky).
+    for (const f of ['inflation', 'whatif', 'markets', 'reflection', 'statements', 'viewmodes'])
+      act(
+        on(0, '08:33'),
+        `${f} on for test accounts`,
+        P,
+        `select public.set_setting('feature:${f}', 'test')`,
+        [],
+      );
     // Robin and Sky did their welcome screens on day 0: each signs the agreement, Dad
     // countersigns, and each finishes onboarding. (Wren hasn't started.)
     for (const [who, name, account] of [

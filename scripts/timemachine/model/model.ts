@@ -129,6 +129,10 @@ export interface Posting {
   units?: Q; // units bought, sold or added by a split
   fund?: FundId;
   gic?: string; // GIC label
+  /** A buy: the day the money left savings (later than `day` when its close came late). Stage 11. */
+  savingsDay?: Day;
+  /** A correction: money in or out, or earned (stage 8 B3). Stage 11's statements need it. */
+  countsAs?: 'money' | 'earned';
 }
 
 interface Gic {
@@ -177,6 +181,8 @@ interface Kid {
   tradeDays: Set<string>;
   /** Has she signed the account agreement? */
   signed: boolean;
+  /** Stage 11: every moment money came in or went out (deposits, withdrawals, money fixes). */
+  moneyMoves: { at: Moment; cents: bigint }[];
 }
 
 /** What the screens should show, to the nearest cent. */
@@ -310,6 +316,7 @@ export class Model {
       accruals: new Map(),
       tradeDays: new Set(),
       signed: false,
+      moneyMoves: [],
     });
   }
 
@@ -817,7 +824,15 @@ export class Model {
         this.scheduled.push({ at: at(day, '00:00'), run: () => (k.savings -= r.cents) });
       }
       k.unitChanges.push({ at: t, fund, units });
-      this.postings.push({ kid: k.id, day: dayOf(t), kind: 'buy', cents: r.cents, units, fund });
+      this.postings.push({
+        kid: k.id,
+        day: dayOf(t),
+        kind: 'buy',
+        cents: r.cents,
+        units,
+        fund,
+        savingsDay: day,
+      });
     } else {
       const have = this.unitsAt(k.id, fund, t);
       let units = have;
@@ -907,10 +922,12 @@ export class Model {
         if (r.kind === 'deposit') {
           k.savings += r.cents;
           k.netDeposits += r.cents;
+          k.moneyMoves.push({ at: t, cents: r.cents });
           this.postings.push({ kid: k.id, day: today, kind: 'deposit', cents: r.cents });
         } else if (r.kind === 'withdraw') {
           k.savings -= r.cents;
           k.netDeposits -= r.cents;
+          k.moneyMoves.push({ at: t, cents: -r.cents });
           this.postings.push({ kid: k.id, day: today, kind: 'withdraw', cents: r.cents });
         } else return no('only deposits and withdrawals need approval');
         r.status = 'approved';
@@ -1109,11 +1126,16 @@ export class Model {
         if (a.direction === 'take') this.takenFromLine.set(lineKey, taken + cents);
         const k = this.kid(a.kid);
         k.savings += a.direction === 'add' ? cents : -cents;
+        // A fix to a deposit or withdrawal is money in or out; any other is earned (stage 8 B3).
+        const countsAs = kind === 'deposit' || kind === 'withdraw' ? 'money' : 'earned';
+        if (countsAs === 'money')
+          k.moneyMoves.push({ at: t, cents: a.direction === 'add' ? cents : -cents });
         this.postings.push({
           kid: k.id,
           day: today,
           kind: a.direction === 'add' ? 'correction_add' : 'correction_take',
           cents,
+          countsAs,
         });
         return { ok: true };
       }
@@ -1311,5 +1333,233 @@ export class Model {
     }
     if (best) out.set('drop_held', best);
     return out;
+  }
+
+  /**
+   * Stage 11: a kid's statement for a month, worked out here from the model's own postings
+   * and end-of-day figures (docs/plans/stage11-plan.md). A money line counts on the day it's
+   * dated; a buy's money leaves savings on its savingsDay. Fund gains are worked out on their
+   * own: each fund's value at the end, minus at the start, minus paid for buys, plus got from sells.
+   */
+  expectedStatement(
+    kid: string,
+    month: Day,
+  ): {
+    from: Day;
+    to: Day;
+    start: bigint;
+    moneyIn: bigint;
+    moneyOut: bigint;
+    interest: bigint;
+    dividends: bigint;
+    fundGains: bigint;
+    fixes: bigint;
+    end: bigint;
+  } {
+    const k = this.kid(kid);
+    const [y, m] = parts(month);
+    const from = k.opened > month ? k.opened : month;
+    const to = addDays(addMonths(mk(y, m, 1), 1), -1);
+    const figs = (d: Day) => this.dayFigures.get(`${kid}|${d}`);
+    const start = figs(addDays(from, -1))?.total ?? 0n;
+    const end = figs(to)!.total;
+    const inWindow = (d: Day) => d >= from && d <= to;
+    let moneyIn = 0n;
+    let moneyOut = 0n;
+    let interest = 0n;
+    let dividends = 0n;
+    let fixes = 0n;
+    let paid = 0n;
+    let got = 0n;
+    for (const p of this.postings) {
+      if (p.kid !== kid) continue;
+      if (p.kind === 'buy') {
+        if (inWindow(p.savingsDay ?? p.day)) paid += p.cents;
+        continue;
+      }
+      if (!inWindow(p.day)) continue;
+      if (p.kind === 'deposit') moneyIn += p.cents;
+      else if (p.kind === 'withdraw') moneyOut += p.cents;
+      else if (
+        p.kind === 'savings_interest' ||
+        p.kind === 'gic_interest' ||
+        p.kind === 'late_interest'
+      )
+        interest += p.cents;
+      else if (p.kind === 'dividend') dividends += p.cents;
+      else if (p.kind === 'sell') got += p.cents;
+      else if (p.kind === 'correction_add' || p.kind === 'correction_take') {
+        const signed = p.kind === 'correction_add' ? p.cents : -p.cents;
+        if (p.countsAs === 'money') {
+          if (signed > 0n) moneyIn += signed;
+          else moneyOut -= signed;
+        } else fixes += signed;
+      }
+    }
+    let fundGains = 0n;
+    for (const f of FUNDS) {
+      const atEnd = figs(to)?.funds.get(f) ?? 0n;
+      const atStart = figs(addDays(from, -1))?.funds.get(f) ?? 0n;
+      fundGains += atEnd - atStart;
+    }
+    fundGains += got - paid;
+    return { from, to, start, moneyIn, moneyOut, interest, dividends, fundGains, fixes, end };
+  }
+
+  /**
+   * Stage 11: the what-if on day `today`, worked out here from the plan's rules (savings, 1-year
+   * GICs, the Nasdaq-100), from her money moments, the model's rates, closes, splits and yields.
+   */
+  expectedWhatIf(
+    kid: string,
+    today: Day,
+  ): {
+    savings: bigint;
+    gic: bigint;
+    gicsGrowing: number;
+    nasdaq: bigint;
+    dividends: bigint;
+  } | null {
+    const moves = [...this.kid(kid).moneyMoves].sort((a, b) =>
+      a.at < b.at ? -1 : a.at > b.at ? 1 : 0,
+    );
+    if (!moves.length) return null;
+    const fund: FundId = 'nasdaq100';
+    const market = MARKET_OF[fund];
+    const first = dayOf(moves[0].at);
+    // Savings
+    let sBal = 0n;
+    let sAcc = Q.ZERO;
+    // GICs
+    const gics: { p: bigint; rate: Q; mat: Day; on: boolean }[] = [];
+    let gCash = 0n;
+    // The Nasdaq-100
+    let units = Q.ZERO;
+    let nCash = 0n;
+    let divs = 0n;
+    const pending = moves
+      .filter((x) => x.cents > 0n)
+      .map((x) => {
+        const c = this.nextClose(fund, x.at);
+        return { amt: x.cents, at: c.at, day: c.day, done: false };
+      });
+    const hist = new Map<Day, Q>();
+    const finalClose = (d: Day) => this.closes.get(`${fund}|${d}`)?.close ?? null;
+    const buy = (pd: { amt: bigint; day: Day; done: boolean }) => {
+      const c = finalClose(pd.day);
+      if (!c) return;
+      units = units.add(Q.of(pd.amt, 100).div(c).ceilTo(8));
+      pd.done = true;
+    };
+    for (const d of daysFrom(first, today)) {
+      const [y, m, dd] = parts(d);
+      if (dd === 1) {
+        sBal += sAcc.ceil();
+        sAcc = Q.ZERO;
+      }
+      for (const g of gics)
+        if (g.on && g.mat === d) {
+          g.p += Q.of(g.p).mul(g.rate).mul(Q.of(12)).div(Q.of(1200)).ceil();
+          g.rate = this.rateOn('gic', 12, d);
+          g.mat = addMonths(d, 12);
+        }
+      for (const s of this.splits)
+        if (s.fund === fund && s.day === d) units = units.mul(Q.of(s.to, s.from));
+      if ([1, 4, 7, 10].includes(m)) {
+        const qStart = mk(y, m, 1);
+        let payDay = qStart;
+        while (!this.isTradingDay(market, payDay)) payDay = addDays(payDay, 1);
+        if (payDay === d) {
+          let last = addDays(qStart, -1);
+          while (!this.isTradingDay(market, last)) last = addDays(last, -1);
+          const close = finalClose(last);
+          if (close) {
+            const qFrom = addMonths(qStart, -3);
+            const qDays = diffDays(qStart, qFrom);
+            const splitsIn = this.splits.filter(
+              (s) => s.fund === fund && s.day > qFrom && s.day <= last,
+            );
+            let unitDays = Q.ZERO;
+            for (let x = qFrom; x < qStart; x = addDays(x, 1)) {
+              let u = hist.get(x) ?? Q.ZERO;
+              for (const s of splitsIn) if (s.day > x) u = u.mul(Q.of(s.to, s.from));
+              unitDays = unitDays.add(u);
+            }
+            if (unitDays.sign() > 0) {
+              const cents = unitDays
+                .div(Q.of(qDays))
+                .mul(close)
+                .mul(this.yieldOn(fund, d))
+                .div(Q.of(4))
+                .ceil();
+              nCash += cents;
+              divs += cents;
+            }
+          }
+        }
+      }
+      for (const mv of moves.filter((x) => dayOf(x.at) === d)) {
+        for (const pd of pending) if (!pd.done && pd.at <= mv.at) buy(pd);
+        if (mv.cents > 0n) {
+          sBal += mv.cents;
+          gics.push({
+            p: mv.cents,
+            rate: this.rateOn('gic', 12, d),
+            mat: addMonths(d, 12),
+            on: true,
+          });
+        } else {
+          let need = -mv.cents;
+          sBal = sBal - need > 0n ? sBal - need : 0n;
+          // GICs: cash first, then break the newest.
+          for (let i = gics.length - 1; gCash < need && i >= 0; i--)
+            if (gics[i].on) {
+              gCash += gics[i].p;
+              gics[i].on = false;
+            }
+          gCash = gCash - need > 0n ? gCash - need : 0n;
+          // The Nasdaq-100: unbought money first, then cash, then sell at the latest close before it.
+          for (const pd of pending)
+            if (!pd.done && pd.at > mv.at && need > 0n) {
+              const n = need < pd.amt ? need : pd.amt;
+              pd.amt -= n;
+              need -= n;
+            }
+          const fromCash = need < nCash ? need : nCash;
+          nCash -= fromCash;
+          need -= fromCash;
+          if (need > 0n && units.sign() > 0) {
+            let close: Q | null = null;
+            for (let x = d, i = 0; i < 30 && !close; x = addDays(x, -1), i++)
+              if (this.isTradingDay(market, x) && this.closeMoment(market, x) <= mv.at)
+                close = finalClose(x);
+            if (close) {
+              const want = Q.of(need, 100).div(close).ceilTo(8);
+              const sell = want.cmp(units) < 0 ? want : units;
+              const proceeds = sell.mul(close).mul(Q.of(100)).ceil();
+              units = units.sub(sell);
+              nCash = nCash + proceeds - need > 0n ? nCash + proceeds - need : 0n;
+            }
+          }
+        }
+      }
+      for (const pd of pending) if (!pd.done && pd.day <= d && pd.amt > 0n) buy(pd);
+      hist.set(d, units);
+      if (d < today)
+        sAcc = sAcc.add(
+          Q.of(sBal)
+            .mul(this.rateOn('savings', null, d))
+            .div(Q.of(100 * daysInYear(y))),
+        );
+    }
+    const lastClose = this.latestClose(fund, today) ?? Q.ZERO;
+    const unbought = pending.filter((pd) => !pd.done).reduce((s, pd) => s + pd.amt, 0n);
+    return {
+      savings: sBal,
+      gic: gCash + gics.filter((g) => g.on).reduce((s, g) => s + g.p, 0n),
+      gicsGrowing: gics.filter((g) => g.on).length,
+      nasdaq: nCash + unbought + units.mul(lastClose).mul(Q.of(100)).round(),
+      dividends: divs,
+    };
   }
 }

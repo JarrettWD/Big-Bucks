@@ -42,7 +42,7 @@ import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
 import { kidRpc, useKidView } from '../kidView';
 import {
-  GRAPH_TABS,
+  visibleTabs,
   WORTH_RANGES,
   axisDollars,
   formatPrice,
@@ -72,6 +72,8 @@ import {
   type WorthRange,
 } from './graphData';
 import * as T from './graphText';
+import { gicsGrowing, TEXT as LEARN } from '../learn/learnText';
+import '../learn/Learn.css';
 import '../home/Home.css';
 import './Graphs.css';
 
@@ -124,7 +126,9 @@ export default function Graphs() {
   const { view, summary } = useKid();
   const [params, setParams] = useSearchParams();
   const asked = params.get('g') as GraphTab | null;
-  const tab: GraphTab = asked && GRAPH_TABS.includes(asked) ? asked : 'worth';
+  // Stage 11: the tabs depend on her view and the learning switches.
+  const tabs = visibleTabs(summary.viewMode, summary.features);
+  const tab: GraphTab = asked && tabs.includes(asked) ? asked : 'worth';
   const accountId = view.accountId;
   const ranges = useRpc<Ranges>('graph_ranges', accountId ? { p_account_id: accountId } : null);
   const [funds, setFunds] = useState<FundInfo[] | null>(null);
@@ -153,16 +157,16 @@ export default function Graphs() {
     if (focus) tabRefs.current[t]?.focus();
   };
   const onTabKey = (e: React.KeyboardEvent) => {
-    const i = GRAPH_TABS.indexOf(tab);
+    const i = tabs.indexOf(tab);
     const go: Record<string, number> = {
       ArrowRight: i + 1,
       ArrowLeft: i - 1,
       Home: 0,
-      End: GRAPH_TABS.length - 1,
+      End: tabs.length - 1,
     };
     if (!(e.key in go)) return;
     e.preventDefault();
-    pick(GRAPH_TABS[(go[e.key] + GRAPH_TABS.length) % GRAPH_TABS.length], true);
+    pick(tabs[(go[e.key] + tabs.length) % tabs.length], true);
   };
 
   let body: ReactNode;
@@ -186,6 +190,8 @@ export default function Graphs() {
         {tab === 'mix' && <MixGraph base={base} />}
         {tab === 'gics' && <LadderGraph base={base} />}
         {tab === 'funds' && <FundGraph base={base} />}
+        {tab === 'whatif' && <WhatIfGraph base={base} />}
+        {tab === 'markets' && <MarketsGraph base={base} />}
       </>
     );
   }
@@ -194,7 +200,7 @@ export default function Graphs() {
     <div className="graphs">
       <h1 className="graphs__title">{T.TITLE}</h1>
       <div className="graphs__tabs" role="tablist" aria-label={T.TITLE} onKeyDown={onTabKey}>
-        {GRAPH_TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             ref={(el) => {
@@ -1239,6 +1245,166 @@ function FundGraph({ base }: { base: Base }) {
                   ))}
                 </tbody>
               </TableToggle>
+            </>
+          );
+        }}
+      </Loaded>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- 7. What if? (stage 11)
+
+interface WhatIf {
+  on: boolean;
+  none?: boolean;
+  actual_cents: Cents;
+  savings_cents: Cents;
+  gic_cents: Cents;
+  gics_growing: number;
+  nasdaq_cents: Cents;
+}
+
+function WhatIfGraph({ base }: { base: Base }) {
+  const { summary } = useKid();
+  const q = useRpc<WhatIf>('kid_what_if', { p_account_id: base.accountId });
+  const basic = summary.viewMode === 'basic';
+  return (
+    <Loaded q={q} empty={(d) => !d.on}>
+      {(d) =>
+        d.none ? (
+          <p className="graph__msg">{LEARN.whatIfNone}</p>
+        ) : (
+          <div className="whatif">
+            <ul className="whatif__list">
+              {(
+                [
+                  [LEARN.whatIfYours, d.actual_cents, true, null],
+                  [LEARN.whatIfSavings, d.savings_cents, false, null],
+                  [LEARN.whatIfGics, d.gic_cents, false, gicsGrowing(Number(d.gics_growing))],
+                  [LEARN.whatIfNasdaq, d.nasdaq_cents, false, null],
+                ] as [string, Cents, boolean, string | null][]
+              ).map(([name, cents, yours, note]) => (
+                <li key={name} className={yours ? 'whatif__row whatif__row--yours' : 'whatif__row'}>
+                  <span className="whatif__name">{name}</span>
+                  <span className="whatif__amount">{formatCents(cents)}</span>
+                  {note && <p className="whatif__note">{note}</p>}
+                </li>
+              ))}
+            </ul>
+            <p>{LEARN.whatIfClose}</p>
+            {!basic && (
+              <details className="whatif__how">
+                <summary>{LEARN.whatIfHow}</summary>
+                <ul>
+                  {LEARN.whatIfHowLines.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )
+      }
+    </Loaded>
+  );
+}
+
+// ---------------------------------------------------------------- 8. Compare the markets (stage 11)
+
+type MarketRange = '1M' | '3M' | '1Y' | '2Y' | 'start';
+const MARKET_RANGES: MarketRange[] = ['1M', '3M', '1Y', '2Y', 'start'];
+interface MarketCompare {
+  on: boolean;
+  range: string;
+  from: string | null;
+  funds: {
+    fund: string;
+    name: string;
+    colour: string;
+    last_pct: string | null;
+    points: { day: string; pct: string }[] | null;
+  }[];
+}
+
+function MarketsGraph({ base }: { base: Base }) {
+  const [range, setRange] = useState<MarketRange>('1Y');
+  const q = useRpc<MarketCompare>('kid_market_compare', {
+    p_account_id: base.accountId,
+    p_range: range,
+  });
+  return (
+    <>
+      <div className="graph__controls">
+        <Choice
+          label={T.RANGE_GROUP}
+          options={MARKET_RANGES.map((r) => ({
+            key: r,
+            short: LEARN.marketsRanges[r],
+            long: LEARN.marketsRanges[r],
+          }))}
+          value={range}
+          onChange={setRange}
+        />
+      </div>
+      <Loaded q={q} empty={(d) => !d.on || d.funds.every((f) => !f.points?.length)}>
+        {(d) => {
+          const days = new Map<string, Record<string, number | string>>();
+          for (const f of d.funds)
+            for (const p of f.points ?? []) {
+              const row = days.get(p.day) ?? { day: p.day };
+              row[f.fund] = Number(p.pct);
+              days.set(p.day, row);
+            }
+          const rows = [...days.values()].sort((a, b) => (String(a.day) < String(b.day) ? -1 : 1));
+          const pct = (v: string | number | null) =>
+            v === null ? '–' : `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
+          return (
+            <>
+              <Figure
+                label={`${T.HEADING.markets}: ${d.funds.map((f) => `${f.name} ${pct(f.last_pct)}`).join(', ')}`}
+              >
+                <LineChart data={rows} margin={{ top: 12, right: 12, bottom: 0, left: 4 }}>
+                  <CartesianGrid vertical={false} stroke="#ebe7f7" />
+                  {xAxis(base.year)}
+                  <YAxis {...axisProps} width={56} tickFormatter={(v: number) => `${v}%`} />
+                  <ReferenceLine y={0} stroke={INK.inkSoft} />
+                  <Tooltip
+                    content={({ active, label }) => {
+                      const r = rows.find((x) => x.day === label);
+                      if (!active || !r) return null;
+                      return (
+                        <Tip
+                          title={formatDate(String(r.day), base.year)}
+                          lines={d.funds
+                            .filter((f) => r[f.fund] !== undefined)
+                            .map((f) => ({ name: f.name, value: pct(r[f.fund] as number) }))}
+                        />
+                      );
+                    }}
+                  />
+                  {d.funds.map((f) => (
+                    <Line
+                      key={f.fund}
+                      dataKey={f.fund}
+                      name={f.name}
+                      stroke={f.colour}
+                      strokeWidth={3}
+                      dot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
+                  ))}
+                </LineChart>
+              </Figure>
+              <ul className="graph__legend">
+                {d.funds.map((f) => (
+                  <li key={f.fund}>
+                    <span className="dot" style={{ background: f.colour }} aria-hidden="true" />
+                    {f.name}: {pct(f.last_pct)}
+                  </li>
+                ))}
+              </ul>
             </>
           );
         }}

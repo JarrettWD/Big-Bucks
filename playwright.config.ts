@@ -26,7 +26,7 @@ export default defineConfig({
     {
       name: 'android-chrome',
       testIgnore:
-        /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding|nightly|look).spec.ts/,
+        /(layout|graphs|dashboard|viewas|approvals|settings|fix|onboarding|nightly|look|learn).spec.ts/,
       dependencies: ['layout'],
       use: { ...devices['Pixel 7'] },
     },
@@ -72,6 +72,13 @@ export default defineConfig({
       name: 'look',
       testMatch: /look.spec.ts/,
       dependencies: ['nightly'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // Stage 11: the learning features. Last: it sells a little of Sky's fund and switches her view.
+    {
+      name: 'learn',
+      testMatch: /learn.spec.ts/,
+      dependencies: ['look'],
       use: { ...devices['Pixel 7'] },
     },
   ],

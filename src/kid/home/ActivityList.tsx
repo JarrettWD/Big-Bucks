@@ -7,12 +7,14 @@
 //   - "Something looks wrong?": a question to Dad with the line attached
 // Wording is listed in docs/MESSAGES.md §7 and §9.
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 import { useKid } from '../KidShell';
-import { useKidView } from '../kidView';
+import { kidRpc, useKidView } from '../kidView';
+import { TEXT as LEARN } from '../learn/learnText';
+import '../learn/Learn.css';
 import { useQuestions, type Question } from '../useQuestions';
 import { Avatar } from '../../components/Avatar';
 import { describeActivity, type ActivityLine, type ActivityRow } from './activityText';
@@ -41,8 +43,23 @@ export function ActivityList({
   thisYear: number;
   shared?: { questions: Question[]; reload: () => void };
 }) {
-  const { view } = useKid();
+  const { view, summary } = useKid();
   const own = useQuestions(shared ? null : view);
+  // Stage 11: why she sold, on each sale line (her own words, when she wrote any).
+  const [why, setWhy] = useState<Map<number, string>>(new Map());
+  const reflections = Boolean(summary.features.reflection);
+  useEffect(() => {
+    if (!reflections) return;
+    let live = true;
+    void kidRpc<{ request_id: number; text: string }[]>(view, 'kid_reflections', {
+      p_account_id: view.accountId,
+    }).then(({ data }) => {
+      if (live && data) setWhy(new Map(data.map((x) => [x.request_id, x.text])));
+    });
+    return () => {
+      live = false;
+    };
+  }, [view, reflections]);
   const { questions, reload } = shared ?? own;
   const [open, setOpen] = useState<string | null>(null);
   const id = useId();
@@ -70,6 +87,11 @@ export function ActivityList({
               <span className="activity__text">
                 <span className="activity__title">{line.title}</span>
                 {line.detail && <span className="activity__detail">{line.detail}</span>}
+                {r.request_id !== null && why.get(r.request_id) && (
+                  <span className="activity__detail why">
+                    {LEARN.whyISold} {why.get(r.request_id)}
+                  </span>
+                )}
                 <span className="activity__date">{formatDate(line.day, thisYear)}</span>
               </span>
               {line.amount && <span className="activity__amount">{line.amount}</span>}
