@@ -4,7 +4,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
 
 ## Status
 
-- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is live in production (2026-10-17), switched on for test accounts only; Dad's phone test passed. Restore drill on a real backup with badges: PASS (step 9). Still to do: the next evening's badge check (step 10).** **Stage 11 (learning features) is built and tested locally (2026-10-17): every suite and the time machine (18 of 18) pass; waiting for Dad's review, then production after Stage 10's step 10.**
+- Current stage: **stages 4 and 5 both done.** Stage 5 (2026-10-10): backups live, restore drill passed on a production backup (follow-ups in its close-out). **Stage 4 (2026-10-14):** three live price nights, Mon–Wed Oct 12–14, 2026, all as expected. Every phase 1 stage (0–8, then 4 and 5) is done. **Phase 1 is complete (2026-10-14, Dad).** Next: the solo beta (plan below). **Stage 9 (Wish List and goals) is done (2026-10-16): live in production, switched on for test accounts only; restore drill passed on a real backup with photos.** **Stage 10 (Make it yours and badges) is done (2026-10-18): live in production for test accounts only; the phone test, the restore drill (PASS) and the first night's badge check (OK after reconcile) all confirmed.** **Stage 11 (learning features) is built and tested locally (2026-10-17): every suite and the time machine (18 of 18) pass; waiting for Dad's review, then production after Stage 10's step 10.**
   - Step 1, the pre-launch audits, is done: three rounds of fixes, approved by Dad and pushed (commit 60dbd20, CI passed, 2026-10-09).
   - The plan for the rest of stage 4 is approved (Stage 4 entry below).
   - Part A is built and tested locally (2026-10-09).
@@ -139,7 +139,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **Production:** not started. Waiting for Stage 10's step 10, then the plan's steps 1–10 with Dad's OK at each.
 - **Phone test, then Nov 1:** in the plan (section 11). On Nov 1, October's statement appears.
 
-### Stage 10 — Make it yours and badges (2026-10-16, in production for test accounts only since 2026-10-17)
+### Stage 10 — Make it yours and badges (done 2026-10-18; in production for test accounts only since 2026-10-17)
 
 - **Plan:** `docs/plans/stage10-plan.md`, approved by Dad 2026-10-16 with A1, B, C, D, E (top hat and bow, for now), F (Dashboard alert only), G (retroactive) and H, plus one change:
   - **No event checks inside money functions.** After a money call succeeds, the app makes a separate call: `kid_check_my_badges()` after her GIC purchase or renewal, and `parent_check_badges()` after Dad approves a deposit or changes the Badges switch.
@@ -232,7 +232,13 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
      - The log: the two switch rows and one `check_badges` row ("…gave First GIC to Test Kid.").
      - Only one GIC was bought today (the 6-month); a 3-month buy, if tried, didn't go through. No money was affected.
      - **Restore drill on this backup: PASS.** 41 of 41 tables match row for row, and the test kid's 6 balances match to the cent and unit. `after_restore()` gave the usual lines for a new project (Vault keys, PINs).
-  10. **Still to do:** after tonight's run (Sat Oct 17), check in the next backup that `job_runs` has a `badges` row, ok, after `reconcile`, and that every money job is ok as before.
+  10. **The next night, from this morning's backup `6b0833b`** (Backup 2026-10-18: 36 tables, 1011 rows, 10 ledger rows; taken 7:00 am Sun Oct 18), read-only. Last night's run (Oct 17, nightly call at 4:30 pm, sent):
+     - every money job for Oct 17 was OK the first time: expire, splits, settle, dividends, notes, GIC maturity, auto-move, monthly, rate notices;
+     - Oct 16's interest was OK (finished in that run). Oct 17's waits for the day to end, as every night; tonight's run does it;
+     - `reconcile` for Oct 17 was OK, no problems (and Oct 14, 15 and 16 too);
+     - **then `badges` for Oct 17 was OK**, at 4:30:29 pm, after reconcile (4:30:28 pm): the test kid checked, nothing new, none skipped, none failed;
+     - no `badge_check_failed` alert ever (alerts: 4 in all, none open); the outbox has nothing waiting (33 rows, all sent).
+- **Stage 10 is done** (2026-10-18). The girls get both features at Stage 12, when every phase 2 feature goes on for everyone.
 - **The planned production steps** (kept for the record):
   1. Check tonight's nightly run is finished (Dashboard) and the outbox is empty.
   2. Take a backup by hand (big-bucks-backups → Actions → Backup → Run workflow). It must be green.
