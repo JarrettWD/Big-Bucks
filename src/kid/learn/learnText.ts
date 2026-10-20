@@ -3,6 +3,7 @@
 
 import { formatDate } from '../../lib/format';
 import { formatCents } from '../../lib/money';
+import { fundLabel } from '../fundNames';
 
 export const TEXT = {
   // Modes
@@ -19,7 +20,7 @@ export const TEXT = {
   whatIfYours: 'What you have',
   whatIfSavings: 'All in savings',
   whatIfGics: 'All in 1-year GICs',
-  whatIfNasdaq: 'All in the Nasdaq-100 fund',
+  whatIfNasdaq: 'All in the Nasdaq-100 fund (QQQ)',
   whatIfClose: 'Different choices do better at different times. Nobody can know ahead of time.',
   whatIfNone: "Once you've put money in, you'll see what would have happened with it here.",
   whatIfHow: 'How was this calculated?',
@@ -27,7 +28,7 @@ export const TEXT = {
     'Each case uses your real deposits and withdrawals, on the days they happened.',
     'Savings: the savings rate on each day, with interest paid on the 1st, like your real savings.',
     "1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one finishes, all of it goes into a new one. (The $10 smallest GIC is left out.)",
-    'The Nasdaq-100 fund: each deposit buys at the next market close. Dividends are paid like your real ones.',
+    'The Nasdaq-100 fund (QQQ): each deposit buys at the next market close. Dividends are paid like your real ones.',
     'A withdrawal comes out the way it really would: from savings, by selling units, or by breaking a GIC early (which pays no interest).',
     'Interest counts when it would really be paid, just like your real money.',
   ],
@@ -117,12 +118,12 @@ export function gicInflation(
 }
 
 export function fundInflation(
-  f: { name: string; year_change_pct: string | number | null },
+  f: { fund?: string; name: string; year_change_pct: string | number | null },
   inflation: string,
 ): string {
   if (f.year_change_pct === null)
     return `Funds don't have a set rate. Prices go up about ${Number(inflation)}% a year right now.`;
   const pct = Number(f.year_change_pct);
   const word = pct >= 0 ? 'went up' : 'went down';
-  return `Funds don't have a set rate. Over the past year, the ${f.name} fund ${word} ${Math.abs(pct).toFixed(2).replace(/\.00$/, '')}%, while prices went up about ${Number(inflation)}%.`;
+  return `Funds don't have a set rate. Over the past year, the ${fundLabel(f.fund, f.name)} ${word} ${Math.abs(pct).toFixed(2).replace(/\.00$/, '')}%, while prices went up about ${Number(inflation)}%.`;
 }

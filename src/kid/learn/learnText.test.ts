@@ -101,8 +101,8 @@ describe('the inflation view', () => {
     );
   });
   it('looks back for funds, never a promise', () => {
-    expect(fundInflation({ name: 'Dow Jones', year_change_pct: '10.00' }, '2.0')).toBe(
-      "Funds don't have a set rate. Over the past year, the Dow Jones fund went up 10%, while prices went up about 2%.",
+    expect(fundInflation({ fund: 'dow', name: 'Dow Jones', year_change_pct: '10.00' }, '2.0')).toBe(
+      "Funds don't have a set rate. Over the past year, the Dow Jones fund (DIA) went up 10%, while prices went up about 2%.",
     );
     expect(fundInflation({ name: 'TSX', year_change_pct: '-3.50' }, '2.0')).toContain(
       'went down 3.50%',

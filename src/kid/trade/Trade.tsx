@@ -37,6 +37,7 @@ import {
   isCaution,
   placeBlocked,
   placeLabel,
+  withFundLabels,
   sellsAll,
   summaryFor,
   waitingLine,
@@ -82,7 +83,7 @@ export default function Trade() {
       if (error || !data) setLoadError(true);
       else {
         setLoadError(false);
-        setOpts(data as TradeOptions);
+        setOpts(withFundLabels(data as TradeOptions));
       }
     });
     return () => {
@@ -457,14 +458,19 @@ function TradeForm(p: {
           </select>
         </div>
       </div>
+      {fund && (
+        <p className="trade__help">
+          About the {fund.name} <Explain term={fund.name} />
+        </p>
+      )}
       {p.side === 'sell' && p.fromList.length === 1 && (
         <p className="muted">You don't have any GICs or funds to sell right now.</p>
       )}
 
       {p.blocked === 'traded today, again tomorrow' && (
         <p className="trade__note" role="status">
-          You've already traded the {fund?.name} fund today. You can trade it again tomorrow. One
-          trade per fund each day helps you think it through.
+          You've already traded the {fund?.name} today. You can trade it again tomorrow. One trade
+          per fund each day helps you think it through.
         </p>
       )}
       {p.blocked === 'ready today' && (

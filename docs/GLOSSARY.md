@@ -1,6 +1,6 @@
 # Big Bucks — Glossary (draft for review)
 
-These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned; `20261012000000_request_expiry_dashboard.sql` added Request expiry).
+These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned; `20261012000000_request_expiry_dashboard.sql` added Request expiry; `20261031000000_rate_notice_wording.sql` added the three fund labels).
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migration isn't changed. This file is a review copy and is regenerated from the database after each change.
 
@@ -19,6 +19,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Dividend:** Money a company shares with the people who own its stock. Your funds pay you a dividend every three months, and it goes into your savings.
 - **Dividend yield:** How much a fund pays in dividends in a year, as a percent of its value. The TSX fund pays the most.
 - **Dow Jones:** An index of 30 big, well-known US companies. It's the steady one of your three funds.
+- **Dow Jones fund (DIA):** On the news, the Dow Jones is measured in points (about 45,000). Your fund's price is the price of one unit of DIA, a real fund that follows the Dow Jones. When the Dow Jones goes up 1%, DIA goes up about 1% too. Watch the percent, not the number. *(New 2026-10-19.)*
 - **Effective date:** The day a new rate starts. Dad usually gives a week's notice so you have time to decide what to do.
 - **ETF:** Short for exchange-traded fund: a fund that people buy and sell on the stock market. Big Bucks uses the prices of three real ETFs (DIA, QQQ and XIC) to follow each index.
 - **Gain:** When something is worth more than you paid for it. You only lock in a gain when you sell.
@@ -37,6 +38,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Maturity:** The day your GIC's promise is finished. You get your money back plus the interest, and you choose what to do next.
 - **Money earned:** Your total worth minus your net deposits. It's the part of your money that your money made for you.
 - **Nasdaq-100:** An index of 100 of the biggest companies on the Nasdaq stock market, mostly technology companies. It's the thrill ride: bigger ups and bigger downs.
+- **Nasdaq-100 fund (QQQ):** On the news, the Nasdaq-100 is measured in points. Your fund's price is the price of one unit of QQQ, a real fund that follows the Nasdaq-100. When the Nasdaq-100 goes up 1%, QQQ goes up about 1% too. Watch the percent, not the number. *(New 2026-10-19.)*
 - **Net deposits:** All the money you've put in, minus all the money you've taken out.
 - **On hold:** Money set aside for a request that's waiting, so you can't use the same dollars twice.
 - **Per year:** Rates are for a whole year. If you keep your money in for half a year, you earn about half as much.
@@ -57,6 +59,7 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **Term:** How long you promise to leave your money in a GIC: 1, 3, 6 or 9 months, or 1 or 2 years. A longer promise usually pays more.
 - **Total worth:** Everything you have in Big Bucks added up: savings, GICs and stock funds.
 - **TSX:** Canada's main stock market. Your TSX fund follows hundreds of big Canadian companies, like banks, energy companies and stores.
+- **TSX fund (XIC):** On the news, the TSX (the S&P/TSX Composite) is measured in points. Your fund's price is the price of one unit of XIC, a real fund that follows the TSX. When the TSX goes up 1%, XIC goes up about 1% too. Watch the percent, not the number. *(New 2026-10-19, from the beta: the ? next to the fund's name.)*
 - **Unit:** A share of a fund. When you buy, your money turns into units. When you sell, your units turn back into money at that day's price.
 - **Unit price:** What one unit of a fund costs today. If the unit price goes up, every unit you own is worth more.
 - **Volatility:** How much a price jumps up and down. The Nasdaq-100 fund is the most volatile of the three.

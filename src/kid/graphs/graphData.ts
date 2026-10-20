@@ -6,6 +6,7 @@
 
 import { OPTION } from '../../lib/colours';
 import { toCents, type Cents } from '../../lib/money';
+import { fundLabel } from '../fundNames';
 
 export type GraphTab =
   'worth' | 'growth' | 'money' | 'mix' | 'gics' | 'funds' | 'whatif' | 'markets';
@@ -84,7 +85,12 @@ export function optionList(funds: FundInfo[]): OptionInfo[] {
     { key: 'gic', name: 'GICs', colour: OPTION.gic, dash: DASHES.gic },
     ...[...funds]
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((f) => ({ key: f.id, name: f.name, colour: f.colour, dash: DASHES[f.id] ?? '' })),
+      .map((f) => ({
+        key: f.id,
+        name: fundLabel(f.id, f.name),
+        colour: f.colour,
+        dash: DASHES[f.id] ?? '',
+      })),
   ];
 }
 

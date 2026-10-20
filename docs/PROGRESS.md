@@ -71,6 +71,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`); until then, RUNBOOK says "stop and ask";
 - **the install check on a girl's phone** (Family Link; Stage 12 entry above);
 - **Dad's fresh read-only audit** of changes since the third pre-launch audit, before the girls' real accounts;
+- **the safety net records that it fired** (Dad, 2026-10-19), so Dad would know if a girl hit "Something went wrong on this screen" (which screen, when; no personal data);
 - at Stage 12 itself: a fresh backup, `prelaunch_reset`, `launched_at`, the girls' accounts, and every phase 2 feature on for everyone (BUILD-PLAN).
 - **Parked:** the install on Dad's S26 (cosmetic; Chrome Beta or `adb logcat` remain, Dad's call).
 
@@ -112,6 +113,16 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **3. Fund names next to ETF prices:** proposed only (in the report to Dad), not changed.
 - **Tests (local):** pgTAP **2215 of 2215**; Vitest **408 of 408**; time machine **18 of 18**; Playwright **127 of 127**.
 - **Not deployed** (Dad: these ship with Stage 11's deploy, step 6). No production changes.
+- **Dad's review (2026-10-19, approved with changes), built the same evening:**
+  - **Safety net wording:** kid screens end "...tell Mom or Dad what you were doing."; Dad's screens (everything under /parent, "View as" included) end "...note what you were doing and tell Buck." (`errorText.ts`, tested in `ErrorBoundary.test.tsx`).
+  - **Rate notices** (migration `20261031000000_rate_notice_wording.sql`, again only the notice wording in `add_rate_unlogged`):
+    - "until it matures" instead of "until it finishes" on the savings line;
+    - a GIC increase adds "A {term} GIC bought from {date / today} gets {new}." after the locked-in line, only when nothing contradicts it: no special for that term on its first day, and no other change or special for that term already planned after it;
+    - `rate_notice_tips_test.sql` now has 22 checks (a raise today, a raise on a later day, a raise with a special overlapping, a raise with a later cut planned); the fingerprint in `parent_approvals_test` updated on purpose again.
+  - **Fund names:** the kid screens say "Dow Jones fund (DIA)", "Nasdaq-100 fund (QQQ)" and "TSX fund (XIC)" (`src/kid/fundNames.ts`): Home's fund cards and mix, Buy / Sell (picker, an "About the {fund}" line with its **?**, the questions, Done, the one-trade-a-day note), Graphs (legends, tables, "Price of one unit of XIC" with the **?**; the fund buttons keep the short name to fit a phone), and the learning lines. Each label is a new glossary term with its **?** text (same migration). Notices, history lines and database errors keep the short name.
+  - **Saturday's dry run will list three migrations:** `20261029000000_learning.sql`, `20261030000000_rate_notice_tips.sql` and `20261031000000_rate_notice_wording.sql`.
+  - **Tests (local):** pgTAP **2221 of 2221**; Vitest **413 of 413**; Playwright **127 of 127** (Home, Graphs and Buy / Sell checks now expect the new labels; Home opens the TSX fund's **?**). No money logic changed (notice wording and screen labels only), so the time machine runs in CI.
+  - **Still to check:** the Oct 20 7:00 am backup, for no cap change from the evening of Oct 19.
 
 ### Stage 11 — Learning features, statements and view modes (2026-10-17, built and tested locally; not in production yet)
 

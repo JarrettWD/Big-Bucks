@@ -46,11 +46,15 @@ test('Home shows her money exactly as the database works it out', async ({ page 
   // All three funds, each with its last market day in words.
   const funds = page.locator('.fund');
   await expect(funds).toHaveCount(3);
-  for (const name of ['Dow Jones', 'Nasdaq-100', 'TSX'])
+  // Each fund says which real fund it follows (Dad, 2026-10-19), with a ? on why its price isn't the index's points.
+  for (const name of ['Dow Jones fund (DIA)', 'Nasdaq-100 fund (QQQ)', 'TSX fund (XIC)'])
     await expect(funds.filter({ hasText: name })).toHaveCount(1);
   await expect(funds.locator('.move').first()).toHaveText(
     /^(▲ Up|▼ Down) \d+\.\d\d%$|^● No change$/,
   );
+  await page.getByRole('button', { name: 'What does "TSX fund (XIC)" mean?' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Watch the percent, not the number.');
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'What does "Daily change" mean?' })).toBeVisible();
 
   // Her mix adds up to 100%.

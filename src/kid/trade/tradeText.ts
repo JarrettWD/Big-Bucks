@@ -5,6 +5,7 @@
 import { formatDate, formatRate, termLabel, termWords } from '../../lib/format';
 import { formatCents, type Cents } from '../../lib/money';
 import type { Kind, Place } from './moves';
+import { fundLabel } from '../fundNames';
 
 // What the database sends ---------------------------------------------------------------------
 
@@ -97,6 +98,11 @@ export interface Preview {
   warnings: Warning[];
   settles: string | null;
   gic_quotes: GicQuote[];
+}
+
+/** Her funds named the way kid screens name them ("TSX fund (XIC)"), once, when they load. */
+export function withFundLabels(o: TradeOptions): TradeOptions {
+  return { ...o, funds: o.funds.map((f) => ({ ...f, name: fundLabel(f.fund_id, f.name) })) };
 }
 
 // Choices in the From and To lists ---------------------------------------------------------------

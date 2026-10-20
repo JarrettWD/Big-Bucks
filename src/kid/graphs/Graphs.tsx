@@ -74,6 +74,7 @@ import {
 import * as T from './graphText';
 import { gicsGrowing, TEXT as LEARN } from '../learn/learnText';
 import '../learn/Learn.css';
+import { fundLabel, optionName, unitPriceLine } from '../fundNames';
 import '../home/Home.css';
 import './Graphs.css';
 
@@ -891,7 +892,8 @@ function MixGraph({ base }: { base: Base }) {
   const q = useRpc<MixRow[]>('my_mix', { p_account_id: base.accountId });
   return (
     <Loaded q={q} empty={(d) => d.length === 0}>
-      {(d) => {
+      {(raw) => {
+        const d = raw.map((r) => ({ ...r, name: optionName(r.option, r.name) }));
         const opt = (k: string) => base.options.find((o) => o.key === k)!;
         const data = d.map((r) => ({ name: r.name, key: r.option, value: plot(r.value_cents) }));
         return (
@@ -1101,7 +1103,11 @@ function FundGraph({ base }: { base: Base }) {
       <div className="graph__controls">
         <Choice
           label={T.FUND_GROUP}
-          options={base.funds.map((f) => ({ key: f.id, short: f.name, long: f.name }))}
+          options={base.funds.map((f) => ({
+            key: f.id,
+            short: f.name,
+            long: fundLabel(f.id, f.name),
+          }))}
           value={fund}
           onChange={setFund}
         />
@@ -1115,6 +1121,9 @@ function FundGraph({ base }: { base: Base }) {
             <>
               <FundFiguresBlock figures={T.fundFigures(info.name, range, c)} />
               <p className="muted">{T.fundChange(info.name, c.change_pct)}</p>
+              <p className="muted">
+                {unitPriceLine(fund)} <Explain term={info.name} />
+              </p>
               <Figure label={`${info.name}: ${T.fundChange(info.name, c.change_pct)}`}>
                 <LineChart data={rows} margin={{ top: 24, right: 12, bottom: 0, left: 4 }}>
                   <CartesianGrid vertical={false} stroke="#ebe7f7" />
@@ -1348,7 +1357,11 @@ function MarketsGraph({ base }: { base: Base }) {
         />
       </div>
       <Loaded q={q} empty={(d) => !d.on || d.funds.every((f) => !f.points?.length)}>
-        {(d) => {
+        {(raw) => {
+          const d = {
+            ...raw,
+            funds: raw.funds.map((f) => ({ ...f, name: optionName(f.fund, f.name) })),
+          };
           const days = new Map<string, Record<string, number | string>>();
           for (const f of d.funds)
             for (const p of f.points ?? []) {

@@ -255,8 +255,8 @@ export function fundChange(name: string, pct: number | string | null): string {
   if (pct === null) return '';
   const way = sign(pct);
   const amount = signedPct(pct).replace(/^[+−]/, '');
-  if (way === 0) return `Over the whole time shown, the ${name} fund didn’t change.`;
-  return `Over the whole time shown, the ${name} fund went ${way > 0 ? 'up' : 'down'} ${amount}.`;
+  if (way === 0) return `Over the whole time shown, the ${name} didn’t change.`;
+  return `Over the whole time shown, the ${name} went ${way > 0 ? 'up' : 'down'} ${amount}.`;
 }
 
 export const EARNED_LABEL = 'Money earned so far';

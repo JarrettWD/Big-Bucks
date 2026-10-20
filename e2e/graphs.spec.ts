@@ -7,6 +7,7 @@ import { formatDate } from '../src/lib/format.ts';
 import { formatCents } from '../src/lib/money.ts';
 import { signedPct } from '../src/kid/graphs/graphData.ts';
 import { earnedNote } from '../src/kid/graphs/graphText.ts';
+import { optionName } from '../src/kid/fundNames.ts';
 import { kid, kidSignIn } from './helpers';
 
 const ROBIN = `(select account_id from public.profiles where username = 'demo_robin')`;
@@ -97,9 +98,9 @@ test('growth by option: time-weighted %, and the $ / % switch', async ({ page })
   const names: Record<string, string> = {
     savings: 'Savings',
     gic: 'GICs',
-    dow: 'Dow Jones',
-    nasdaq100: 'Nasdaq-100',
-    tsx: 'TSX',
+    dow: 'Dow Jones fund (DIA)',
+    nasdaq100: 'Nasdaq-100 fund (QQQ)',
+    tsx: 'TSX fund (XIC)',
   };
   expect(last.length, 'Robin has several options').toBeGreaterThan(2);
 
@@ -133,8 +134,8 @@ test('money in vs money earned, my mix and the GIC ladder match the database', a
     `select earned_cents::text as earned, total_cents::text as total, net_deposits_cents::text as money_in
        from public.money_in_vs_earned(${ROBIN}) order by day desc limit 1`,
   );
-  const mix = await rows<{ name: string; mix_pct: number; value: string }>(
-    `select name, mix_pct, value_cents::text as value from public.my_mix(${ROBIN})`,
+  const mix = await rows<{ option: string; name: string; mix_pct: number; value: string }>(
+    `select option, name, mix_pct, value_cents::text as value from public.my_mix(${ROBIN})`,
   );
   const ladder = await rows<{ maturity: string; ready: boolean; at: string }>(
     `select maturity_date::text as maturity, ready, at_maturity_cents::text as at from public.gic_ladder(${ROBIN})`,
@@ -164,7 +165,7 @@ test('money in vs money earned, my mix and the GIC ladder match the database', a
   const items = page.locator('.key--mix .key__item');
   await expect(items).toHaveCount(mix.length);
   for (const [i, m] of mix.entries()) {
-    await expect(items.nth(i)).toContainText(`${m.name} ${m.mix_pct}%`);
+    await expect(items.nth(i)).toContainText(`${optionName(m.option, m.name)} ${m.mix_pct}%`);
     await expect(items.nth(i)).toContainText(formatCents(m.value));
   }
 

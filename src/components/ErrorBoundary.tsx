@@ -4,10 +4,10 @@
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BOUNDARY_TEXT } from './errorText';
+import { BOUNDARY_TEXT, isParentPath } from './errorText';
 import './ErrorBoundary.css';
 
-class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class Boundary extends Component<{ children: ReactNode; parent: boolean }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError(): { failed: boolean } {
@@ -24,7 +24,7 @@ class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
     return (
       <main className="oops" role="alert">
         <h1 className="oops__title">{BOUNDARY_TEXT.title}</h1>
-        <p>{BOUNDARY_TEXT.body}</p>
+        <p>{this.props.parent ? BOUNDARY_TEXT.parentBody : BOUNDARY_TEXT.kidBody}</p>
         <div className="oops__buttons">
           <button type="button" className="oops__btn" onClick={() => window.history.back()}>
             {BOUNDARY_TEXT.back}
@@ -41,5 +41,9 @@ class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
 /** One boundary per page: moving to another page starts fresh. */
 export function ScreenBoundary({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  return <Boundary key={pathname}>{children}</Boundary>;
+  return (
+    <Boundary key={pathname} parent={isParentPath(pathname)}>
+      {children}
+    </Boundary>
+  );
 }

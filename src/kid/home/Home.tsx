@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Explain } from '../../components/Glossary';
+import { fundLabel } from '../fundNames';
 import { daysBetween, formatDate, formatPct, formatRate, termLabel } from '../../lib/format';
 import { formatCents } from '../../lib/money';
 import { useKid } from '../KidShell';
@@ -474,7 +475,7 @@ function FundsCard({ data, year }: { data: HomeData; year: number }) {
             {owned.map((f) => (
               <li key={f.fund_id}>
                 <span className="dot" style={{ background: f.colour }} aria-hidden="true" />
-                {f.name} {f.mix_pct}%
+                {fundLabel(f.fund_id, f.name)} {f.mix_pct}%
               </li>
             ))}
           </ul>
@@ -505,7 +506,9 @@ function FundRow({ f, updating }: { f: Fund; updating: boolean }) {
     <li className="fund">
       <span className="dot dot--big" style={{ background: f.colour }} aria-hidden="true" />
       <span className="fund__text">
-        <span className="fund__name">{f.name}</span>
+        <span className="fund__name">
+          {fundLabel(f.fund_id, f.name)} <Explain term={fundLabel(f.fund_id, f.name)} />
+        </span>
         <span className="fund__mine">
           {!f.owned
             ? "You don't own any yet"

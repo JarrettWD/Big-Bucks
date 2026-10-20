@@ -230,12 +230,14 @@ describe('graph wording', () => {
     expect(fundFigures('TSX', 'first', none).none).toBe('You don’t own any TSX right now.');
   });
   it('says how the whole fund moved over the range', () => {
-    expect(fundChange('Dow Jones', '0.26')).toBe(
-      'Over the whole time shown, the Dow Jones fund went up 0.26%.',
+    expect(fundChange('Dow Jones fund (DIA)', '0.26')).toBe(
+      'Over the whole time shown, the Dow Jones fund (DIA) went up 0.26%.',
     );
-    expect(fundChange('TSX', -1.4)).toBe(
-      'Over the whole time shown, the TSX fund went down 1.40%.',
+    expect(fundChange('TSX fund (XIC)', -1.4)).toBe(
+      'Over the whole time shown, the TSX fund (XIC) went down 1.40%.',
     );
-    expect(fundChange('TSX', 0)).toBe('Over the whole time shown, the TSX fund didn’t change.');
+    expect(fundChange('TSX fund (XIC)', 0)).toBe(
+      'Over the whole time shown, the TSX fund (XIC) didn’t change.',
+    );
   });
 });

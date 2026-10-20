@@ -4,7 +4,7 @@ Every message the girls can see from the money engine, exported from the databas
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migrations aren't changed. This file is a review copy and is regenerated from the migrations after each change.
 
-**How to read it:** parts in `{braces}` are filled in when the message is shown. Money looks like $1,234.56, rates like 2.0%, dates like Nov 1, units like 0.23809524, terms like "1-month", "1-year" or "2-year", and fund names are Dow Jones, Nasdaq-100 and TSX. Messages only Dad sees (on the parent screens) and technical errors aren't listed.
+**How to read it:** parts in `{braces}` are filled in when the message is shown. Money looks like $1,234.56, rates like 2.0%, dates like Nov 1, units like 0.23809524, terms like "1-month", "1-year" or "2-year", and fund names depend on who writes them: on the app's screens (§6 to §14) a fund is called by the real fund it follows, **Dow Jones fund (DIA)**, **Nasdaq-100 fund (QQQ)** and **TSX fund (XIC)**, each with a **?** (Dad, 2026-10-19); in notices, history lines and errors written by the database (§1, §2, §4, §5) it keeps the short name, Dow Jones, Nasdaq-100 or TSX. Messages only Dad sees (on the parent screens) and technical errors aren't listed.
 
 ## 1. Notices (the bell and the Home banner)
 
@@ -62,12 +62,15 @@ Each notice has a title and a body.
 - **Rate change, when Dad saves it**
   - Title: {Savings rate / {term} GIC rate} {drops from {old} to {new} / goes up from {old} to {new} / is {new}} {on {date} / today}
     - Example: Savings rate drops from 2.0% to 1.5% on Nov 1
-  - Body: {Dad's note} plus one line (changed 2026-10-19 after the beta, **draft for Dad's review**):
-    - Any savings change (a cut or a raise): This doesn't change GIC rates. A GIC keeps the rate it was bought at until it finishes.
+  - Body: {Dad's note} plus one line (changed 2026-10-19 after the beta; approved by Dad the same day):
+    - Any savings change (a cut or a raise): This doesn't change GIC rates. A GIC keeps the rate it was bought at until it matures.
       - It never tells her to buy a GIC first: savings changes don't affect GIC rates. (The old tip, "Tip: GICs bought before then keep today's rates.", nudged a kid toward a 1-month GIC at 2.5% on Oct 19, the evening before a 5.0% special started the same day as the savings cut.)
     - A GIC rate dropping later: Tip: a {term} GIC bought before {date} keeps today's {rate}.
       - Example: Tip: a 3-month GIC bought before Oct 26 keeps today's 3.0%.
-      - Only for that term, and only when today's rate for that term holds every day until then. If a special or another change for that term comes first, it says the next line instead.
+      - Only for that term, and only when today's rate for that term holds every day until then. If a special or another change for that term comes first, it says "GICs you already have keep their locked-in rate." instead.
+    - A GIC rate going up: GICs you already have keep their locked-in rate. A {term} GIC bought {from {date} / from today} gets {new}.
+      - Example: GICs you already have keep their locked-in rate. A 6-month GIC bought from Oct 26 gets 4.5%.
+      - Like the cut's tip, the second sentence is only there when nothing contradicts it: that term really pays the new rate on its first day (no special running then), and no other change or special for that term is already planned after it. Otherwise only the first sentence.
     - Any other GIC rate change: GICs you already have keep their locked-in rate.
   - Notices already sent keep their words: they're stored when sent (the Oct 19 test notice stays as it was).
 - **Rate change hidden behind a running special** (pre-launch audit: nothing changes for her until the special ends)
@@ -292,6 +295,13 @@ These come from the app's screens (`src/`), not the database, so wording edits h
 
 (An unknown username gets the same "That PIN didn't match" answer as a wrong PIN, on purpose, so the login screen never reveals which usernames exist.)
 
+### A screen that can't be shown (the app-wide safety net, Dad 2026-10-19)
+
+- **Something went wrong on this screen**
+  - Kid screens: Big Bucks couldn't show this page. Go back and try again. If it keeps happening, tell Mom or Dad what you were doing.
+  - Dad's screens (everything under /parent, "View as" included): Big Bucks couldn't show this page. Go back and try again. If it keeps happening, note what you were doing and tell Buck.
+  - Buttons: **Go back** · **Go to the start**
+
 ### Offline
 
 - **You're offline** · Big Bucks needs the internet to show your money. It'll come back as soon as you're connected.
@@ -324,7 +334,11 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
   - Each GIC: {amount} · {term} at {rate} · Ready {date} · {n} days to go · Earns {interest} by then
   - Matured and waiting: Ready now! · **Choose**
 - **Stock funds:** Your mix · {fund} {n}% · Last market day, {date} (with the **?** for "Daily change")
-  - Each fund: Yours: {value}, or You don't own any yet
+  - Each fund: {fund} **?** · Yours: {value}, or You don't own any yet
+  - The fund **?** (glossary, one per fund; Dad, 2026-10-19):
+    - Dow Jones fund (DIA): On the news, the Dow Jones is measured in points (about 45,000). Your fund's price is the price of one unit of DIA, a real fund that follows the Dow Jones. When the Dow Jones goes up 1%, DIA goes up about 1% too. Watch the percent, not the number.
+    - Nasdaq-100 fund (QQQ): On the news, the Nasdaq-100 is measured in points. Your fund's price is the price of one unit of QQQ, a real fund that follows the Nasdaq-100. When the Nasdaq-100 goes up 1%, QQQ goes up about 1% too. Watch the percent, not the number.
+    - TSX fund (XIC): On the news, the TSX (the S&P/TSX Composite) is measured in points. Your fund's price is the price of one unit of XIC, a real fund that follows the TSX. When the TSX goes up 1%, XIC goes up about 1% too. Watch the percent, not the number.
   - The daily change: ▲ Up {n}% · ▼ Down {n}% · ● No change. Both directions are shown equally clearly, in calm colours, never red.
 - **Recent activity** · See all · Nothing here yet. Your story starts with your first deposit!
 - **"Updating…"** in place of any amount: Updating… Your numbers are being double-checked. They'll be back soon.
@@ -382,9 +396,10 @@ From the app's screen (`src/kid/trade/`: wording in `tradeText.ts` and `moves.ts
   - Buy: Put money into savings, a GIC or a fund.
   - Sell: Take money out of a GIC, a fund or savings.
 - **From** and **To** lists. Every move goes through savings:
-  - Buy: 💵 Cash from Dad → 🐷 Savings; or 🐷 Savings → 🔒 A new GIC, 📈 Dow Jones, 📈 Nasdaq-100 or 📈 TSX
+  - Buy: 💵 Cash from Dad → 🐷 Savings; or 🐷 Savings → 🔒 A new GIC, 📈 Dow Jones fund (DIA), 📈 Nasdaq-100 fund (QQQ) or 📈 TSX fund (XIC)
   - Sell: 🔒 One of your GICs (🔒 Your GIC when she has just one; she picks which on cards below), 📈 {fund} (funds she has units of), or 🐷 Savings → 🐷 Savings; 🐷 Savings → 💵 Cash to you
   - A fund already traded today: {fund} (traded today, again tomorrow)
+  - Under the pickers, when a fund is picked: About the {fund} (with that fund's **?**)
   - Nothing to sell: You don't have any GICs or funds to sell right now.
 - **How much?**
   - Under the box:
@@ -398,7 +413,7 @@ From the app's screen (`src/kid/trade/`: wording in `tradeText.ts` and `moves.ts
   - Under the cards: A GIC comes out all at once. (**?** Breaking a GIC early)
 - **Buying a GIC: How long?** Each term with its rate, "earns {interest}" on her amount once it's checked, and "Special!" on a special.
 - **Notes instead of the amount box:**
-  - You've already traded the {fund} fund today. You can trade it again tomorrow. One trade per fund each day helps you think it through.
+  - You've already traded the {fund} today. You can trade it again tomorrow. One trade per fund each day helps you think it through.
   - This GIC is ready today, so you won't lose any interest. It will be ready to choose soon.
 - **Next.** For a GIC before a term is picked, the button reads "Pick how long first". While checking: Checking…
 - **If the check can't reach the bank:** Big Bucks couldn't check that just now. Please try again.
@@ -578,14 +593,15 @@ From the app's screens (`src/kid/graphs/graphText.ts`), so edits are a code chan
 
 - The price of one unit of a fund, with your buys and sells marked.
 - **Words to know:** Unit price · Volatility · Rate of return
-- **Which fund?** Dow Jones · Nasdaq-100 · TSX
+- **Which fund?** Dow Jones · Nasdaq-100 · TSX (the buttons keep the short names to fit a phone; screen readers hear the full label)
+- Under the fund's change: Price of one unit of {DIA / QQQ / XIC} (with the **?** for that fund)
 - **Her figures, labelled apart:**
   - **1M, 3M, 6M:** **The fund's change while you had it** {growth %} · **Your money's change** {dollars} · or: You didn't own any {fund} in this time.
   - **When they point opposite ways** (one plain sentence under them):
     - Fund up, money down: These point different ways because of timing: you had more money in the {fund} on its down days than on its up days. When you buy matters, not just what you buy.
     - Fund down, money up: These point different ways because of timing: you had more money in the {fund} on its up days than on its down days. When you buy matters, not just what you buy.
   - **Since I bought:** **Worth now** {value} · **You paid** {cost} · **Your money's change** {gain} ({percent}) · or: You don't own any {fund} right now.
-- **The whole fund:** Over the whole time shown, the {fund} fund went up {percent}. / …went down {percent}. / …didn't change.
+- **The whole fund:** Over the whole time shown, the {fund} went up {percent}. / …went down {percent}. / …didn't change.
 - The marks: ▲ **You bought** · ▼ **You sold** · ◆ **Big market days**
 - Her trades: {date} · You bought {amount} at {price} / You sold {amount} at {price}
 - **Big market days:** {date} · {the market-move note}
@@ -967,14 +983,14 @@ The last line is added only when "Make it yours" is on for her.
 - **The toggle (in Total worth):** 💡 What will it buy?
 - **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
 - **Each GIC:** When it finishes on {date}, it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
-- **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} fund went up {x}% (or went down {x}%), while prices went up about {inflation}%.
+- **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} went up {x}% (or went down {x}%), while prices went up about {inflation}%.
 - **Under her total:** That's normal. It's one reason people use GICs and funds too.
 - **? Inflation:** the existing glossary entry (since stage 1): Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
 
 ### What if? (Graphs)
 
 - **Intro:** Here's what would have happened if all the money you put in had gone into just one place.
-- **Rows:** What you have · All in savings · All in 1-year GICs · All in the Nasdaq-100 fund, each with its amount.
+- **Rows:** What you have · All in savings · All in 1-year GICs · All in the Nasdaq-100 fund (QQQ), each with its amount.
 - **Under the GICs row, while any is still growing:** GIC interest is paid when each GIC finishes. {n} is / are still growing.
 - **Then:** Different choices do better at different times. Nobody can know ahead of time.
 - **Nothing in yet:** Once you've put money in, you'll see what would have happened with it here.
@@ -982,7 +998,7 @@ The last line is added only when "Make it yours" is on for her.
   - Each case uses your real deposits and withdrawals, on the days they happened.
   - Savings: the savings rate on each day, with interest paid on the 1st, like your real savings.
   - 1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one finishes, all of it goes into a new one. (The $10 smallest GIC is left out.)
-  - The Nasdaq-100 fund: each deposit buys at the next market close. Dividends are paid like your real ones.
+  - The Nasdaq-100 fund (QQQ): each deposit buys at the next market close. Dividends are paid like your real ones.
   - A withdrawal comes out the way it really would: from savings, by selling units, or by breaking a GIC early (which pays no interest).
   - Interest counts when it would really be paid, just like your real money.
 - **Never:** "you lost", "you could have", "wrong", "mistake" (a test checks).

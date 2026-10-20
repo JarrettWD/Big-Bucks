@@ -175,13 +175,15 @@ test('selling a fund worth less than she paid shows that, calmly, in dollars', a
   await page.getByText('Sell all of it').click();
   await expect(
     page.getByText(
-      `Your TSX is worth ${formatCents(f.value)} right now, but you paid ${formatCents(f.cost)}. Selling now makes a loss of ${formatCents(-Number(f.gain))} final.`,
+      `Your TSX fund (XIC) is worth ${formatCents(f.value)} right now, but you paid ${formatCents(f.cost)}. Selling now makes a loss of ${formatCents(-Number(f.gain))} final.`,
       { exact: false },
     ),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'What does "Loss" mean?' })).toBeVisible();
   await next(page).click();
-  await expect(page.getByRole('heading', { name: 'Sell all of your TSX?' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Sell all of your TSX fund (XIC)?' }),
+  ).toBeVisible();
   await expect(
     page.getByText(`It's worth ${formatCents(-Number(f.gain))} less than you paid.`),
   ).toBeVisible();
@@ -190,14 +192,18 @@ test('selling a fund worth less than she paid shows that, calmly, in dollars', a
 
   // Typing the value she's shown (the same as Home's) sells all of it, never an error.
   await page.getByText('Sell all of it').click(); // untick
-  await expect(page.getByText(`Your TSX is worth about ${formatCents(f.value)}.`)).toBeVisible();
+  await expect(
+    page.getByText(`Your TSX fund (XIC) is worth about ${formatCents(f.value)}.`),
+  ).toBeVisible();
   await amountBox(page).fill(formatCents(f.value).slice(1));
   await expect(
-    page.getByText("That's what all of your TSX is worth, so this sells all of it."),
+    page.getByText("That's what all of your TSX fund (XIC) is worth, so this sells all of it."),
   ).toBeVisible();
   await expect(page.locator('.trade__problem:not(:empty)')).toHaveCount(0);
   await next(page).click();
-  await expect(page.getByRole('heading', { name: 'Sell all of your TSX?' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Sell all of your TSX fund (XIC)?' }),
+  ).toBeVisible();
   // She holds on: nothing is sold.
   await page.getByRole('button', { name: 'Go back' }).click();
 });
@@ -212,10 +218,10 @@ test('a fund trade: when it settles, then one trade per fund per day', async ({ 
   await amountBox(page).fill('10');
   await expect(page.getByText(`Your buy happens at ${settles}`, { exact: false })).toBeVisible();
   await next(page).click();
-  await expect(page.getByRole('heading', { name: 'Buy $10.00 of TSX?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Buy $10.00 of TSX fund (XIC)?' })).toBeVisible();
   await page.getByRole('button', { name: 'Yes, do it' }).click();
-  await expect(page.getByText(`Your TSX buy happens at ${settles}.`)).toBeVisible();
-  await expect(page.locator('.waiting')).toContainText('Buying TSX: $10.00');
+  await expect(page.getByText(`Your TSX fund (XIC) buy happens at ${settles}.`)).toBeVisible();
+  await expect(page.locator('.waiting')).toContainText('Buying TSX fund (XIC): $10.00');
 
   const r = await dbRow(
     `select fund_id, amount_cents::text, held_cents::text, status::text from public.requests
@@ -235,7 +241,7 @@ test('a fund trade: when it settles, then one trade per fund per day', async ({ 
     /traded today, again tomorrow/,
   );
   await page.getByLabel('To').selectOption('fund:tsx');
-  await expect(page.getByText("You've already traded the TSX fund today.")).toBeVisible();
+  await expect(page.getByText("You've already traded the TSX fund (XIC) today.")).toBeVisible();
   await expect(amountBox(page)).toHaveCount(0);
   await expect(next(page)).toBeDisabled();
 });

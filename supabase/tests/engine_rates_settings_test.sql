@@ -117,7 +117,7 @@ select is(tests.rate('savings', null, '2026-10-27'), 1.500::numeric, 'the new ra
 select results_eq(
   $$select title, body from public.notifications where type = 'rate_change' and account_id = tests.acct('kid_a')$$,
   $$values ('Savings rate drops from 2.0% to 1.5% on Oct 27',
-            'The Bank of Canada cut rates. This doesn''t change GIC rates. A GIC keeps the rate it was bought at until it finishes.')$$,
+            'The Bank of Canada cut rates. This doesn''t change GIC rates. A GIC keeps the rate it was bought at until it matures.')$$,
   'each kid is told right away: old and new rate, when, and Dad''s note');
 select is((select count(*) from public.notifications where type = 'rate_change'), 2::bigint,
   'both kids get it, the test account too');
