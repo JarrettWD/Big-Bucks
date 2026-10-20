@@ -20,21 +20,14 @@ import {
   parseWords,
   type SettingCard,
   type SettingsData,
+  parseCap,
 } from './settingsText';
-import { parseAmount } from '../../kid/trade/moves';
 import { formatCents } from '../../lib/money';
 import './Settings.css';
 
 async function fetchSettings(): Promise<{ data: SettingsData | null; error: string | null }> {
   const { data, error } = await supabase.rpc('parent_settings');
   return error ? { data: null, error: error.message } : { data: data as SettingsData, error: null };
-}
-
-/** Dollars typed by Dad → whole cents as text (string arithmetic only). */
-function parseCap(text: string) {
-  const r = parseAmount(text);
-  if (r.state === 'ok') return { value: r.cents.toString() };
-  return { error: r.state === 'empty' ? 'Type the new cap, like 1000.' : r.message };
 }
 
 export default function Settings() {

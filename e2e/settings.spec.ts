@@ -63,6 +63,57 @@ async function previewed(change: Locator) {
   return out;
 }
 
+// Dad, 2026-10-19: typing a new cap one key at a time blanked the screen. Every number box is
+// typed into key by key (empty, part-typed, a normal value); the screen must stay up, with no
+// error at all. Nothing is saved.
+test('typing into the cap, a rate and a special, key by key, never blanks the screen', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await open(page);
+  const stillUp = async (what: string) => {
+    await page.waitForTimeout(400);
+    await expect(page.getByRole('heading', { name: 'Settings', level: 1 }), what).toBeVisible();
+    expect(errors, what).toEqual([]);
+  };
+
+  const cap = page.getByRole('region', { name: 'Deposit cap' });
+  await cap.getByRole('button', { name: 'Change' }).click();
+  const capBox = cap.getByLabel(/New cap, in dollars/);
+  await capBox.press('End');
+  await capBox.pressSequentially('1', { delay: 60 }); // "1,0001": a key added
+  await stillUp('cap: a key added to "1,000"');
+  await capBox.fill('');
+  await capBox.press('Backspace');
+  await stillUp('cap: empty');
+  await capBox.pressSequentially('1,2', { delay: 60 }); // part-typed
+  await stillUp('cap: part-typed');
+  await capBox.fill('');
+  await capBox.pressSequentially('1200', { delay: 60 });
+  await stillUp('cap: a normal value');
+  await expect(cap.getByRole('button', { name: 'Yes, change to $1,200.00' })).toBeVisible();
+
+  const row = page
+    .getByRole('region', { name: 'Rates' })
+    .locator('.set__row', { hasText: '1-year GIC' });
+  await row.getByRole('button', { name: 'Change the 1-year GIC rate' }).click();
+  const change = row.getByRole('group', { name: 'New 1-year GIC rate' });
+  const rateBox = change.getByLabel('New rate (% per year)');
+  await rateBox.fill('');
+  await stillUp('rate: empty');
+  await rateBox.pressSequentially('5.', { delay: 60 });
+  await stillUp('rate: part-typed');
+  await rateBox.pressSequentially('25', { delay: 60 });
+  await stillUp('rate: a normal value');
+  await change.getByLabel('Limited-time special').check();
+  await change.getByLabel('Last day').fill('');
+  await stillUp('special: no last day yet');
+  await rateBox.fill('');
+  await rateBox.pressSequentially('6.', { delay: 60 });
+  await stillUp('special: part-typed rate');
+});
+
 test('a rate change: preview, Back, then save; the notice reaches Sky word for word', async ({
   page,
   browser,

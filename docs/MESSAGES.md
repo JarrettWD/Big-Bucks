@@ -62,10 +62,14 @@ Each notice has a title and a body.
 - **Rate change, when Dad saves it**
   - Title: {Savings rate / {term} GIC rate} {drops from {old} to {new} / goes up from {old} to {new} / is {new}} {on {date} / today}
     - Example: Savings rate drops from 2.0% to 1.5% on Nov 1
-  - Body: {Dad's note} plus one tip:
-    - Savings rate dropping later: Tip: GICs bought before then keep today's rates.
-    - GIC rate dropping later: Tip: a GIC bought before then keeps today's rate.
+  - Body: {Dad's note} plus one line (changed 2026-10-19 after the beta, **draft for Dad's review**):
+    - Any savings change (a cut or a raise): This doesn't change GIC rates. A GIC keeps the rate it was bought at until it finishes.
+      - It never tells her to buy a GIC first: savings changes don't affect GIC rates. (The old tip, "Tip: GICs bought before then keep today's rates.", nudged a kid toward a 1-month GIC at 2.5% on Oct 19, the evening before a 5.0% special started the same day as the savings cut.)
+    - A GIC rate dropping later: Tip: a {term} GIC bought before {date} keeps today's {rate}.
+      - Example: Tip: a 3-month GIC bought before Oct 26 keeps today's 3.0%.
+      - Only for that term, and only when today's rate for that term holds every day until then. If a special or another change for that term comes first, it says the next line instead.
     - Any other GIC rate change: GICs you already have keep their locked-in rate.
+  - Notices already sent keep their words: they're stored when sent (the Oct 19 test notice stays as it was).
 - **Rate change hidden behind a running special** (pre-launch audit: nothing changes for her until the special ends)
   - Title: {Savings rate / {term} GIC rate} after the special: {new}
   - Body: {Dad's note} The special at {special rate} keeps going until {end date}. After that, the rate will be {new}. (GICs: plus "GICs you already have keep their locked-in rate.")

@@ -11,7 +11,14 @@ import { useId, useState, type ReactNode } from 'react';
 import { parentCheckBadges } from '../../lib/badgeCheck';
 import { ChangeActions, PreviewBox } from './Preview';
 import { runAction, useFocusOnOpen, usePreview } from './usePreview';
-import { TEXT, parsePercent, type Parsed, type RateRow, type SettingsData } from './settingsText';
+import {
+  TEXT,
+  buttonWords,
+  parsePercent,
+  type Parsed,
+  type RateRow,
+  type SettingsData,
+} from './settingsText';
 
 export interface SettingInput {
   kind: 'text' | 'textarea' | 'choice';
@@ -155,7 +162,7 @@ export function SettingChange({
         quiet={quiet}
       />
       <ChangeActions
-        yes={'value' in parsed ? yes(parsed.value) : yes(input.initial)}
+        yes={buttonWords(parsed, input, yes)}
         blocked={current === null || problem !== null || !current.summary}
         saving={saving}
         onYes={() => void go()}

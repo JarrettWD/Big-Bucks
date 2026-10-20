@@ -11,6 +11,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { ScreenBoundary } from './components/ErrorBoundary';
 import { GlossaryProvider } from './components/Glossary';
 import { OfflineScreen, useOnline } from './components/Offline';
 import KidShell from './kid/KidShell';
@@ -119,103 +120,106 @@ export default function App() {
   return (
     <AuthProvider>
       <GlossaryProvider>
-        <Routes>
-          <Route path="/" element={<Root />} />
-          <Route
-            path="/avatar-sheet"
-            element={
-              <Suspense fallback={null}>
-                <AvatarSheet />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <SignedOutOnly>
-                <KidLogin />
-              </SignedOutOnly>
-            }
-          />
-          <Route
-            path="/kid"
-            element={
-              <RequireKid>
-                <KidShell />
-              </RequireKid>
-            }
-          >
-            <Route index element={<Home />} />
-            <Route path="history" element={<History />} />
-            <Route path="gic/:id" element={<GicChoice />} />
+        {/* A screen that throws shows a friendly message with a way back, never a blank page. */}
+        <ScreenBoundary>
+          <Routes>
+            <Route path="/" element={<Root />} />
             <Route
-              path="graphs"
+              path="/avatar-sheet"
               element={
-                <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
-                  <Graphs />
+                <Suspense fallback={null}>
+                  <AvatarSheet />
                 </Suspense>
               }
             />
-            <Route path="trade" element={<Trade />} />
-            <Route path="wishlist" element={<WishList />} />
-            <Route path="notices" element={<Notices />} />
-            <Route path="look" element={<MakeItYours />} />
-            <Route path="badges" element={<Badges />} />
-            <Route path="statements" element={<Statements />} />
-            <Route path="welcome" element={<Welcome />} />
-          </Route>
-          <Route
-            path="/parent/login"
-            element={
-              <SignedOutOnly>
-                <ParentLogin />
-              </SignedOutOnly>
-            }
-          />
-          <Route path="/parent/mfa" element={<ParentMfa />} />
-          {/* Dad's read-only "View as <kid>": her screens, in her own app's frame. */}
-          <Route
-            path="/parent/view/:accountId"
-            element={
-              <RequireParent>
-                <ParentViewAs />
-              </RequireParent>
-            }
-          >
-            <Route index element={<Home />} />
-            <Route path="history" element={<History />} />
             <Route
-              path="graphs"
+              path="/login"
               element={
-                <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
-                  <Graphs />
-                </Suspense>
+                <SignedOutOnly>
+                  <KidLogin />
+                </SignedOutOnly>
               }
             />
-            <Route path="notices" element={<Notices />} />
-            <Route path="look" element={<MakeItYours />} />
-            <Route path="badges" element={<Badges />} />
-            <Route path="statements" element={<Statements />} />
-            <Route path="welcome" element={<Welcome />} />
-            <Route path="*" element={<ToHerHome />} />
-          </Route>
-          <Route
-            path="/parent"
-            element={
-              <RequireParent>
-                <ParentShell />
-              </RequireParent>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="approvals" element={<Approvals />} />
-            <Route path="wishlists" element={<ParentWishlists />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="fix/:accountId" element={<FixMistake />} />
-            <Route path="*" element={<Navigate to="/parent" replace />} />
-          </Route>
-          <Route path="*" element={<Root />} />
-        </Routes>
+            <Route
+              path="/kid"
+              element={
+                <RequireKid>
+                  <KidShell />
+                </RequireKid>
+              }
+            >
+              <Route index element={<Home />} />
+              <Route path="history" element={<History />} />
+              <Route path="gic/:id" element={<GicChoice />} />
+              <Route
+                path="graphs"
+                element={
+                  <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
+                    <Graphs />
+                  </Suspense>
+                }
+              />
+              <Route path="trade" element={<Trade />} />
+              <Route path="wishlist" element={<WishList />} />
+              <Route path="notices" element={<Notices />} />
+              <Route path="look" element={<MakeItYours />} />
+              <Route path="badges" element={<Badges />} />
+              <Route path="statements" element={<Statements />} />
+              <Route path="welcome" element={<Welcome />} />
+            </Route>
+            <Route
+              path="/parent/login"
+              element={
+                <SignedOutOnly>
+                  <ParentLogin />
+                </SignedOutOnly>
+              }
+            />
+            <Route path="/parent/mfa" element={<ParentMfa />} />
+            {/* Dad's read-only "View as <kid>": her screens, in her own app's frame. */}
+            <Route
+              path="/parent/view/:accountId"
+              element={
+                <RequireParent>
+                  <ParentViewAs />
+                </RequireParent>
+              }
+            >
+              <Route index element={<Home />} />
+              <Route path="history" element={<History />} />
+              <Route
+                path="graphs"
+                element={
+                  <Suspense fallback={<p className="muted">Loading the graphs…</p>}>
+                    <Graphs />
+                  </Suspense>
+                }
+              />
+              <Route path="notices" element={<Notices />} />
+              <Route path="look" element={<MakeItYours />} />
+              <Route path="badges" element={<Badges />} />
+              <Route path="statements" element={<Statements />} />
+              <Route path="welcome" element={<Welcome />} />
+              <Route path="*" element={<ToHerHome />} />
+            </Route>
+            <Route
+              path="/parent"
+              element={
+                <RequireParent>
+                  <ParentShell />
+                </RequireParent>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="approvals" element={<Approvals />} />
+              <Route path="wishlists" element={<ParentWishlists />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="fix/:accountId" element={<FixMistake />} />
+              <Route path="*" element={<Navigate to="/parent" replace />} />
+            </Route>
+            <Route path="*" element={<Root />} />
+          </Routes>
+        </ScreenBoundary>
       </GlossaryProvider>
     </AuthProvider>
   );

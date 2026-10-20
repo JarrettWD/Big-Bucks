@@ -85,6 +85,34 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
+### Beta fixes (2026-10-19, from Dad's 7 pm checks; built and tested locally, ship with Stage 11's deploy)
+
+- **Passed in the beta:**
+  - Friday's TSX buy settled at Oct 19's close: 0.43614795 units at $57.32 = $25.00.
+  - The 1-month GIC special (5.0%, Oct 26 to Nov 1) and its notice.
+  - The scheduled savings cut (2.0% → 1.0% from Oct 26), on Settings and the kid side.
+- **1. Settings went blank while typing a new deposit cap.**
+  - **Root cause:** while what's typed isn't a whole amount yet (one key added to or removed from "1,000"), the change box worded its button from the cap's starting text, "1,000". That's dollars for reading, which the money formatter (whole cents only) rightly refuses, so it threw. With no error boundary anywhere, React cleared the whole page.
+  - **Fix:**
+    - the button's words now come from the parsed starting value, or a neutral "Check the value first" (`buttonWords`);
+    - a new app-wide safety net (`ScreenBoundary`) shows "Something went wrong on this screen" with Go back and Go to the start, never a blank page.
+  - **Other boxes:** the inflation, yield, expiry, switch and note boxes already kept parsed starting values, so only the cap could crash. Rates and specials word their button from the database's preview.
+  - **Tests:**
+    - `settingInputs.test.ts` (empty, part-typed, typos and normal values for the cap, percents and days);
+    - `ErrorBoundary.test.tsx`;
+    - `settings.spec.ts` "typing into the cap, a rate and a special, key by key, never blanks the screen".
+  - **Nothing was written to production:** typing only ever runs a preview, which is rolled back. A change is saved only when Dad taps Yes. The latest backup (`343ff4e`, 7:00 am Oct 19) has just the original cap row and no cap change in the parent log, but it was taken before the crash; the next morning's backup will show the evening.
+- **2. A wrong tip on the savings cut notice.** It said "Tip: GICs bought before then keep today's rates.", which nudged a kid toward a 1-month GIC at 2.5% just before a 5.0% special started.
+  - **Fix:** migration `20261030000000_rate_notice_tips.sql` replaces only the notice wording in `add_rate_unlogged`:
+    - savings changes get "This doesn't change GIC rates. A GIC keeps the rate it was bought at until it finishes.";
+    - a GIC cut gets "Tip: a {term} GIC bought before {date} keeps today's {rate}.", only for that term and only when today's rate holds until then.
+  - Notices are stored when sent, so the Oct 19 test notice keeps its words.
+  - **Tests:** `rate_notice_tips_test.sql` (16 checks: savings cut alone, savings raise alone, GIC cut alone, GIC raise alone, GIC special alone, tonight's savings cut with a 1-month special the same day, a GIC cut with a special between, and a cut for one term while another term has a special). Updated: the two tests that quoted the old tip, and `parent_approvals_test`'s pinned fingerprint of `add_rate_unlogged` (changed on purpose; noted there).
+  - **Saturday's dry run will list two migrations:** `20261029000000_learning.sql` and `20261030000000_rate_notice_tips.sql`.
+- **3. Fund names next to ETF prices:** proposed only (in the report to Dad), not changed.
+- **Tests (local):** pgTAP **2215 of 2215**; Vitest **408 of 408**; time machine **18 of 18**; Playwright **127 of 127**.
+- **Not deployed** (Dad: these ship with Stage 11's deploy, step 6). No production changes.
+
 ### Stage 11 — Learning features, statements and view modes (2026-10-17, built and tested locally; not in production yet)
 
 - **Plan:** `docs/plans/stage11-plan.md`, approved by Dad 2026-10-17 with A–H as recommended, plus five additions:

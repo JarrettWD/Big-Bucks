@@ -99,7 +99,7 @@ select is(tests.preview('add_rate', '{"vehicle": "savings", "rate": "1.5", "note
               "to": null, "back_to": null},
     "notices": [
       {"title": "Savings rate drops from 2.0% to 1.5% on Oct 12", "kids": 2, "on": null,
-       "body": "The Bank of Canada cut rates. Tip: GICs bought before then keep today''s rates."},
+       "body": "The Bank of Canada cut rates. This doesn''t change GIC rates. A GIC keeps the rate it was bought at until it finishes."},
       {"title": "The new savings rate is now 1.5%", "kids": 2, "on": "Oct 12", "body": "It applies from today."}]}'::jsonb,
   'savings 2.0% → 1.5% (7 days out by default): the log line, the notice now and the one on Oct 12');
 select is(tests.footprint(), (select f from fp), 'the preview leaves no rate, notice or log row behind');

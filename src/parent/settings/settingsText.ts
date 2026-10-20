@@ -1,5 +1,6 @@
 // The Settings screen's words, for Dad. What the girls see comes from the
 // database's notices, previewed word for word (docs/MESSAGES.md §1 and §4).
+import { parseAmount } from '../../kid/trade/moves';
 
 export interface ExpirySettings {
   days: number;
@@ -89,6 +90,13 @@ export interface ChangePreview {
 }
 
 export type Parsed = { value: string } | { error: string };
+
+/** Dollars typed by Dad for the deposit cap → whole cents as text (string arithmetic only). */
+export function parseCap(text: string): Parsed {
+  const r = parseAmount(text);
+  if (r.state === 'ok') return { value: r.cents.toString() };
+  return { error: r.state === 'empty' ? 'Type the new cap, like 1000.' : r.message };
+}
 
 /** Whole days typed by Dad, or a message. The database checks again. */
 export function parseDays(text: string, min: number, max: number): number | string {
@@ -201,6 +209,7 @@ export const TEXT = {
   capRule: (from: string) =>
     `A lower cap needs 7 days' notice so the girls can react: it can start on ${from} at the earliest. A higher cap can start today.`,
   capLabel: 'New cap, in dollars (for both girls)',
+  yesCheckFirst: 'Check the value first',
   yesCap: (text: string) => `Yes, change to ${text}`,
 
   inflationTitle: 'Inflation rate',
@@ -327,3 +336,19 @@ export const LOGINS = {
   expired: "Her code ran out before she used it, so she can't sign in. Reset her PIN again.",
   done: 'Done',
 };
+
+/**
+ * The button's words. While what's typed isn't a whole value yet (part-typed, empty, a typo),
+ * they come from the parsed starting value, never its raw text: the cap's starting text is
+ * "1,000" (dollars, for reading), which the money formatter rightly refuses, and that threw
+ * and blanked the screen (Dad, 2026-10-19). If even that doesn't parse, a neutral label.
+ */
+export function buttonWords(
+  parsed: Parsed,
+  input: { initial: string; parse: (text: string) => Parsed },
+  yes: (value: string) => string,
+): string {
+  if ('value' in parsed) return yes(parsed.value);
+  const start = input.parse(input.initial);
+  return 'value' in start ? yes(start.value) : TEXT.yesCheckFirst;
+}
