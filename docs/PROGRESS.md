@@ -71,6 +71,8 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`); until then, RUNBOOK says "stop and ask";
 - **the install check on a girl's phone** (Family Link; Stage 12 entry above);
 - **Dad's fresh read-only audit** of changes since the third pre-launch audit, before the girls' real accounts;
+- **the maturity notice says "matured"** (Dad, 2026-10-20): "Your {term} GIC finished and earned …" becomes "matured", done as a reviewed money-function change to the nightly maturity job (plan, known-answer test, time machine), not a wording patch;
+- **the agreement says "matures"** (Dad, 2026-10-20): change "When a GIC finishes, …" to "matures" in a new agreement version before the girls sign their real agreements at launch, so no re-sign is needed later. Only the test account has signed so far (Oct 20 backup: one account, `is_test`; its signature and Dad's countersignature, version 1);
 - **the safety net records that it fired** (Dad, 2026-10-19), so Dad would know if a girl hit "Something went wrong on this screen" (which screen, when; no personal data);
 - at Stage 12 itself: a fresh backup, `prelaunch_reset`, `launched_at`, the girls' accounts, and every phase 2 feature on for everyone (BUILD-PLAN).
 - **Parked:** the install on Dad's S26 (cosmetic; Chrome Beta or `adb logcat` remain, Dad's call).
