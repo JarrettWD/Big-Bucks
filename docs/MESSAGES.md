@@ -52,7 +52,7 @@ Each notice has a title and a body.
 
 - **GIC matured**
   - Title: Your GIC is ready!
-  - Body: Your {term} GIC finished and earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}: renew it, pick a new term, or move it to savings. Until you choose, it earns the savings rate.
+  - Body: Your {term} GIC finished and earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}: renew it, pick a new term, or move it to savings. Until you choose, it earns the savings rate. (Still "finished": this notice is written by the nightly maturity job, a money function, so it waits for Dad's decision.)
 - **No choice in her 7 days** (her last day to choose is later if the nightly run was late: pre-launch audit)
   - Title: Your GIC money is in savings
   - Body: You didn't choose by {last day to choose}, so your {amount} moved to savings, where it's safe and still earning interest.
@@ -369,7 +369,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 
 ### The GIC choice
 
-- 🎉 **Your GIC grew!** Your {term} GIC finished and earned {interest}. You now have {total}.
+- 🎉 **Your GIC grew!** Your {term} GIC matured and earned {interest}. You now have {total}.
 - **Choose by {date}.** If you don't choose by then, your {total} moves to savings, where it's safe and still earning interest. Until you choose, it earns the savings rate ({rate} a year).
 - **What would you like to do?**
   - **Keep it growing:** Another {term} GIC at {rate}. (adds "(special rate!)" during a special)
@@ -657,7 +657,7 @@ One card at a time, and every card is part of onboarding (there is no skip). **B
 1. **Home 🏠**
    - Home shows everything you have. Your total worth **?** is at the top.
    - Under it are your three ways to grow money: savings, GICs and stock funds.
-   - When something needs you, like a GIC that's finished, a banner tells you.
+   - When something needs you, like a GIC that has matured, a banner tells you.
 2. **Three ways to grow your money**
    - Each one has a good side and a catch: getting your money back quickly, or giving it time to grow more.
    - 🐷 **Savings** **?**: safe, and ready whenever you need it. It earns {savings_rate} a year in interest **?**, paid on the 1st of every month. New money always lands here first.
@@ -705,7 +705,7 @@ One card at a time, and every card is part of onboarding (there is no skip). **B
   5. 😴 **Sleep on it.** When you ask to take money out, Dad waits at least {withdraw_wait_hours} hours before he can say yes, so you have time to think it over.
   6. ✋ **Money on hold.** While a request is waiting, its money is on hold **?**, so you can't use the same money twice.
   7. 🔢 **The smallest amounts** are {min_savings} for savings, and {min_invest} for a GIC or a stock fund.
-  8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings.
+  8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings. (Still "finishes": this is the signed agreement; changing it means a new version for the girls to sign.)
   9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time.
   10. 📈 **One trade per fund each day.** You can buy or sell each fund once a day. Buys and sells happen at the next market close.
   11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Big Bucks tells you at least {cut_notice_days} days before. Good news, like a higher rate, can start right away. A GIC you already have keeps its rate.
@@ -790,7 +790,7 @@ Shown once, the first time she opens the app after Dad switches a feature on for
   - You can change them any time.
 - **Badges**
   - Title: New: badges 🏅
-  - You earn a badge for smart money choices, like keeping a GIC until it finishes or staying calm when a fund drops.
+  - You earn a badge for smart money choices, like keeping a GIC until it matures or staying calm when a fund drops.
   - Each badge unlocks something fun for your animal to wear.
 - **Any later feature:** Title: New: {feature} · then its own two or three lines, drafted here before the feature is switched on.
 
@@ -887,7 +887,7 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 - **Pick your animal:** the sixteen animals, each with its name: Fox · Panda · Koala · Bunny · Cat · Puppy · Owl · Penguin · Unicorn · Tiger · Frog · Hedgehog · Bear · Hamster · Lion · Moose
 - **Something to wear** (only when badges are on for her): None · then each accessory she has earned. One she hasn't earned yet shows softly, with how to earn it:
   - Party hat · Buy your first GIC.
-  - Graduation cap · Keep a GIC until it finishes.
+  - Graduation cap · Keep a GIC until it matures.
   - Sunglasses · Stay calm and keep a fund when it drops.
   - Top hat · Build a GIC ladder (3 GICs, $10 or more each).
   - Bow · Earn your first dollar of interest.
@@ -905,19 +905,19 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 - **Still to discover:** the rest, softly, each with its name and its one line. No count, no bar.
 - **The six, with their lines:**
   - 🎉 **First GIC** · You locked money in a GIC to grow.
-  - 🎓 **Kept it to the end** · You kept a GIC until it finished and got all its interest.
+  - 🎓 **Kept it to the end** · You kept a GIC until it matured and got all its interest.
   - 😎 **Cool in a drop** · A fund fell more than 10%, and you stayed calm and kept it.
-  - 🪜 **GIC ladder** **?** · You had 3 GICs that finish on different days.
+  - 🪜 **GIC ladder** **?** · You had 3 GICs that mature on different days.
   - 💰 **First dollar of interest** · Your money earned $1.00 of interest.
   - 👑 **Goal reached** · You saved enough for your goal.
 - **Still to discover, the lines:**
   - First GIC · Buy a GIC and let your money grow.
-  - Kept it to the end · Keep a GIC until it finishes.
+  - Kept it to the end · Keep a GIC until it matures.
   - Cool in a drop · When a fund drops a lot, stay calm and keep it for 30 days.
-  - GIC ladder · Have 3 GICs of $10 or more that finish on different days.
+  - GIC ladder · Have 3 GICs of $10 or more that mature on different days.
   - First dollar of interest · Let your money earn $1.00 of interest.
   - Goal reached · Save enough for your goal.
-- **? GIC ladder (glossary):** the existing glossary entry (since stage 1, editable in Settings): Having several GICs that finish at different times, like the steps of a ladder. Some of your money is always close to being free.
+- **? GIC ladder (glossary):** the existing glossary entry (since stage 1, editable in Settings): Having several GICs that mature at different times (reworded 2026-10-20, only if Dad hadn't already reworded it), like the steps of a ladder. Some of your money is always close to being free.
 
 ### The notices (the bell, type `badge`)
 
@@ -929,7 +929,7 @@ The last line is added only when "Make it yours" is on for her.
   - Your animal can wear a party hat now.
 - **Kept it to the end**
   - 🎓 Badge: Kept it to the end!
-  - You waited until your GIC finished, so you got all its interest. Patience pays!
+  - You waited until your GIC matured, so you got all its interest. Patience pays!
   - Your animal can wear a graduation cap now.
 - **Cool in a drop**
   - 😎 Badge: Cool in a drop!
@@ -937,7 +937,7 @@ The last line is added only when "Make it yours" is on for her.
   - Your animal can wear sunglasses now.
 - **GIC ladder**
   - 🪜 Badge: GIC ladder!
-  - You have 3 GICs that finish on different days, so some money frees up sooner. Smart thinking!
+  - You have 3 GICs that mature on different days, so some money frees up sooner. Smart thinking!
   - Your animal can wear a top hat now.
 - **First dollar of interest**
   - 💰 Badge: Your first dollar of interest!
@@ -982,7 +982,7 @@ The last line is added only when "Make it yours" is on for her.
 
 - **The toggle (in Total worth):** 💡 What will it buy?
 - **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
-- **Each GIC:** When it finishes on {date}, it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
+- **Each GIC:** When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
 - **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} went up {x}% (or went down {x}%), while prices went up about {inflation}%.
 - **Under her total:** That's normal. It's one reason people use GICs and funds too.
 - **? Inflation:** the existing glossary entry (since stage 1): Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
@@ -991,13 +991,13 @@ The last line is added only when "Make it yours" is on for her.
 
 - **Intro:** Here's what would have happened if all the money you put in had gone into just one place.
 - **Rows:** What you have · All in savings · All in 1-year GICs · All in the Nasdaq-100 fund (QQQ), each with its amount.
-- **Under the GICs row, while any is still growing:** GIC interest is paid when each GIC finishes. {n} is / are still growing.
+- **Under the GICs row, while any is still growing:** GIC interest is paid when each GIC matures. {n} is / are still growing.
 - **Then:** Different choices do better at different times. Nobody can know ahead of time.
 - **Nothing in yet:** Once you've put money in, you'll see what would have happened with it here.
 - **How was this calculated? (detailed only):**
   - Each case uses your real deposits and withdrawals, on the days they happened.
   - Savings: the savings rate on each day, with interest paid on the 1st, like your real savings.
-  - 1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one finishes, all of it goes into a new one. (The $10 smallest GIC is left out.)
+  - 1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one matures, all of it goes into a new one. (The $10 smallest GIC is left out.)
   - The Nasdaq-100 fund (QQQ): each deposit buys at the next market close. Dividends are paid like your real ones.
   - A withdrawal comes out the way it really would: from savings, by selling units, or by breaking a GIC early (which pays no interest).
   - Interest counts when it would really be paid, just like your real money.

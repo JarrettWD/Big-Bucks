@@ -117,7 +117,11 @@ export function GicInflation({ gicId }: { gicId: number }) {
   const { data, year } = useContext(Ctx);
   const g = data?.gics.find((x) => x.gic_id === gicId);
   if (!data || !g) return null;
-  return <Line>{gicInflation(g, year)}</Line>;
+  return (
+    <Line>
+      {gicInflation(g, year)} <Explain term="Matures" />
+    </Line>
+  );
 }
 
 export function FundInflation({ fundId }: { fundId: string }) {

@@ -303,7 +303,7 @@ insert into public.settings (key, value, effective_date) values ('feature:badges
 select tests.as_kid('kid_a');
 select is(public.whats_new(),
   $$[{"feature": "badges", "title": "New: badges 🏅", "link": null,
-      "lines": ["You earn a badge for smart money choices, like keeping a GIC until it finishes or staying calm when a fund drops.",
+      "lines": ["You earn a badge for smart money choices, like keeping a GIC until it matures or staying calm when a fund drops.",
                 "Each badge unlocks something fun for your animal to wear."]},
      {"feature": "wishlist", "title": "New: your Wish List ⭐", "link": "/kid/wishlist",
       "lines": ["Add things you'd love to have, give each one stars, and see how close you are to affording it.",
@@ -312,7 +312,7 @@ select is(public.whats_new(),
   'two features switched on after she onboarded: one screen each, numbers filled in');
 select results_eq(
   $$select title, body from public.notifications where account_id = tests.acct('kid_a') and type = 'whats_new' order by title$$,
-  $$values ('New: badges 🏅', 'You earn a badge for smart money choices, like keeping a GIC until it finishes or staying calm when a fund drops. Each badge unlocks something fun for your animal to wear.'),
+  $$values ('New: badges 🏅', 'You earn a badge for smart money choices, like keeping a GIC until it matures or staying calm when a fund drops. Each badge unlocks something fun for your animal to wear.'),
            ('New: your Wish List ⭐', 'Add things you''d love to have, give each one stars, and see how close you are to affording it. If you still want something after 7 days, you can make it a savings goal. Mom and Dad can see your wish list.')$$,
   'each also lands in her bell');
 select is(jsonb_array_length(public.whats_new()), 2, 'until she taps Got it, it''s still waiting...');

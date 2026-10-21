@@ -128,7 +128,7 @@ export function tourCards(rules: HouseRules, wishList: boolean): TourCard[] {
           term: 'Total worth',
         },
         { text: 'Under it are your three ways to grow money: savings, GICs and stock funds.' },
-        { text: "When something needs you, like a GIC that's finished, a banner tells you." },
+        { text: 'When something needs you, like a GIC that has matured, a banner tells you.' },
       ],
     },
     {

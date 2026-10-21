@@ -27,7 +27,7 @@ export const TEXT = {
   whatIfHowLines: [
     'Each case uses your real deposits and withdrawals, on the days they happened.',
     'Savings: the savings rate on each day, with interest paid on the 1st, like your real savings.',
-    "1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one finishes, all of it goes into a new one. (The $10 smallest GIC is left out.)",
+    "1-year GICs: each deposit buys a 1-year GIC that day, at that day's rate. When one matures, all of it goes into a new one. (The $10 smallest GIC is left out.)",
     'The Nasdaq-100 fund (QQQ): each deposit buys at the next market close. Dividends are paid like your real ones.',
     'A withdrawal comes out the way it really would: from savings, by selling units, or by breaking a GIC early (which pays no interest).',
     'Interest counts when it would really be paid, just like your real money.',
@@ -90,7 +90,7 @@ export const startLine = (from: string, opened: boolean, year: number) =>
 
 export const gicsGrowing = (n: number) =>
   n > 0
-    ? `GIC interest is paid when each GIC finishes. ${n === 1 ? '1 is' : `${n} are`} still growing.`
+    ? `GIC interest is paid when each GIC matures. ${n === 1 ? '1 is' : `${n} are`} still growing.`
     : null;
 
 /** "In a year, at today's 2% savings rate, your $183.67 would grow to about $187.38. ..." */
@@ -114,7 +114,7 @@ export function gicInflation(
   },
   year: number,
 ): string {
-  return `When it finishes on ${formatDate(g.maturity_date, year)}, it pays ${formatCents(g.at_maturity_cents)}. With prices going up meanwhile, that buys about what ${formatCents(g.buys_like_cents)} buys today.`;
+  return `When it matures on ${formatDate(g.maturity_date, year)}, it pays ${formatCents(g.at_maturity_cents)}. With prices going up meanwhile, that buys about what ${formatCents(g.buys_like_cents)} buys today.`;
 }
 
 export function fundInflation(

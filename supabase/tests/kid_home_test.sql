@@ -315,8 +315,8 @@ select ok(
 select is((select kid_text from public.glossary where term = 'Daily change'),
   'How much a fund went up or down since the market''s last day, as a percent. Markets go up and down all the time, and one day doesn''t matter much. What counts is how it does over months and years.',
   'the "Daily change" explanation says one day doesn''t matter much');
-select is((select count(*) from public.glossary), 58::bigint,
-  'still the same terms: 52, plus Growth and Money earned from the graphs migration (stage 7 part 2c), plus Request expiry (stage 8 B1), plus the three fund labels (2026-10-19 beta)');
+select is((select count(*) from public.glossary), 59::bigint,
+  'still the same terms: 52, plus Growth and Money earned from the graphs migration (stage 7 part 2c), plus Request expiry (stage 8 B1), plus the three fund labels (2026-10-19 beta), plus Matures (2026-10-20)');
 
 select * from finish();
 rollback;

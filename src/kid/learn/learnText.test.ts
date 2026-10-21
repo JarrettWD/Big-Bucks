@@ -38,10 +38,8 @@ describe('what-if wording teaches, never scolds', () => {
     expect(TEXT.whatIfClose).toContain('Nobody can know ahead of time.');
   });
   it('says GICs still growing, so early GICs never look worse (Dad addition 3)', () => {
-    expect(gicsGrowing(1)).toBe('GIC interest is paid when each GIC finishes. 1 is still growing.');
-    expect(gicsGrowing(3)).toBe(
-      'GIC interest is paid when each GIC finishes. 3 are still growing.',
-    );
+    expect(gicsGrowing(1)).toBe('GIC interest is paid when each GIC matures. 1 is still growing.');
+    expect(gicsGrowing(3)).toBe('GIC interest is paid when each GIC matures. 3 are still growing.');
     expect(gicsGrowing(0)).toBeNull();
   });
 });
@@ -90,14 +88,14 @@ describe('the inflation view', () => {
       "In a year, at today's 2% savings rate, your $183.67 would grow to about $187.38. Prices usually go up too, about 2% a year right now, so it would buy about what $183.70 buys today.",
     );
   });
-  it('words a GIC to its finish', () => {
+  it('words a GIC to when it matures', () => {
     expect(
       gicInflation(
         { at_maturity_cents: 10075, buys_like_cents: 10030, maturity_date: '2027-01-10' },
         2026,
       ),
     ).toBe(
-      'When it finishes on Jan 10, 2027, it pays $100.75. With prices going up meanwhile, that buys about what $100.30 buys today.',
+      'When it matures on Jan 10, 2027, it pays $100.75. With prices going up meanwhile, that buys about what $100.30 buys today.',
     );
   });
   it('looks back for funds, never a promise', () => {

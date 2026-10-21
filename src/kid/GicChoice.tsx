@@ -128,7 +128,7 @@ export default function GicChoice() {
               <span aria-hidden="true">🎉 </span>Your GIC grew!
             </h1>
             <p className="choice__lead">
-              Your {termLabel(gic.term_months)} GIC finished and earned{' '}
+              Your {termLabel(gic.term_months)} GIC matured and earned{' '}
               <strong>{formatCents(gic.interest_at_maturity_cents)}</strong>. You now have{' '}
               <strong>{balance}</strong>.
             </p>

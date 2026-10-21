@@ -86,6 +86,32 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
+### Pre-Saturday checks (2026-10-20, Dad's review of deddfa9; built and tested locally, ship with Stage 11's deploy)
+
+- **A. The two notice migrations** (`20261030000000_rate_notice_tips`, `20261031000000_rate_notice_wording`):
+  - each replaces only `public.add_rate_unlogged`; the second also adds three glossary rows;
+  - neither creates a table, and neither touches the ledger, interest, posting, settlement or balances;
+  - against production's version (`20261018060000_audit_minor`), only the notice body's `case` changed; the line inserting the rate row and every check are byte-identical.
+- **B. "Matures", not "finishes"** (migration `20261101000000_matures_wording.sql`, wording only):
+  - a new **?** "Matures" (shown on the GIC inflation line); "Maturity" and "GIC ladder" reworded only if they still had their original words;
+  - the two GIC badges and the badges What's new; `badge_kinds` and `whats_new_features` are append-only with no edit function, so the migration switches their guard off for exactly these rewordings and back on, and checks it's on (`matures_wording_test.sql`, 12 checks);
+  - screens: the badge how-to, the GIC choice card, onboarding's banner line, and the learning lines;
+  - earned badges store no wording (`badges.details` is `{}` in production); notices already sent keep theirs (test kid only).
+  - **Not changed, Dad's call:** the maturity notice "Your {term} GIC finished and earned …" (written by the nightly maturity job, a money function) and the signed agreement's "When a GIC finishes, …" (needs a new agreement version for the girls to sign).
+- **C. Supabase's Oct 30 change (no automatic grants on new public tables):**
+  - Big Bucks never used those defaults: `20261002040000_rls.sql` switched them off on day one (for functions too), and every table since was granted on purpose.
+  - Audit: production (Oct 20 backup's schema) and a fresh local reset have the same 134 grants on every table, view and sequence; locally there are 3 more for `sell_reflections` (Stage 11, not in production yet). Functions match too, apart from Stage 11's new ones. Default privileges match.
+  - anon: no table, view or sequence; one function, `ping` (the health check).
+  - `20261029000000_learning.sql` already grants `sell_reflections` explicitly (`revoke all`, then `select` to authenticated and service_role), so it wasn't edited (committed migrations stay as they are). backup_reader's SELECT comes from the project's own default privilege, not Supabase's, and is restated in the next migration.
+  - New migration `20261102000000_explicit_grants.sql`: every table, view and sequence's grants written out, generated from the audit. A reset with it gives the same 137 grants as without it: a no-op, and on production too.
+  - New test `explicit_grants_test.sql`: exact grants per role for every object; nothing for anon or PUBLIC; SELECT only; anon runs only `ping`. A probe table created without grants fails it.
+  - The restore drill loads the backup's `schema.sql`, which carries every GRANT, so restores keep production's grants.
+  - The Supabase CLI is pinned to exactly 2.119.0 (`package.json`; CI runs `npm ci`). Its local images still carry Supabase's old defaults for `supabase_admin`, but our tables are created by `postgres`, whose defaults our migration already sets. A CLI update is a deliberate change, and the grants test shows any difference.
+  - CLAUDE.md now says: every migration that creates a table, view or sequence grants it in the same file.
+- **Saturday's dry run should list five migrations, in this order:** `20261029000000_learning.sql`, `20261030000000_rate_notice_tips.sql`, `20261031000000_rate_notice_wording.sql`, `20261101000000_matures_wording.sql`, `20261102000000_explicit_grants.sql`.
+- **Tests (local):** pgTAP **2239 of 2239**; Vitest **413 of 413**; Playwright **127 of 127**. No money logic changed (wording and grants only), so the time machine runs in CI.
+- **Not deployed.** No production changes; production was only read (the Oct 20 backup).
+
 ### Beta fixes (2026-10-19, from Dad's 7 pm checks; built and tested locally, ship with Stage 11's deploy)
 
 - **Passed in the beta:**
@@ -109,7 +135,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
     - a GIC cut gets "Tip: a {term} GIC bought before {date} keeps today's {rate}.", only for that term and only when today's rate holds until then.
   - Notices are stored when sent, so the Oct 19 test notice keeps its words.
   - **Tests:** `rate_notice_tips_test.sql` (16 checks: savings cut alone, savings raise alone, GIC cut alone, GIC raise alone, GIC special alone, tonight's savings cut with a 1-month special the same day, a GIC cut with a special between, and a cut for one term while another term has a special). Updated: the two tests that quoted the old tip, and `parent_approvals_test`'s pinned fingerprint of `add_rate_unlogged` (changed on purpose; noted there).
-  - **Saturday's dry run will list two migrations:** `20261029000000_learning.sql` and `20261030000000_rate_notice_tips.sql`.
+  - **Saturday's dry run:** now five migrations (see the pre-Saturday checks above).
 - **3. Fund names next to ETF prices:** proposed only (in the report to Dad), not changed.
 - **Tests (local):** pgTAP **2215 of 2215**; Vitest **408 of 408**; time machine **18 of 18**; Playwright **127 of 127**.
 - **Not deployed** (Dad: these ship with Stage 11's deploy, step 6). No production changes.
@@ -120,9 +146,9 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
     - a GIC increase adds "A {term} GIC bought from {date / today} gets {new}." after the locked-in line, only when nothing contradicts it: no special for that term on its first day, and no other change or special for that term already planned after it;
     - `rate_notice_tips_test.sql` now has 22 checks (a raise today, a raise on a later day, a raise with a special overlapping, a raise with a later cut planned); the fingerprint in `parent_approvals_test` updated on purpose again.
   - **Fund names:** the kid screens say "Dow Jones fund (DIA)", "Nasdaq-100 fund (QQQ)" and "TSX fund (XIC)" (`src/kid/fundNames.ts`): Home's fund cards and mix, Buy / Sell (picker, an "About the {fund}" line with its **?**, the questions, Done, the one-trade-a-day note), Graphs (legends, tables, "Price of one unit of XIC" with the **?**; the fund buttons keep the short name to fit a phone), and the learning lines. Each label is a new glossary term with its **?** text (same migration). Notices, history lines and database errors keep the short name.
-  - **Saturday's dry run will list three migrations:** `20261029000000_learning.sql`, `20261030000000_rate_notice_tips.sql` and `20261031000000_rate_notice_wording.sql`.
+  - **Saturday's dry run:** see the pre-Saturday checks above (five migrations).
   - **Tests (local):** pgTAP **2221 of 2221**; Vitest **413 of 413**; Playwright **127 of 127** (Home, Graphs and Buy / Sell checks now expect the new labels; Home opens the TSX fund's **?**). No money logic changed (notice wording and screen labels only), so the time machine runs in CI.
-  - **Still to check:** the Oct 20 7:00 am backup, for no cap change from the evening of Oct 19.
+  - **Checked (2026-10-20):** the Oct 20 7:00 am backup (`3a0f5d1`) still has only the original cap row ($1,000 from Jan 1), and the parent log since Oct 19 shows only the two rate saves (7:32 and 7:33 pm). No cap change reached production.
 
 ### Stage 11 — Learning features, statements and view modes (2026-10-17, built and tested locally; not in production yet)
 
@@ -175,7 +201,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - **`npm test`:** 28 files, **383 of 383** pass. New: `learnText.test.ts` (20 checks): wording that never scolds (each check also proves it would catch the word), the GIC "still growing" line, the reflection's notes, statements and inflation wording (including Dad's 2026-10-17 note under each statement: "Your October interest is paid on Nov 1, so it shows on your November statement."), and which graphs each view shows.
   - **Time machine:** **PASS, 18 of 18**. Money is unchanged and matches to the cent. New: all 24 statements (2 kids × 12 months) match the model's own statements, every line and the identity, to the cent; the what-if matches for both kids (all three cases).
   - **Playwright:** **126 of 126** pass. New: `learn.spec.ts` (19 tests): the inflation toggle, What if? (gentle wording), Markets, a statement against the graph and its print layout, "Why did you sell?" after a real sell then in her history, the basic view (three graphs plus What if?, the simple statement) and back, "View as", and every new screen at 6 sizes in both views with large text. One fix came from it: basic mode now lays its cards out in one plain column (Home's named areas had squashed a card).
-- **Production: paused after step 1** (Dad, 2026-10-18). Step 1 done from the 7:00 am Oct 18 backup `6b0833b` (every Oct 17 nightly job ok, outbox empty); resume Sat Oct 24 after 11:45 am at step 2 (backup by hand), then the dry run of only `20261029000000_learning.sql` for Dad's review.
+- **Production: paused after step 1** (Dad, 2026-10-18). Step 1 done from the 7:00 am Oct 18 backup `6b0833b` (every Oct 17 nightly job ok, outbox empty); resume Sat Oct 24 after 11:45 am at step 2 (backup by hand), then the dry run for Dad's review: since the beta fixes it lists five migrations, `20261029000000_learning.sql` to `20261102000000_explicit_grants.sql` (pre-Saturday checks above).
 - **Phone test, then Nov 1:** in the plan (section 11). On Nov 1, October's statement appears.
 
 ### Stage 10 — Make it yours and badges (done 2026-10-18; in production for test accounts only since 2026-10-17)

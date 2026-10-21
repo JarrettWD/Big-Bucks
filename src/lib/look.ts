@@ -185,7 +185,7 @@ export const ACCESSORIES: Accessory[] = [
     name: 'Graduation cap',
     spot: 'head',
     aspect: 1,
-    howTo: 'Keep a GIC until it finishes.',
+    howTo: 'Keep a GIC until it matures.',
   },
   {
     key: 'sunglasses',
