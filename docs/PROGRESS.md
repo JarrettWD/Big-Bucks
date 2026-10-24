@@ -203,7 +203,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - **`npm test`:** 28 files, **383 of 383** pass. New: `learnText.test.ts` (20 checks): wording that never scolds (each check also proves it would catch the word), the GIC "still growing" line, the reflection's notes, statements and inflation wording (including Dad's 2026-10-17 note under each statement: "Your October interest is paid on Nov 1, so it shows on your November statement."), and which graphs each view shows.
   - **Time machine:** **PASS, 18 of 18**. Money is unchanged and matches to the cent. New: all 24 statements (2 kids × 12 months) match the model's own statements, every line and the identity, to the cent; the what-if matches for both kids (all three cases).
   - **Playwright:** **126 of 126** pass. New: `learn.spec.ts` (19 tests): the inflation toggle, What if? (gentle wording), Markets, a statement against the graph and its print layout, "Why did you sell?" after a real sell then in her history, the basic view (three graphs plus What if?, the simple statement) and back, "View as", and every new screen at 6 sizes in both views with large text. One fix came from it: basic mode now lays its cards out in one plain column (Home's named areas had squashed a card).
-- **Production (2026-10-24): steps 1–8 done; the phone test (step 9) is Dad's this afternoon; the restore drill and step 10 on the Oct 25 7:00 am backup.**
+- **Production (2026-10-24): steps 1–9 done, and the restore drill PASSED on `3f97db9`; step 10 on the Oct 25 7:00 am backup.**
   1. Step 1 from the 7:00 am Oct 18 backup `6b0833b` (every Oct 17 nightly job ok, outbox empty).
   2. **Backup by hand** (Dad, run #32, 12:02 pm, 59 s): `6a0847b` "Backup 2026-10-24: 36 tables, 1207 rows, 14 ledger rows". Key tables: accounts 1, transactions 14, interest_accruals 13, gic_holdings 3, requests 10, rates 9, settings 13, fund_prices 582, parent_actions 14, notifications 15, badges 2, badge_kinds 6, glossary 55, whats_new_features 3, agreement_signatures 2.
   3. **Dry run** (12:05 pm, approved by Dad): "Would push these migrations: 20261029000000_learning.sql, 20261030000000_rate_notice_tips.sql, 20261031000000_rate_notice_wording.sql, 20261101000000_matures_wording.sql, 20261102000000_explicit_grants.sql"; no seeds, no roles.
@@ -220,7 +220,16 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
      - Unchanged: Make it yours and Badges ("Test accounts only" since Oct 17).
      - Wish List was switched **off** at 12:31:05 pm and back to "Test accounts only" at 12:31:29 (rows 26 and 30, both logged); it ends as before. Nothing else happened in those 24 seconds: no notices, Wish List rows or goals that day, and no cancellations.
      - What's new cards are created when a kid opens the app (`whats_new()`), so none were sent yet. Production has one account, the test kid (`is_test`), so no card can reach a non-test account. She has already seen the Wish List one, so it won't repeat; the six new ones will appear on her next visit.
-  - **Next:** the phone test (step 9, Dad, this afternoon); the restore drill on the Oct 25 7:00 am backup, with the step 10 check.
+  9. **Dad's phone test on the new build (Oct 24 afternoon): passed.**
+     - The test kid saw the six new What's new cards; the Wish List card didn't come back.
+     - "TSX fund (XIC)", "Dow Jones fund (DIA)" and "Nasdaq-100 fund (QQQ)" on Home, Buy / Sell and Graphs; their **?** texts open.
+     - "Matures" on the badges and the GIC inflation line; the "Matures" **?** opens.
+     - Inflation, What if?, Compare the markets, Statements (with October's interest line) and View modes (portrait and landscape) all OK.
+     - Reflection not tested: it needs a sell, skipped to keep the Oct 27 test setup.
+     - Parent cap box: typed, deleted to empty, the screen stayed up; cancelled without saving.
+     - No buys, sells, approvals or settings saved.
+  - **Restore drill on `3f97db9` (Oct 24, after the deploy, at Dad's request): PASS.** 42 of 42 tables match row for row (`sell_reflections` included), and the test kid's 10 balances match to the cent and unit. `after_restore()` reported the usual lines for a new project: the login key made new (PINs to reset), the nightly function's Vault key and the GitHub token to set again. The drill copy was removed; production wasn't touched.
+  - **Next:** the step 10 check on the Oct 25 7:00 am backup (tonight's nightly jobs on the new build).
 - **Phone test, then Nov 1:** in the plan (section 11). On Nov 1, October's statement appears.
 
 ### Stage 10 — Make it yours and badges (done 2026-10-18; in production for test accounts only since 2026-10-17)
