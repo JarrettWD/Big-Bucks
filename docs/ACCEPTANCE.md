@@ -70,7 +70,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 2**
 
-- [ ] Wish list items can be added and reordered, and become goals only after 7 days
+- [x] Wish list items can be added and reordered, and become goals only after 7 days (2026-10-25: Dad on production as the test kid: the day-7 "Still want this?" made a goal, shown on Home with its progress bar; the second wish showed "Can be your goal from …"; Move up kept its order after reopening the app, the goal unchanged, and moving back worked; PROGRESS Stage 9)
 - [ ] Theme colours and avatars save and show everywhere
 - [ ] Badges unlock at the right moments, with their accessories
 - [ ] Inflation view numbers match a hand check

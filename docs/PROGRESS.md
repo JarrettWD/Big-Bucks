@@ -439,7 +439,8 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - The first wish offered "Still want this?"; Dad made it her goal. Home shows the goal card with its progress bar, "You're x% of the way there" and the projected words.
   - The second wish behaved correctly: the switch prompt, and "Can be your goal from …".
   - Tablet portrait, landscape and large text all OK.
-  - **ACCEPTANCE not ticked yet:** the box also says "reordered", and Move up / Move down hasn't been recorded on production. One Move up on the test kid's list proves it; then tick the box with this test as evidence.
+  - **Move up (Dad, Oct 25):** the second wish moved to first, the order stayed after closing and reopening the app, and the goal on Home was unchanged; moving it back worked too.
+  - **ACCEPTANCE ticked** (2026-10-25): "Wish list items can be added and reordered, and become goals only after 7 days".
 - The girls get the Wish List at Stage 12, when every phase 2 feature goes on for everyone.
 
 ### Stage 12 — Launch prep (not started)
