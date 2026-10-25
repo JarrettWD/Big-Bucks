@@ -435,7 +435,12 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
      - `csv/public.wishlist_photos.csv` holds **2** rows: Dad's new photo (7:20 pm) and one from his first test (6:37 pm, on a wish now in the Done list). Both are JPEGs: 72 KB and 73 KB, with 6 KB and 7 KB thumbnails.
      - `counts.json` agrees (2 rows), and `data.sql` has no photo rows.
      - **Restore drill on this real backup: PASS.** 40 of 40 tables match row for row (photos included, checked by each row's checksum, so the bytes match), and the test kid's 6 balances match to the cent and unit. `after_restore()` reported the usual lines for a new project: Vault keys to set again, and the PINs to reset.
-- **Still to do:** the ACCEPTANCE tick above, about Oct 23 (day 7). The girls get the Wish List at Stage 12, when every phase 2 feature goes on for everyone.
+- **Day-7 test (Dad, Oct 25, as the test kid on production): passed.**
+  - The first wish offered "Still want this?"; Dad made it her goal. Home shows the goal card with its progress bar, "You're x% of the way there" and the projected words.
+  - The second wish behaved correctly: the switch prompt, and "Can be your goal from …".
+  - Tablet portrait, landscape and large text all OK.
+  - **ACCEPTANCE not ticked yet:** the box also says "reordered", and Move up / Move down hasn't been recorded on production. One Move up on the test kid's list proves it; then tick the box with this test as evidence.
+- The girls get the Wish List at Stage 12, when every phase 2 feature goes on for everyone.
 
 ### Stage 12 — Launch prep (not started)
 
