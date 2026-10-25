@@ -152,7 +152,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - **Tests (local):** pgTAP **2221 of 2221**; Vitest **413 of 413**; Playwright **127 of 127** (Home, Graphs and Buy / Sell checks now expect the new labels; Home opens the TSX fund's **?**). No money logic changed (notice wording and screen labels only), so the time machine runs in CI.
   - **Checked (2026-10-20):** the Oct 20 7:00 am backup (`3a0f5d1`) still has only the original cap row ($1,000 from Jan 1), and the parent log since Oct 19 shows only the two rate saves (7:32 and 7:33 pm). No cap change reached production.
 
-### Stage 11 — Learning features, statements and view modes (2026-10-17, built and tested locally; not in production yet)
+### Stage 11 — Learning features, statements and view modes (done 2026-10-25; in production for test accounts only since 2026-10-24)
 
 - **Plan:** `docs/plans/stage11-plan.md`, approved by Dad 2026-10-17 with A–H as recommended, plus five additions:
   1. Fund gains worked out on their own; the identity tested against the graph; a mutation test.
@@ -203,7 +203,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - **`npm test`:** 28 files, **383 of 383** pass. New: `learnText.test.ts` (20 checks): wording that never scolds (each check also proves it would catch the word), the GIC "still growing" line, the reflection's notes, statements and inflation wording (including Dad's 2026-10-17 note under each statement: "Your October interest is paid on Nov 1, so it shows on your November statement."), and which graphs each view shows.
   - **Time machine:** **PASS, 18 of 18**. Money is unchanged and matches to the cent. New: all 24 statements (2 kids × 12 months) match the model's own statements, every line and the identity, to the cent; the what-if matches for both kids (all three cases).
   - **Playwright:** **126 of 126** pass. New: `learn.spec.ts` (19 tests): the inflation toggle, What if? (gentle wording), Markets, a statement against the graph and its print layout, "Why did you sell?" after a real sell then in her history, the basic view (three graphs plus What if?, the simple statement) and back, "View as", and every new screen at 6 sizes in both views with large text. One fix came from it: basic mode now lays its cards out in one plain column (Home's named areas had squashed a card).
-- **Production (2026-10-24): steps 1–9 done, and the restore drill PASSED on `3f97db9`; step 10 on the Oct 25 7:00 am backup.**
+- **Production (2026-10-24 and 25): steps 1–10 done; restore drill PASS on `3f97db9`.**
   1. Step 1 from the 7:00 am Oct 18 backup `6b0833b` (every Oct 17 nightly job ok, outbox empty).
   2. **Backup by hand** (Dad, run #32, 12:02 pm, 59 s): `6a0847b` "Backup 2026-10-24: 36 tables, 1207 rows, 14 ledger rows". Key tables: accounts 1, transactions 14, interest_accruals 13, gic_holdings 3, requests 10, rates 9, settings 13, fund_prices 582, parent_actions 14, notifications 15, badges 2, badge_kinds 6, glossary 55, whats_new_features 3, agreement_signatures 2.
   3. **Dry run** (12:05 pm, approved by Dad): "Would push these migrations: 20261029000000_learning.sql, 20261030000000_rate_notice_tips.sql, 20261031000000_rate_notice_wording.sql, 20261101000000_matures_wording.sql, 20261102000000_explicit_grants.sql"; no seeds, no roles.
@@ -229,7 +229,13 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
      - Parent cap box: typed, deleted to empty, the screen stayed up; cancelled without saving.
      - No buys, sells, approvals or settings saved.
   - **Restore drill on `3f97db9` (Oct 24, after the deploy, at Dad's request): PASS.** 42 of 42 tables match row for row (`sell_reflections` included), and the test kid's 10 balances match to the cent and unit. `after_restore()` reported the usual lines for a new project: the login key made new (PINs to reset), the nightly function's Vault key and the GitHub token to set again. The drill copy was removed; production wasn't touched.
-  - **Next:** the step 10 check on the Oct 25 7:00 am backup (tonight's nightly jobs on the new build).
+  10. **Step 10, from the Oct 25 7:00 am backup `de87b29`** (37 tables, 1268 rows, 14 ledger rows; read-only):
+      - The Oct 24 nightly run (4:30 pm) on the new build: interest (for Oct 23), expire, splits, settle, dividends, notes, gic_maturity, auto_move, monthly and rate_notices all ok; reconcile ok (1 account, no problems, no new alerts, jobs done through Oct 24); badges ok (nothing new to award). Interest for Oct 24 says "waiting: the day isn't over yet", as every night: a day's interest is worked out the evening after (Oct 22 and Oct 23 went the same way).
+      - Alerts: none open (the last, Oct 12's, was resolved the same day).
+      - Production at `20261102000000_explicit_grants` (`migration list`: 54 local, 54 remote, no mismatch).
+      - The six Stage 11 switches are still "Test accounts only" (settings rows 33–48); Make it yours, Badges and Wish List unchanged; no cancellations and no parent actions since the switches.
+  - **Why the table counts differ** (36 at 12:02 pm, 42 in the drill): the backup's "tables" counts only the app's own tables in public and private, not views. `6a0847b` (before the push) has 35 public + 1 private = 36; `3f97db9` (after it) adds `sell_reflections`: 37. The drill also checks the backup's 5 "other" tables, the logins and photo storage (`auth.users`, `auth.identities`, `auth.mfa_factors`, `storage.buckets`, `storage.objects`): 37 + 5 = 42. Stage 10's drill had 35 + 5 = 40. `wishlist_photos` (restored from its own CSV) is one of the 37; the three views (`account_balances`, `fund_positions`, `gic_positions`) aren't counted anywhere.
+- **Stage 11 is done** (2026-10-25). In production for test accounts only since 2026-10-24; the girls get it at Stage 12, when every phase 2 feature goes on for everyone. Reflection wasn't phone-tested (it needs a sell; kept for the Oct 27 test setup).
 - **Phone test, then Nov 1:** in the plan (section 11). On Nov 1, October's statement appears.
 
 ### Stage 10 — Make it yours and badges (done 2026-10-18; in production for test accounts only since 2026-10-17)
