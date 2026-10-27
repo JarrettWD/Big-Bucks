@@ -220,7 +220,7 @@ test('a one-week special: three notices, and it ends on its last day', async ({ 
   const [{ n }] = await rows<{ n: string }>('select count(*)::text as n from public.accounts');
   expect(shown[1].label).toBe(`On ${day.after_text}, every kid (${n} accounts) will see:`);
   expect(shown[1].text).toBe(
-    'The 1-year GIC special has ended 1-year GICs are back to 5.0%. GICs bought during the special keep 6.5%.',
+    'The 1-year GIC special has ended 1-year GICs are back to 5.0%. GICs bought during the special keep 6.5% until they mature.',
   );
   await change
     .getByRole('button', { name: `Yes, save 6.5% special from ${day.start_text}` })

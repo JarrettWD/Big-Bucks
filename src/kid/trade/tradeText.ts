@@ -105,6 +105,11 @@ export function withFundLabels(o: TradeOptions): TradeOptions {
   return { ...o, funds: o.funds.map((f) => ({ ...f, name: fundLabel(f.fund_id, f.name) })) };
 }
 
+/** A special's tag on a term button: "Special! Last day: Nov 1" (Dad, 2026-10-26). */
+export function specialTag(ends: string | null | undefined, year: number): string {
+  return ends ? `Special! Last day: ${formatDate(ends, year)}` : 'Special!';
+}
+
 // Choices in the From and To lists ---------------------------------------------------------------
 
 export function placeLabel(p: Place, o: TradeOptions, side: 'from' | 'to'): string {

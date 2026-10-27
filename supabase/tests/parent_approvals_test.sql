@@ -88,11 +88,11 @@ select is(
       and p.proname in ('approve_request_unlogged', 'decline_request_unlogged', 'answer_question_unlogged',
                         'acknowledge_alert_unlogged', 'add_rate_unlogged', 'set_setting_unlogged',
                         'move_preview_unflagged')),
-  'acknowledge_alert_unlogged f799cbab72b3f4c8c5ba9a4d0f906055, add_rate_unlogged 1c62f73a784784ad7661c83020a72a37, '
+  'acknowledge_alert_unlogged f799cbab72b3f4c8c5ba9a4d0f906055, add_rate_unlogged a2f0eedd57d66128a87527a761ff8717, '
   || 'answer_question_unlogged fca9682d14eb34d86275dde11a6fe1f0, approve_request_unlogged 8bc03e82aa00f8f603d0c3c7d0f3725f, '
   || 'decline_request_unlogged cb21305de809debe9d85f1fd8980a7f3, move_preview_unflagged 405fbd6fc29c261492392b625ce8f66e, '
   || 'set_setting_unlogged 0f97833200dcaef970a9115b4563c47e',
-  'the originals are byte for byte as committed (approve_request_unlogged and set_setting_unlogged as changed on purpose in stage 8 B1; request_expiry_test proves only those lines changed; add_rate_unlogged as changed on purpose in the pre-launch audit, for the notice when a special hides a change: audit_fixes_test checks it; and again on 2026-10-19, only its notice tip, then its wording ("matures", the increase tip): rate_notice_tips_test checks both)');
+  'the originals are byte for byte as committed (approve_request_unlogged and set_setting_unlogged as changed on purpose in stage 8 B1; request_expiry_test proves only those lines changed; add_rate_unlogged as changed on purpose in the pre-launch audit, for the notice when a special hides a change: audit_fixes_test checks it; and again on 2026-10-19, only its notice tip, then its wording ("matures", the increase tip), and on 2026-10-26 its special wording ("Last day"): rate_notice_tips_test and rate_help_test check them)');
 
 select is(
   array(select w.proname::text

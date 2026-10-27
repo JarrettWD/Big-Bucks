@@ -75,20 +75,20 @@ Each notice has a title and a body.
   - Notices already sent keep their words: they're stored when sent (the Oct 19 test notice stays as it was).
 - **Rate change hidden behind a running special** (pre-launch audit: nothing changes for her until the special ends)
   - Title: {Savings rate / {term} GIC rate} after the special: {new}
-  - Body: {Dad's note} The special at {special rate} keeps going until {end date}. After that, the rate will be {new}. (GICs: plus "GICs you already have keep their locked-in rate.")
+  - Body: {Dad's note} The special at {special rate} keeps going. Last day: {end date}. After that, the rate will be {new}. (GICs: plus "GICs you already have keep their locked-in rate.")
 - **Special, when Dad saves it**
   - Title: Special: {savings / {term} GICs} at {rate} from {start date} to {end date}
     - Example: Special: 1-year GICs at 6.0% from Nov 1 to Nov 7
-  - Body: {Dad's note} After {end date} the rate goes back to {regular rate}. A GIC bought during the special keeps {rate} until it matures. (The last sentence is for GIC specials only.)
+  - Body: {Dad's note} Last day: {end date}. Then the rate goes back to {regular rate}. A GIC bought during the special keeps {rate} until it matures. (The last sentence is for GIC specials only.)
 - **Rate change, on the day it starts**
   - Title: The new {savings / {term} GIC} rate is now {rate}
   - Body: It applies from today.
 - **Special, on its first day**
   - Title: The {savings / {term} GIC} special at {rate} starts today
-  - Body: It ends after {end date}.
+  - Body: Last day: {end date}. (Was "It ends after {end date}." until 2026-10-26.)
 - **Special, the day after it ends**
   - Title: The {savings / {term} GIC} special has ended
-  - Body, GICs: {term} GICs are back to {regular rate}. GICs bought during the special keep {special rate}.
+  - Body, GICs: {term} GICs are back to {regular rate}. GICs bought during the special keep {special rate} until they mature.
   - Body, savings: Savings is back to {regular rate}.
 
 ### Dividend rates (stage 8)
@@ -329,7 +329,10 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 - **Total worth** · Watch your bucks grow.
 - **"Your GIC grew!" card:** Your {term} GIC earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}. · **Choose what's next**
 - **Notices:** the newest unread notice, with **Got it**; under it, "1 more new notice" or "{n} more new notices". GIC "ready" notices aren't repeated here, because a waiting GIC has its own card.
-- **Savings:** On hold · Free to use (only while a request is holding money) · Earning {rate} a year · Changing to {new rate} on {date} (when a change is announced)
+- **Savings:** On hold · Free to use (only while a request is holding money) · Earning {rate} a year, with the **?** for "Interest rate" (below) · Changing to {new rate} on {date} (when a change is announced)
+  - **The Interest rate ? beside her rate** (Dad, 2026-10-26): the glossary words, then her own lines, worked out by the database (`kid_rate_help`):
+    - At {rate} a year, every $100 earns {amount} in a year. (The plain meaning of the percent, for example "$1"; "about $2.13" when it isn't whole cents.)
+    - Your {savings} would earn about {amount} in a year. (Her own figure, like the real interest: monthly, each month rounded up. Not shown with nothing saved.)
 - **GICs:** No GICs right now. A GIC locks your money away for a while and pays more interest than savings.
   - Each GIC: {amount} · {term} at {rate} · Ready {date} · {n} days to go · Earns {interest} by then
   - Matured and waiting: Ready now! · **Choose**
@@ -373,7 +376,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 - **Choose by {date}.** If you don't choose by then, your {total} moves to savings, where it's safe and still earning interest. Until you choose, it earns the savings rate ({rate} a year).
 - **What would you like to do?**
   - **Keep it growing:** Another {term} GIC at {rate}. (adds "(special rate!)" during a special)
-  - **Try a different length:** Pick a shorter or longer GIC. Then **How long?** with each term and its rate, and "Special!" on a special.
+  - **Try a different length:** Pick a shorter or longer GIC. Then **How long?** with each term and its rate, and "Special! Last day: {date}" on a special.
   - **Move it to savings:** Use it any time. Savings pays {rate} a year.
 - **Before anything happens:**
   - Put {total} into a {term} GIC at {rate}? · It will earn {interest} of interest. · It's ready in {term}. Then you choose again. · Taking it out early means losing that interest.
@@ -411,7 +414,7 @@ From the app's screen (`src/kid/trade/`: wording in `tradeText.ts` and `moves.ts
 - **Breaking a GIC** (no amount box): **Which GIC?** with a card for each of her GICs, tapped to choose:
   - {amount} · {term} GIC at {rate} · Ready {date} (a GIC that matures today: Ready today)
   - Under the cards: A GIC comes out all at once. (**?** Breaking a GIC early)
-- **Buying a GIC: How long?** Each term with its rate, "earns {interest}" on her amount once it's checked, and "Special!" on a special.
+- **Buying a GIC: How long?** Each term with its rate, "earns {interest}" on her amount once it's checked, and "Special! Last day: {date}" on a special.
 - **Notes instead of the amount box:**
   - You've already traded the {fund} today. You can trade it again tomorrow. One trade per fund each day helps you think it through.
   - This GIC is ready today, so you won't lose any interest. It will be ready to choose soon.
@@ -982,6 +985,8 @@ The last line is added only when "Make it yours" is on for her.
 
 - **The toggle (in Total worth):** 💡 What will it buy?
 - **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
+  - {in a year} is worked out like the real interest, monthly with each month rounded up (since 2026-10-26), so it agrees with the Interest rate **?**.
+  - **The Inflation ?** (Dad, 2026-10-26): the glossary words, then: At {inflation} a year, something that costs $100 now costs {amount} next year. · Your {savings} in savings would need to grow to {need} to buy the same things. (Not shown with nothing saved.)
 - **Each GIC:** When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
 - **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} went up {x}% (or went down {x}%), while prices went up about {inflation}%.
 - **Under her total:** That's normal. It's one reason people use GICs and funds too.

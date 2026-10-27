@@ -56,6 +56,12 @@
   font-size: 1.1rem;
   line-height: 1.45;
 }
+/* Her own figures (the live lines), set apart a little from the general words. */
+.explain__card p.explain__live {
+  margin-top: -0.25rem;
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--bb-gold);
+}
 .explain__close {
   width: 100%;
   min-height: 48px;

@@ -62,7 +62,7 @@ insert into r select 'gic_special', public.add_rate('gic', 12, 6.0, '2026-10-20'
 select is((tests.notice((select id from r where k = 'gic_special'))).title, 'Special: 1-year GICs at 6.0% from Oct 20 to Oct 30',
   'a GIC special');
 select is((tests.notice((select id from r where k = 'gic_special'))).body,
-  'After Oct 30 the rate goes back to 5.0%. A GIC bought during the special keeps 6.0% until it matures.',
+  'Last day: Oct 30. Then the rate goes back to 5.0%. A GIC bought during the special keeps 6.0% until it matures.',
   '...its own words, no tip to buy before it');
 
 -- 6. Tonight's case: a 1-month GIC special starting the same day as the savings cut (case 1).

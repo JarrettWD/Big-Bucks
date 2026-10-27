@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { Explain } from '../../components/Glossary';
 import { useKid } from '../KidShell';
 import { kidRpc } from '../kidView';
+import { inflationLines, useRateHelp } from '../rateHelp';
 import { fundInflation, gicInflation, savingsInflation, TEXT } from './learnText';
 import './Learn.css';
 
@@ -106,9 +107,17 @@ function Line({ children }: { children: ReactNode }) {
 export function SavingsInflation() {
   const { data } = useContext(Ctx);
   if (!data) return null;
+  return <SavingsInflationLine data={data} />;
+}
+
+// Its own component so her ? figures load only when the inflation line shows.
+function SavingsInflationLine({ data }: { data: InflationData }) {
+  const { view } = useKid();
+  const help = useRateHelp(view, data.savings.now_cents);
   return (
     <Line>
-      {savingsInflation(data.savings, data.inflation_rate)} <Explain term="Inflation" />
+      {savingsInflation(data.savings, data.inflation_rate)}{' '}
+      <Explain term="Inflation" live={inflationLines(help)} />
     </Line>
   );
 }

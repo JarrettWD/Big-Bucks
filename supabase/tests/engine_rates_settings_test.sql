@@ -166,7 +166,7 @@ select is(
   'The 1-year GIC special at 6.0% starts today', 'a notice when the special starts');
 select is(
   (select title || ' / ' || body from public.notifications where type = 'rate_live' and account_id = tests.acct('kid_a') order by id desc limit 1),
-  'The 1-year GIC special has ended / 1-year GICs are back to 5.0%. GICs bought during the special keep 6.0%.',
+  'The 1-year GIC special has ended / 1-year GICs are back to 5.0%. GICs bought during the special keep 6.0% until they mature.',
   'and one when it ends');
 
 -- 3. Settings ------------------------------------------------------------------
