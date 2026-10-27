@@ -50,6 +50,12 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 
 **Rates (week 2, from about Oct 19):**
 - **A savings rate change:** the notice, the 7-day default, applied on its effective date (save it about Oct 19, effective about Oct 26).
+  - **Oct 26 check (Dad, on production as the test kid): passed.**
+    - Savings shows "Earning 1.0% a year".
+    - After the nightly run, the bell has "The new savings rate is now 1.0%: It applies from today.", with no GIC tip.
+    - The bell has "The 1-month GIC special at 5.0% starts today: It ends after Nov 1.", and Buy / Sell shows the special.
+    - **To tick the box:** the Oct 27 7:00 am backup should show Oct 26's savings interest accrued at 1.0% (a day's interest is worked out the evening after). The special's switch back is due Nov 2 (box "A special switches back…").
+    - **Two wording items queued for the next production session** (proposed to Dad Oct 26, not changed yet): the "Interest rate" **?** beside a live rate, and the special's "It ends after Nov 1".
 - **Existing GICs keep their locked-in rate after a GIC rate change:** with the 1-month GIC open.
 - **A special switches back to the regular rate on its end date:** a short special, for example Oct 20–27.
 - **A deposit-cap change reaches the kid with a notice.** "Both girls" is ticked at Stage 12.
