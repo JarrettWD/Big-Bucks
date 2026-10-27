@@ -54,7 +54,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
     - Savings shows "Earning 1.0% a year".
     - After the nightly run, the bell has "The new savings rate is now 1.0%: It applies from today.", with no GIC tip.
     - The bell has "The 1-month GIC special at 5.0% starts today: It ends after Nov 1.", and Buy / Sell shows the special.
-    - **To tick the box:** the Oct 27 7:00 am backup should show Oct 26's savings interest accrued at 1.0% (a day's interest is worked out the evening after). The special's switch back is due Nov 2 (box "A special switches back…").
+    - **To tick the box:** after the Oct 28 catch-up, from the Oct 29 backup: Oct 25 at 2.0%, Oct 26 and Oct 27 at 1.0% (see the skipped-night item above; Oct 26's interest is worked out on the skipped Oct 27 run). The special's switch back is due Nov 2 (box "A special switches back…").
     - **Two wording items queued for the next production session** (proposed to Dad Oct 26, not changed yet): the "Interest rate" **?** beside a live rate, and the special's "It ends after Nov 1".
 - **Existing GICs keep their locked-in rate after a GIC rate change:** with the 1-month GIC open.
 - **A special switches back to the regular rate on its end date:** a short special, for example Oct 20–27.
@@ -70,6 +70,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 
 **Exercised on purpose, safely (each on a weekday Dad picks, never the 1st, a month-end, a GIC maturity day or a payment day; only the test kid's data is affected; Claude writes the steps on the day and Dad flips the switch):**
 - **A skipped night, caught up with no duplicate postings, and a price-service "outage":** before 4:00 pm, Dad switches the nightly timer off (Supabase → **Integrations** → **Cron** → `big-bucks-nightly` → off), with a test-kid buy requested that day. That evening nothing runs; the next morning's Health check goes red ("Nightly jobs haven't finished since …", GitHub emails Dad, expected). Before 4:00 pm the next day he switches it back on. The 4:30 pm run catches up both days. Check: one row per job and day, no posting twice (`posting_key`), reconcile ok, and the buy settled at its own day's real close, never an older one. Suggested Tue Oct 27 off, Wed Oct 28 on.
+  - **Also from the Oct 29 7:00 am backup (Dad, 2026-10-26): the savings cut's interest.** A day's savings interest is written by the next day's 4:30 pm run (Oct 23's at 2.000% was written Oct 24 at 4:30 pm). So the Oct 27 backup shows Oct 25 at 2.0% (from the Oct 26 run); the skipped Oct 27 run writes nothing; the Oct 28 catch-up writes Oct 26 **and** Oct 27, both at 1.0% (`rate_id` of the cut), each exactly once. Then tick "A savings rate change sends the notice, with the 7-day default, and applies on its effective date".
 - **The 9:00 pm missing-close alert, which clears itself when the close arrives:** another evening, the timer off before 4:00 pm and back on at about 9:05 pm. The 9:30 pm kick finds that day's closes missing and raises one `missing_price` alert per fund (on the Dashboard; the next morning's Health check would report any still open), then fetches the closes; each alert settles as its close is stored. Suggested Thu Oct 22.
 
 **Before Stage 12 (nothing lost):**
