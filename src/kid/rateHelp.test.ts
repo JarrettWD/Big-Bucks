@@ -5,7 +5,10 @@ import { inflationLines, interestLines, shortAmount, type RateHelp } from './rat
 import { specialTag } from './trade/tradeText';
 
 const help: RateHelp = {
+  today: '2026-10-27',
   savings_rate: '1.000',
+  now_rate: '1.000',
+  special_until: null,
   per_100_cents: 100,
   per_100_exact: true,
   balance_cents: '9500',
@@ -32,6 +35,25 @@ describe('the Interest rate ?', () => {
         per_100_exact: false,
       })[0],
     ).toBe('At 2.125% a year, every $100 earns about $2.13 in a year.');
+  });
+  it('during a savings special, says the special and its last day, and works the year at the regular rate', () => {
+    // Dad, 2026-10-27: the figures are kid_rate_help's known answers (rate_help_test.sql).
+    expect(
+      interestLines({
+        ...help,
+        today: '2026-11-03',
+        savings_rate: '2.125',
+        now_rate: '5.000',
+        special_until: '2026-11-08',
+        per_100_cents: 213,
+        per_100_exact: false,
+        year_cents: '210',
+      }),
+    ).toEqual([
+      "Right now you're earning the special 5.0% until Nov 8, then 2.125%.",
+      'At 2.125% a year, every $100 earns about $2.13 in a year.',
+      'Your $95.00 would earn about $2.10 in a year.',
+    ]);
   });
   it('leaves out her line when she has nothing saved, and says nothing before it loads', () => {
     expect(interestLines({ ...help, year_cents: null })).toHaveLength(1);

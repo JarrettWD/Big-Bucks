@@ -331,7 +331,8 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 - **Notices:** the newest unread notice, with **Got it**; under it, "1 more new notice" or "{n} more new notices". GIC "ready" notices aren't repeated here, because a waiting GIC has its own card.
 - **Savings:** On hold · Free to use (only while a request is holding money) · Earning {rate} a year, with the **?** for "Interest rate" (below) · Changing to {new rate} on {date} (when a change is announced)
   - **The Interest rate ? beside her rate** (Dad, 2026-10-26): the glossary words, then her own lines, worked out by the database (`kid_rate_help`):
-    - At {rate} a year, every $100 earns {amount} in a year. (The plain meaning of the percent, for example "$1"; "about $2.13" when it isn't whole cents.)
+    - During a savings special only, first: Right now you're earning the special {special rate} until {last day}, then {regular rate}. (Dad, 2026-10-27.)
+    - At {rate} a year, every $100 earns {amount} in a year. (The plain meaning of the percent, for example "$1"; "about $2.13" when it isn't whole cents. {rate} is always the regular savings rate, never a special: a special lasts days, not a year.)
     - Your {savings} would earn about {amount} in a year. (Her own figure, like the real interest: monthly, each month rounded up. Not shown with nothing saved.)
 - **GICs:** No GICs right now. A GIC locks your money away for a while and pays more interest than savings.
   - Each GIC: {amount} · {term} at {rate} · Ready {date} · {n} days to go · Earns {interest} by then
@@ -985,7 +986,7 @@ The last line is added only when "Make it yours" is on for her.
 
 - **The toggle (in Total worth):** 💡 What will it buy?
 - **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
-  - {in a year} is worked out like the real interest, monthly with each month rounded up (since 2026-10-26), so it agrees with the Interest rate **?**.
+  - {in a year} is worked out like the real interest, monthly with each month rounded up (since 2026-10-26), at the regular savings rate (never a special), so it agrees with the Interest rate **?** to the cent.
   - **The Inflation ?** (Dad, 2026-10-26): the glossary words, then: At {inflation} a year, something that costs $100 now costs {amount} next year. · Your {savings} in savings would need to grow to {need} to buy the same things. (Not shown with nothing saved.)
 - **Each GIC:** When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
 - **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} went up {x}% (or went down {x}%), while prices went up about {inflation}%.

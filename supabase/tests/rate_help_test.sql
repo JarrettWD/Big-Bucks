@@ -1,9 +1,10 @@
 -- The live figures in the "Interest rate" and "Inflation" ?s (Dad, 2026-10-26; migration
--- 20261103000000_rate_help.sql). Known answers worked by hand: a year of savings interest
+-- 20261103000000_rate_help.sql; a savings special: 20261104000000_rate_help_special.sql).
+-- Known answers worked by hand: a year of savings interest
 -- month by month, each month rounded up to the cent like the real interest; the plain meaning
 -- of a percent for $100; inflation's "would need to grow to", rounded up.
 begin;
-select plan(24);
+select plan(31);
 
 create schema tests;
 create function tests.clock(p_at text) returns void language sql as $$
@@ -82,9 +83,29 @@ select is(tests.help((select acct from k where name = 'a')) ->> 'per_100_exact',
 
 insert into public.rates (vehicle, gic_term, rate, effective_date, end_date, is_special)
 values ('savings', null, 5.0, '2026-11-02', '2026-11-08', true);
+insert into public.settings (key, value, effective_date) values ('feature:inflation', 'test', '2026-11-01');
 select tests.clock('2026-11-03 12:00');
-select is((tests.help((select acct from k where name = 'a')) ->> 'savings_rate')::numeric, 5.0::numeric,
-  'during a savings special, the special rate (what Home shows)');
+-- During a savings special (Dad, 2026-10-27; 20261104000000_rate_help_special.sql): both year
+-- projections use the regular rate, and the ? names the special and its last day in words.
+select is((tests.help((select acct from k where name = 'a')) ->> 'savings_rate')::numeric, 2.125::numeric,
+  'during a savings special, the year figures use the regular rate (2.125%), not the special');
+select is((tests.help((select acct from k where name = 'a')) ->> 'now_rate')::numeric, 5.0::numeric,
+  '...while today''s rate is the special''s 5.0% (what Home shows)');
+select is(tests.help((select acct from k where name = 'a')) ->> 'special_until', '2026-11-08',
+  '...and its last day is Nov 8');
+-- $95.00 at 2.125%: 9500 × 2.125%/12 = 16.82¢ → 17¢ for six months; at $96.02, 17.004¢ → 18¢ for six: $2.10.
+-- (At the special's 5.0% it would wrongly say $4.92.)
+select is(tests.help((select acct from k where name = 'a')) ->> 'year_cents', '210',
+  'her year figure: about $2.10 at the regular 2.125%, never the special''s rate');
+select is(tests.help((select acct from k where name = 'a')) ->> 'per_100_cents', '213',
+  '...and the plain meaning is for the regular rate too: about $2.13 per $100');
+select is(public.kid_inflation((select acct from k where name = 'a')) -> 'savings' ->> 'in_a_year_cents', '9710',
+  'the Inflation line agrees to the cent: $95.00 + $2.10 = $97.10, at the regular rate');
+select tests.clock('2026-11-09 12:00');
+select is(tests.help((select acct from k where name = 'a')) -> 'special_until', 'null'::jsonb,
+  'the day after the special: no special to mention');
+select is((tests.help((select acct from k where name = 'a')) ->> 'now_rate')::numeric, 2.125::numeric,
+  '...and today''s rate is the regular one again');
 
 -- 4. Nothing saved, and who can see -------------------------------------------------------------------
 

@@ -2,12 +2,18 @@
 // Every figure comes from the database (kid_rate_help); these only put words around them.
 
 import { useEffect, useState } from 'react';
-import { formatRate } from '../lib/format';
+import { formatDate, formatRate } from '../lib/format';
 import { formatCents, toCents, type Cents } from '../lib/money';
 import { kidRpc, type KidView } from './kidView';
 
 export interface RateHelp {
+  today: string;
+  /** The regular rate: what both year figures use, never a special (Dad, 2026-10-27). */
   savings_rate: string | number;
+  /** Today's rate, a special included: what Home shows. */
+  now_rate: string | number;
+  /** A savings special's last day, while one is running. */
+  special_until: string | null;
   per_100_cents: Cents;
   per_100_exact: boolean;
   balance_cents: Cents;
@@ -26,12 +32,18 @@ export function shortAmount(value: Cents): string {
   return s.endsWith('.00') ? s.slice(0, -3) : s;
 }
 
-/** The Interest rate ?: the plain meaning of her rate, then her own figure. */
+/** The Interest rate ?: a running savings special in words, then the plain meaning of her
+ * regular rate, then her own figure (at the regular rate: a special lasts days, not a year). */
 export function interestLines(h: RateHelp | null): string[] {
   if (!h) return [];
-  const lines = [
+  const lines: string[] = [];
+  if (h.special_until)
+    lines.push(
+      `Right now you're earning the special ${formatRate(h.now_rate)} until ${formatDate(h.special_until, Number(h.today.slice(0, 4)))}, then ${formatRate(h.savings_rate)}.`,
+    );
+  lines.push(
     `At ${formatRate(h.savings_rate)} a year, every $100 earns ${h.per_100_exact ? '' : 'about '}${shortAmount(h.per_100_cents)} in a year.`,
-  ];
+  );
   if (h.year_cents !== null)
     lines.push(
       `Your ${formatCents(h.balance_cents)} would earn about ${shortAmount(h.year_cents)} in a year.`,
