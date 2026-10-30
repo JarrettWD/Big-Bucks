@@ -1,7 +1,7 @@
 // The nightly run end to end on the LOCAL Supabase (Stage 4, Part A): the nightly
 // Edge Function with the made-up price source catches up after a skipped day, and the
 // database kicks it by itself (nightly_kick, then the one sender through pg_net), as
-// pg_cron does on production. Runs last: it moves the app clock forward two days.
+// pg_cron does on production. Runs last: it moves the app clock into next month (firstNight).
 import { expect, test } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
 
@@ -33,13 +33,20 @@ async function withDb<T>(run: (db: LocalDb) => Promise<T>): Promise<T> {
 }
 
 /**
- * Tonight's day, from which the skipped night (the day after) is a day both markets
- * trade, so the catch-up has real closes to fill in.
+ * The first test night, the same on any day of the month (Dad, 2026-10-29): from the 3rd of
+ * next month, the first day whose next day both markets trade (so the skipped night has real
+ * closes to fill in). Every test day then falls between about the 3rd and the 23rd: never on
+ * the 1st (when the month's interest is paid), a quarter's dividend day or a month's end. And
+ * the first run always catches up across exactly one 1st, whatever today's date, so the
+ * state these tests leave behind never depends on when they run. (The clock only moves
+ * forward, so the 1st can't be avoided altogether: what matters is that it's always the same.)
  */
 async function firstNight(db: LocalDb): Promise<string> {
   const [r] = await db.q<{ d: string }>(
     `select min(g)::date::text as d
-       from generate_series(public.app_today(), public.app_today() + 14, interval '1 day') g
+       from generate_series((date_trunc('month', public.app_today()) + interval '1 month 2 days')::date,
+                            (date_trunc('month', public.app_today()) + interval '1 month 16 days')::date,
+                            interval '1 day') g
       where public.is_trading_day('nyse', (g + interval '1 day')::date)
         and public.is_trading_day('tsx', (g + interval '1 day')::date)`,
   );
