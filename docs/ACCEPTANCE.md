@@ -48,7 +48,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 1, live: rates and settings**
 
-- [ ] A savings rate change sends the notice, with the 7-day default, and applies on its effective date
+- [x] A savings rate change sends the notice, with the 7-day default, and applies on its effective date (2026-10-29: Dad saved 2.0% → 1.0% on Oct 19, effective Oct 26, 7 days ahead; the kid had the notice that evening and "The new savings rate is now 1.0%" on Oct 26; backup `37e9784` shows Oct 25 at 2.000% and Oct 26 and Oct 27 at 1.000% (rate 12), each day once; PROGRESS Oct 26–29)
 - [ ] Existing GICs keep their locked-in rate after a GIC rate change
 - [ ] A special switches back to the regular rate on its end date
 - [ ] A deposit-cap change reaches both girls with a notice
