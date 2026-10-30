@@ -55,7 +55,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
     - After the nightly run, the bell has "The new savings rate is now 1.0%: It applies from today.", with no GIC tip.
     - The bell has "The 1-month GIC special at 5.0% starts today: It ends after Nov 1.", and Buy / Sell shows the special.
     - **To tick the box:** after the Oct 28 catch-up, from the Oct 29 backup: Oct 25 at 2.0%, Oct 26 and Oct 27 at 1.0% (see the skipped-night item above; Oct 26's interest is worked out on the skipped Oct 27 run). The special's switch back is due Nov 2 (box "A special switches back…").
-    - **Two wording items, on branch `rate-wording`** (approved by Dad, not merged): the "Interest rate" **?** beside a live rate, and the special's "Last day". They ship at the next production session, **Sat Nov 7 after 11:45 am** (Dad, 2026-10-28): merge, a dry run listing exactly `20261103000000_rate_help.sql` then `20261104000000_rate_help_special.sql`, `db push`, then the Pages deploy.
+    - **Two wording items, on branch `rate-wording`** (approved by Dad, not merged): the "Interest rate" **?** beside a live rate, and the special's "Last day". They ship at the next production session, **Sat Nov 7 after 11:45 am** (Dad, 2026-10-28; steps in "Production session Sat Nov 7" above).
 - **Existing GICs keep their locked-in rate after a GIC rate change:** with the 1-month GIC open.
 - **A special switches back to the regular rate on its end date:** a short special, for example Oct 20–27.
 - **A deposit-cap change reaches the kid with a notice.** "Both girls" is ticked at Stage 12.
@@ -124,6 +124,22 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Production session Sat Nov 7, after 11:45 am (planned; Dad, 2026-10-29)
+
+Ships two reviewed branches: `rate-wording` (the rate **?**s and "Last day", two migrations) and `price-down-test` (the outage test, the made-up source's switch, test order; it changes the nightly and health functions' shared code, no migration). Production changes stay outside 4:00–5:00 pm. In order:
+
+1. **Backup by hand** (big-bucks-backups → Actions → Backup → Run workflow), green; note its commit.
+2. **Record what's deployed now, for rollback:** `npx supabase functions list` (read-only): each function's version, update time and checksum. Expected today: nightly version 3 (Oct 17, from `b2c8179`), health version 5 (Oct 11, from `77bfa30`), kid-login version 2, download-backup version 1. Rollback = deploy the same functions again from a worktree at that commit (`git worktree add ../bb-rollback <commit>`, then `npx supabase functions deploy nightly health` from it).
+3. **Merge** `rate-wording` and `price-down-test` into `main` (PROGRESS.md may need its lines joined by hand), all tests locally, push, CI green.
+4. **Dry run**, for Dad's review: it must list exactly `20261103000000_rate_help.sql`, then `20261104000000_rate_help_special.sql`. Stop if it lists anything else.
+5. **`db push`**, then a second dry run: "Remote database is up to date."
+6. **`npx supabase functions deploy nightly health`**, then the smoke check:
+   - `functions list`: both ACTIVE, with new versions;
+   - **Health check** by hand (big-bucks-backups → Actions → Health check → Run workflow, Send test alert unticked): green;
+   - the nightly with production's own settings: its first real call is the 4:30 pm timer run. After it, check read-only that the call's reply was 200 (not a refusal), Saturday's jobs ran ok and reconcile is ok.
+7. **Deploy to GitHub Pages** only after step 6 passes, after 5:00 pm. Check the live bundle has "Last day" and the new **?** lines.
+8. **Mon Nov 9 evening**, the first real price fetch on the new function (Saturday and Sunday have no close): Dad asks Buck to check the 4:30 pm run (all three closes stored, Monday's jobs ok, no open alerts). If prices failed, **roll back the functions (step 2) before 9:00 pm**, so the 9:00 pm check and the evening's later runs use the old function.
 
 ### Pre-Saturday checks (2026-10-20, Dad's review of deddfa9; built and tested locally, ship with Stage 11's deploy)
 
