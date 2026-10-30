@@ -57,11 +57,11 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 - [x] `select * from public.check_time_rules();` on production shows no ok = false rows (2026-10-10, RUNBOOK production setup step 6)
 - [ ] 30 nights in a row with zero reconciliation mismatches
-- [ ] A deliberately skipped night is caught up the next run, with no duplicate postings
+- [x] A deliberately skipped night is caught up the next run, with no duplicate postings (2026-10-29: the nightly timer off Oct 26–28, so Oct 27 never ran; Oct 28's 7:30 pm run caught up one day at a time: Oct 26's interest, then Oct 27's jobs and Oct 28's, each once and ok (job_runs 312–335), reconcile ok; the $10 test buy (request #22) settled at Oct 27's close, XIC $57.76, not Oct 28's; no posting key, interest day or job-day twice; interest right across the rate change: Oct 25 at 2.000%, Oct 26 and 27 at 1.000% (backup `37e9784`); PROGRESS Oct 26–28)
 - [ ] A simulated price-service outage makes trades wait rather than settle on an old price
 - [x] A test alert reaches Dad’s dashboard and email (2026-10-10: Send test alert, email arrived, Dashboard alert acknowledged)
 - [x] Production has a few nights of real closes for DIA, QQQ and XIC, and about two years of history for the graphs (DIA and QQQ Oct 12–14, XIC Oct 13–14, 2026, the TSX closed for Thanksgiving on Oct 12; backfill: 100 daily closes and weekly closes back to Oct 11, 2024)
-- [ ] A close still missing at 9:00 pm Alberta time alerts Dad, and the alert clears itself when the close arrives
+- [x] A close still missing at 9:00 pm Alberta time alerts Dad, and the alert clears itself when the close arrives (2026-10-29: the nightly timer off until 9:13 pm; the 9:30 pm check raised `missing_price` alerts 5, 6 and 7 for the Dow Jones, Nasdaq-100 and TSX Oct 29 closes at 9:30:00, and each cleared itself as its close was stored: 9:30:03, 9:30:15, 9:30:28; PROGRESS Oct 29)
 - [x] The morning health check is green on a normal day, and fails (emailing Dad) when anything is open (green Oct 13 and 14, 2026; red with GitHub's email on Oct 12, when a `backup_failed` alert was open)
 - [ ] The daily backup commits to GitHub every day, and the copy on Dad’s computer updates
 - [x] The Download backup button produces a complete zip (2026-10-10, on Dad's phone: csv and json folders, manifest.json, README.txt)
