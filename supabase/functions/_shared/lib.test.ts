@@ -5,7 +5,9 @@ import {
   fakeCloses,
   isHosted,
   keyProblem,
+  LOCAL_SWITCHES,
   parseDaily,
+  priceSource,
   parseSplits,
   parseWeekly,
   providerSymbol,
@@ -166,5 +168,39 @@ describe('keys', () => {
     expect(keyProblem('local-nightly-key-for-this-computer-only', false)).toBeNull();
     expect(keyProblem('local-nightly-key-for-this-computer-only', true)).not.toBeNull();
     expect(keyProblem('x'.repeat(40), true)).toBeNull();
+  });
+});
+
+// Dad, 2026-10-29: the "price source down" switch exists only on your own computer.
+describe('the price source and its test switches', () => {
+  const env = (priceSource?: string, switches?: string) => ({ priceSource, switches });
+
+  it('hosted Supabase always uses the real provider, and refuses every test setting', () => {
+    expect(priceSource(env(undefined, undefined), null, true)).toEqual({ source: 'real' });
+    expect(priceSource(env('', ''), null, true)).toEqual({ source: 'real' });
+    // The made-up source, with or without the switches.
+    expect(priceSource(env('fake'), null, true)).toHaveProperty('refused');
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'down', true)).toHaveProperty('refused');
+    // The switches setting, even alone.
+    expect(priceSource(env(undefined, LOCAL_SWITCHES), null, true)).toHaveProperty('refused');
+    // The header, even alone, and any value of it.
+    expect(priceSource(env(), 'down', true)).toHaveProperty('refused');
+    expect(priceSource(env(), '', true)).toHaveProperty('refused');
+  });
+
+  it("an address that isn't clearly local counts as hosted, so it refuses too", () => {
+    const hosted = isHosted('not a url');
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'down', hosted)).toHaveProperty('refused');
+  });
+
+  it('on your own computer: the made-up source, and "down" only with every lock open', () => {
+    expect(priceSource(env('fake'), null, false)).toEqual({ source: 'fake' });
+    expect(priceSource(env('fake', LOCAL_SWITCHES), null, false)).toEqual({ source: 'fake' });
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'down', false)).toEqual({ source: 'down' });
+    // Each lock on its own keeps it from going down, and says so.
+    expect(priceSource(env('fake'), 'down', false)).toHaveProperty('refused');
+    expect(priceSource(env('fake', 'yes'), 'down', false)).toHaveProperty('refused');
+    expect(priceSource(env(undefined, LOCAL_SWITCHES), 'down', false)).toHaveProperty('refused');
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'up', false)).toHaveProperty('refused');
   });
 });

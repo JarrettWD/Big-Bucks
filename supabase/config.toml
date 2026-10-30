@@ -400,6 +400,9 @@ deno_version = 2
 NIGHTLY_KEY = "local-nightly-key-for-this-computer-only"
 HEALTH_CHECK_KEY = "local-health-key-for-this-computer-only"
 PRICE_SOURCE = "fake"
+# Lets the end-to-end test switch the made-up price source "down" for one call, as in a
+# price-service outage (header x-fake-prices: down). Hosted Supabase refuses it (Dad, 2026-10-29).
+PRICE_SOURCE_SWITCHES = "local-only"
 
 [analytics]
 enabled = true

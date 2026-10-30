@@ -171,3 +171,192 @@ test('the database kicks the run by itself, through its one sender', async () =>
     }
   });
 });
+
+// Dad, 2026-10-29 (ACCEPTANCE: "A simulated price-service outage makes trades wait rather than
+// settle on an old price"). The made-up price source is switched "down" for one evening, with
+// the test kid's buy waiting for that day's close. The switch is this computer's only:
+// supabase/config.toml's PRICE_SOURCE_SWITCHES and the x-fake-prices header, both refused on
+// hosted Supabase (priceSource in supabase/functions/_shared/lib.ts, and its unit tests).
+async function nightlyDown(): Promise<Record<string, unknown>> {
+  const r = await fetch(URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-nightly-key': KEY, 'x-fake-prices': 'down' },
+    body: JSON.stringify({ mode: 'nightly' }),
+  });
+  const body = (await r.json()) as Record<string, unknown>;
+  expect(r.status, JSON.stringify(body)).toBe(200);
+  return body;
+}
+
+test('a price-service outage: the buy waits, never at an old close, and settles at its own', async () => {
+  test.setTimeout(180_000);
+  await withDb(async (db) => {
+    // A day both markets trade, with the next day trading too, after the tests above.
+    const from = await plus(db, await firstNight(db), 5);
+    const [{ d: day }] = await db.q<{ d: string }>(
+      `select min(g)::date::text as d
+         from generate_series($1::date, $1::date + 14, interval '1 day') g
+        where public.is_trading_day('nyse', g::date) and public.is_trading_day('tsx', g::date)
+          and public.is_trading_day('nyse', (g + interval '1 day')::date)
+          and public.is_trading_day('tsx', (g + interval '1 day')::date)`,
+      [from],
+    );
+    const before = await plus(db, day, -1);
+    const next = await plus(db, day, 1);
+    const [robin] = await db.q<{ user_id: string; account_id: string }>(
+      `select user_id::text, account_id::text from public.profiles where username = 'demo_robin'`,
+    );
+    try {
+      // The evening before: everything done, so every earlier close is stored (the "old price").
+      await db.setClock(`${before} 17:00`);
+      expect((await nightly()).done).toBe(true);
+      const [old] = await db.q<{ close: string | null }>(
+        `select public.final_close('tsx', x.d)::text as close
+           from (select max(price_date) as d from public.fund_prices
+                  where fund_id = 'tsx' and price_date < $1::date) x`,
+        [day],
+      );
+      expect(old.close, 'an earlier TSX close is there to be misused').not.toBeNull();
+
+      // That morning she buys $10.00 of the TSX fund: it waits for that day's close.
+      await db.setClock(`${day} 09:00`);
+      const buy = await db.call(
+        { role: 'authenticated', sub: robin.user_id, aal: 'aal1' },
+        `select public.request_trade('tsx', 'buy', 1000)`,
+      );
+      expect(buy.ok, JSON.stringify(buy)).toBe(true);
+      const [req] = await db.q<{ id: number }>(
+        `select max(id)::int as id from public.requests where account_id = $1 and fund_id = 'tsx'`,
+        [robin.account_id],
+      );
+
+      // 9:30 pm, the price service down. First the 9:00 pm check's alerts (nightly_kick raises
+      // them before it calls; here the call is made directly so it can carry the switch).
+      await db.setClock(`${day} 21:30`);
+      await db.q(`select public.raise_missing_price_alerts($1::date)`, [day]);
+      const [{ n: callsBefore }] = await db.q<{ n: number }>(
+        `select coalesce(max(id), 0)::int as n from public.price_calls`,
+      );
+      const down = await nightlyDown();
+      // Every fund's call failed (each with its one retry), and nothing was stored.
+      const prices = down.prices as { fund: string; error?: string }[];
+      expect(prices.length).toBe(3);
+      for (const p of prices) expect(p.error, p.fund).toMatch(/No answer from the provider/);
+      const [calls] = await db.q<{ n: number; ok: number }>(
+        `select count(*)::int as n, count(*) filter (where ok)::int as ok
+           from public.price_calls where id > $1`,
+        [callsBefore],
+      );
+      expect(calls).toEqual({ n: 6, ok: 0 });
+      const closes = await db.q<{ c: string | null }>(
+        `select public.final_close(f.id, $1::date)::text as c from public.funds f`,
+        [day],
+      );
+      expect(
+        closes.every((r) => r.c === null),
+        'no close for that day was stored or guessed',
+      ).toBe(true);
+
+      // The buy waits: not settled, nothing posted, its money still on hold. Never the old close.
+      const [waiting] = await db.q<{ status: string; held: string }>(
+        `select status::text, held_cents::text as held from public.requests where id = $1`,
+        [req.id],
+      );
+      expect(waiting).toEqual({ status: 'pending', held: '1000' });
+      const posted = await db.q(`select 1 from public.transactions where request_id = $1`, [
+        req.id,
+      ]);
+      expect(posted).toEqual([]);
+      const jobs = await db.q<{ job: string; status: string }>(
+        `select job::text, status::text from public.job_runs
+          where run_for_date = $1 and job::text in ('settle', 'expire', 'gic_maturity', 'auto_move',
+                                                    'monthly', 'rate_notices')
+          order by id`,
+        [day],
+      );
+      expect(jobs, 'settle waits for the close').not.toContainEqual({
+        job: 'settle',
+        status: 'ok',
+      });
+      // The other nightly jobs still ran that night, and the day before's interest.
+      for (const job of ['expire', 'gic_maturity', 'auto_move', 'monthly', 'rate_notices'])
+        expect(jobs, job).toContainEqual({ job, status: 'ok' });
+      const [interest] = await db.q<{ n: number }>(
+        `select count(*)::int as n from public.job_runs
+          where job = 'interest' and run_for_date = $1 and status = 'ok'`,
+        [before],
+      );
+      expect(interest.n, 'the interest for the day before was worked out').toBe(1);
+      expect(down.done).toBe(false);
+      const open = await db.q<{ fund: string }>(
+        `select details ->> 'fund_id' as fund from public.alerts
+          where kind = 'missing_price' and details ->> 'date' = $1 and resolved_at is null
+          order by 1`,
+        [day],
+      );
+      expect(open.map((a) => a.fund)).toEqual(['dow', 'nasdaq100', 'tsx']);
+
+      // The next evening, the price service is back: both days' closes come in, and the buy
+      // settles at its own day's close.
+      await db.setClock(`${next} 17:00`);
+      const back = await nightly();
+      expect(back.done).toBe(true);
+      const [own] = await db.q<{ close: string | null }>(
+        `select public.final_close('tsx', $1::date)::text as close`,
+        [day],
+      );
+      expect(own.close).not.toBeNull();
+      const [settled] = await db.q<{ status: string }>(
+        `select status::text from public.requests where id = $1`,
+        [req.id],
+      );
+      expect(settled.status).toBe('settled');
+      const rows = await db.q<{
+        vehicle: string;
+        units: string | null;
+        price: string | null;
+        eff: string;
+      }>(
+        `select vehicle::text, units::text, unit_price::text as price,
+                (effective_at at time zone 'America/Toronto')::date::text as eff
+           from public.transactions where request_id = $1 order by id`,
+        [req.id],
+      );
+      // Exactly two postings, once each, at that day's close (never the old one).
+      expect(rows.map((r) => r.vehicle)).toEqual(['savings', 'stock']);
+      const stock = rows[1];
+      expect(Number(stock.price)).toBe(Number(own.close));
+      if (Number(own.close) !== Number(old.close))
+        expect(Number(stock.price)).not.toBe(Number(old.close));
+      expect(stock.eff).toBe(day);
+      const [units] = await db.q<{ u: string }>(
+        `select (ceil(10.00 / $1::numeric * 100000000) / 100000000)::numeric(20,8)::text as u`,
+        [own.close],
+      );
+      expect(stock.units).toBe(units.u);
+      // Its alerts cleared themselves when the closes came in.
+      const still = await db.q(
+        `select 1 from public.alerts
+          where kind = 'missing_price' and details ->> 'date' = $1 and resolved_at is null`,
+        [day],
+      );
+      expect(still).toEqual([]);
+
+      // Nothing twice: no posting key, interest day, or job-day (badges aside) more than once.
+      const twice = await db.q<{ what: string }>(
+        `select 'posting ' || posting_key as what from public.transactions
+          where posting_key is not null group by posting_key having count(*) > 1
+         union all
+         select 'interest ' || account_id || ' ' || accrual_date from public.interest_accruals
+          group by account_id, accrual_date having count(*) > 1
+         union all
+         select 'job ' || job || ' ' || run_for_date from public.job_runs
+          where status = 'ok' and job::text not in ('backup', 'health', 'badges')
+          group by job, run_for_date having count(*) > 1`,
+      );
+      expect(twice).toEqual([]);
+    } finally {
+      await db.setClock('');
+    }
+  });
+});
