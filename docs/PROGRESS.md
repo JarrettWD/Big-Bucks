@@ -109,6 +109,16 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **Dad's fresh read-only audit** of changes since the third pre-launch audit, before the girls' real accounts;
 - **the maturity notice says "matured"** (Dad, 2026-10-20): "Your {term} GIC finished and earned …" becomes "matured", done as a reviewed money-function change to the nightly maturity job (plan, known-answer test, time machine), not a wording patch;
 - **the agreement says "matures"** (Dad, 2026-10-20): change "When a GIC finishes, …" to "matures" in a new agreement version before the girls sign their real agreements at launch, so no re-sign is needed later. Only the test account has signed so far (Oct 20 backup: one account, `is_test`; its signature and Dad's countersignature, version 1);
+- **each month's savings interest, broken down by rate period** (approved by Dad 2026-11-01; build after Nov 7, in its own worktree and branch):
+  - **One read-only function** (for example `kid_interest_breakdown(account, month)`) over the existing daily interest rows, plus its "View as" case and grants, with known-answer tests (October 2026's figures; a savings-special month). **No change to the nightly monthly job or any money function**, and the note stored with each posting stays as it is.
+  - It groups consecutive days by rate: each period's dates, rate, lowest and highest balance, exact interest and that to a tenth of a cent; the month's total; and the amount paid (from the posting), **checked to equal the total rounded up**.
+  - **Wording** (on the monthly statement's interest line, and under "How was this calculated?" on the history line when the rate or balance changed in the month):
+    - October interest: 11¢
+    - Oct 10–25 at 2.0%, on between $70.00 and $140.00 depending on the day: about 8.6¢
+    - Oct 26–31 at 1.0%, on between $85.00 and $95.00 depending on the day: about 1.4¢
+    - Together 10.05¢, rounded up to 11¢ in your favour.
+  - A period with one balance reads "on $95.00". Ranges put the lower number first. Amounts are in tenths of a cent, with a **?** on "about": "Interest is worked out every day in tiny bits of a cent, then added up and rounded up on the 1st." A month with one rate and one balance stays one line.
+  - Waiting GIC money is already in the daily rows; "late interest" lines keep their own explanation.
 - **a "recent alerts" summary on the parent Dashboard** (Dad, 2026-10-29), for example "3 alerts in the last 24 hours, all resolved", tap for details, so alerts that clear quickly aren't invisible (on Oct 29 three missing-price alerts were raised and resolved within 28 seconds, and the Dashboard, which lists open alerts only, never showed them);
 - **the safety net records that it fired** (Dad, 2026-10-19), so Dad would know if a girl hit "Something went wrong on this screen" (which screen, when; no personal data);
 - at Stage 12 itself: a fresh backup, `prelaunch_reset`, `launched_at`, the girls' accounts, and every phase 2 feature on for everyone (BUILD-PLAN).
@@ -130,7 +140,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **October's interest was paid: 11¢**, and Dad's rough check matches. From the daily rows (read-only): the account opened Oct 10, so 22 days. Oct 10–25 at 2.0%, on five balances from $70.00 to $140.00: 8.630138¢. Oct 26–31 at 1.0%, on $95.00, then $85.00 after the Oct 27 buy: 1.424658¢. Together 10.054795¢, rounded up to 11¢ (posting `interest:2026-10:…`, its note "October: 22 days of interest added up to $0.1005, rounded up to $0.11").
 - **The app installs on Dad's S26 as a real app** now, not just a Chrome shortcut. The parked item is closed (Stage 12 entry).
 - **Buy / Sell's 💡 line shows the 3:00 pm close**, right now that Alberta stays at UTC−6 from Nov 1 (Alberta's Official Time Act; the market closes at 4:00 pm Toronto time).
-- **Proposed, not built:** a breakdown of each month's savings interest by rate period, from the daily rows (Buck's proposal to Dad, 2026-11-01).
+- **Approved for the Stage 12 list (Dad, 2026-11-01):** a breakdown of each month's savings interest by rate period, from the daily rows (see the list under "Before Stage 12").
 
 ### Production session Sat Nov 7, after 11:45 am (planned; Dad, 2026-10-29)
 
