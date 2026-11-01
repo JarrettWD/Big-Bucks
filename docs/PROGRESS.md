@@ -13,7 +13,7 @@ Claude Code updates this file at the end of every stage. Newest stage at the top
   - The three follow-up fixes are live: the plain-words health check (migration pushed, `health` redeployed), the manifest `id` with no orientation lock (Deploy to GitHub Pages green), and the clipboard option. Commit `a013ea4`, CI run 38080462474 passed.
   - **Still open:**
     - ~~RUNBOOK step 14: three nights of real closes~~ Done 2026-10-14 (Stage 4 close-out).
-    - Installing on Dad's S26 is still blocked by a stale record from its first, Play-Protect-blocked attempt (a Chrome shortcut works). A fresh Samsung tablet installed it as a proper app, so no TWA wrapper is needed (Stage 12 entry).
+    - ~~Installing on Dad's S26~~ Done 2026-11-01: Big Bucks now installs on Dad's S26 as a real app, not just a Chrome shortcut (Dad's check). A fresh Samsung tablet had already installed it as a proper app, so no TWA wrapper is needed (Stage 12 entry).
 - Build order (changed 2026-10-03, screens first): stages 6 → 7 → 8 against the local database only, then 4 → 5 (live setup), then the solo beta. Deploy, phone install and real accounts move to after stage 4. Phase 1 is complete when stage 5 is done. See "Build order" in `docs/BUILD-PLAN.md`.
 - **The girls' devices:** a Samsung Galaxy A17 phone and Samsung Galaxy tablets, all Android with Chrome. Every layout must work on both the phone and the tablets (portrait and landscape), and every stage checks both.
 - Phase 1 complete: **yes (2026-10-14)**
@@ -112,7 +112,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **a "recent alerts" summary on the parent Dashboard** (Dad, 2026-10-29), for example "3 alerts in the last 24 hours, all resolved", tap for details, so alerts that clear quickly aren't invisible (on Oct 29 three missing-price alerts were raised and resolved within 28 seconds, and the Dashboard, which lists open alerts only, never showed them);
 - **the safety net records that it fired** (Dad, 2026-10-19), so Dad would know if a girl hit "Something went wrong on this screen" (which screen, when; no personal data);
 - at Stage 12 itself: a fresh backup, `prelaunch_reset`, `launched_at`, the girls' accounts, and every phase 2 feature on for everyone (BUILD-PLAN).
-- **Parked:** the install on Dad's S26 (cosmetic; Chrome Beta or `adb logcat` remain, Dad's call).
+- ~~**Parked:** the install on Dad's S26~~ Closed 2026-11-01: it now installs as a real app (Dad).
 
 ## Stage log
 
@@ -124,6 +124,13 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Known issues:
 - Dad to do by hand:
 -->
+
+### Nov 1 checks (Dad, on production as the test kid; recorded 2026-11-01)
+
+- **October's interest was paid: 11¢**, and Dad's rough check matches. From the daily rows (read-only): the account opened Oct 10, so 22 days. Oct 10–25 at 2.0%, on five balances from $70.00 to $140.00: 8.630138¢. Oct 26–31 at 1.0%, on $95.00, then $85.00 after the Oct 27 buy: 1.424658¢. Together 10.054795¢, rounded up to 11¢ (posting `interest:2026-10:…`, its note "October: 22 days of interest added up to $0.1005, rounded up to $0.11").
+- **The app installs on Dad's S26 as a real app** now, not just a Chrome shortcut. The parked item is closed (Stage 12 entry).
+- **Buy / Sell's 💡 line shows the 3:00 pm close**, right now that Alberta stays at UTC−6 from Nov 1 (Alberta's Official Time Act; the market closes at 4:00 pm Toronto time).
+- **Proposed, not built:** a breakdown of each month's savings interest by rate period, from the daily rows (Buck's proposal to Dad, 2026-11-01).
 
 ### Production session Sat Nov 7, after 11:45 am (planned; Dad, 2026-10-29)
 
@@ -510,7 +517,8 @@ Ships two reviewed branches: `rate-wording` (the rate **?**s and "Last day", two
     - There's no `related_applications`, intent or link-capture setting.
   - Dad's admin side was always meant for another browser anyway (BUILD-PLAN Stage 6: Firefox or Samsung Internet); the Chrome shortcut works meanwhile.
   - **Don't** reset Chrome's site data for `jarrettwd.github.io`: Big Bucks and Inventory share that address, so it would wipe Inventory's saved data too.
-  - **Parked, low priority** (Dad, 2026-10-10): cosmetic, Dad's phone only.
+  - **Closed 2026-11-01:** Dad's S26 now installs Big Bucks as a real app (no longer only "Create shortcut"), without the options below. Kept for the record.
+  - **Was parked, low priority** (Dad, 2026-10-10): cosmetic, Dad's phone only.
     - **Tried, no change** (still "Create shortcut" only): removing leftover Big Bucks icons, then retrying; clearing Google Play Store's cache; clearing Chrome's cache. These kept all site data and sign-ins.
     - **Remaining options, Dad's call later:**
       - **Chrome Beta:** a separate app with its own fresh record. Install Big Bucks from it; it then runs in Chrome Beta, signed in separately.
