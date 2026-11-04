@@ -5,7 +5,8 @@
 //   - the sheet: every animal wearing every accessory, every picture loaded;
 //   - she picks a colour, an animal and her party hat; the frame takes her colour,
 //     the option colours don't change;
-//   - her Badges screen: First GIC with its date, the rest "Still to discover";
+//   - her Badges screen: First GIC with its date (and any other the demo's date gave her),
+//     the rest "Still to discover";
 //   - three GICs on three new dates: the GIC ladder arrives right after the purchase
 //     (the app's own check, separate from the money call), with its notice;
 //   - Dad's "View as" shows exactly her look and badges, and changes nothing;
@@ -97,13 +98,18 @@ test('her badges: First GIC with its date, the rest still to discover', async ({
   const earned = page.locator('section', {
     has: page.getByRole('heading', { name: 'Your badges', exact: true }),
   });
+  // How many she has earned depends on the date the demo runs to (from Nov 1, 2026, October's
+  // interest also gives her First dollar of interest), so the screen is compared with the database.
+  const [has] = await sql<{ n: number }>(
+    `select count(*)::int as n from public.badges where account_id = ${SKY()}`,
+  );
   await expect(earned.getByRole('heading', { name: /First GIC/ })).toBeVisible();
-  await expect(earned.getByText(/^Earned /)).toHaveCount(1);
+  await expect(earned.getByText(/^Earned /)).toHaveCount(has.n);
   await expect(earned.getByText('Wearing it ✓')).toBeVisible();
   const todo = page.locator('section', {
     has: page.getByRole('heading', { name: 'Still to discover' }),
   });
-  await expect(todo.locator('li')).toHaveCount(5);
+  await expect(todo.locator('li')).toHaveCount(6 - has.n);
   await expect(todo).not.toContainText(/\d of \d|streak/i);
 });
 

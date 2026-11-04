@@ -41,9 +41,24 @@ test('detailed: "What will it buy?" adds a line to her savings', async ({ page }
   await expect(page.locator('.home__savings .infl__line')).toContainText(
     'so it would buy about what',
   );
-  await expect(
-    page.getByText("That's normal. It's one reason people use GICs and funds too."),
-  ).toBeVisible();
+  // The Total card has the whole thought, never only its last sentence (Dad, 2026-11-03).
+  await expect(page.locator('.infl__total')).toHaveText(
+    /^Prices usually go up a little each year \(about \d+\.\d% right now\), so the same money buys a bit less later\. That's normal\. It's one reason people use GICs and funds too\.$/,
+  );
+  // One card for her funds, a line per fund she owns, and a closing line (Dad, 2026-11-03).
+  const [owns] = await sql<{ n: number }>(
+    `select jsonb_array_length(public.kid_inflation(${SKY}) -> 'funds') as n`,
+  );
+  const card = page.locator('.infl__funds');
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText(
+    "Funds don't have a set rate. They go up and down. Over the past year:",
+  );
+  await expect(card.locator('li')).toHaveCount(owns.n);
+  await expect(card.locator('li').first()).toHaveText(
+    /fund \([A-Z]{3}\): (up|down) \d+\.\d%$|: no change$|: not a full year of prices yet$/,
+  );
+  await expect(page.locator('.home__funds .infl__line')).toHaveCount(1);
   await toggle.click(); // off again for the next tests
 });
 

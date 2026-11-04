@@ -339,7 +339,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
     - Dow Jones fund (DIA): On the news, the Dow Jones is measured in points (about 45,000). Your fund's price is the price of one unit of DIA, a real fund that follows the Dow Jones. When the Dow Jones goes up 1%, DIA goes up about 1% too. Watch the percent, not the number.
     - Nasdaq-100 fund (QQQ): On the news, the Nasdaq-100 is measured in points. Your fund's price is the price of one unit of QQQ, a real fund that follows the Nasdaq-100. When the Nasdaq-100 goes up 1%, QQQ goes up about 1% too. Watch the percent, not the number.
     - TSX fund (XIC): On the news, the TSX (the S&P/TSX Composite) is measured in points. Your fund's price is the price of one unit of XIC, a real fund that follows the TSX. When the TSX goes up 1%, XIC goes up about 1% too. Watch the percent, not the number.
-  - The daily change: ▲ Up {n}% · ▼ Down {n}% · ● No change. Both directions are shown equally clearly, in calm colours, never red.
+  - The daily change, with its day (Dad, 2026-11-03): ▲ Up {n}% on {date} · ▼ Down {n}% on {date} · ● No change on {date}. Both directions are shown equally clearly, in calm colours, never red.
 - **Recent activity** · See all · Nothing here yet. Your story starts with your first deposit!
 - **"Updating…"** in place of any amount: Updating… Your numbers are being double-checked. They'll be back soon.
 - **If Home can't load:** Big Bucks couldn't load your money just now. Please try again in a minute. · Try again
@@ -983,8 +983,14 @@ The last line is added only when "Make it yours" is on for her.
 - **The toggle (in Total worth):** 💡 What will it buy?
 - **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
 - **Each GIC:** When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
-- **Each fund she owns:** Funds don't have a set rate. Over the past year, the {fund} went up {x}% (or went down {x}%), while prices went up about {inflation}%.
-- **Under her total:** That's normal. It's one reason people use GICs and funds too.
+- **Her funds, one card** (Dad, 2026-11-03; it replaced a line per fund that repeated the same sentence):
+  - Funds don't have a set rate. They go up and down. Over the past year:
+  - one line per fund she owns: {fund}: up {x.x}% / down {x.x}% / no change / not a full year of prices yet
+  - then one closing line that says only what's true, comparing each fund with prices at the same one-decimal figures she sees:
+    - all ahead: All 3 grew more than prices did (about {inflation}%). (Both … for two; It … for one.)
+    - otherwise, in this order, only the parts that apply: The {funds} grew more than prices did (about {inflation}%). · The {funds} grew about as much as prices did (about {inflation}%). · The {funds} grew less than prices did (about {inflation}%), so it buys / they buy a little less than a year ago. · The {funds} went down, so it buys / they buy less than a year ago.
+  - Example (Nov 3, 2026): Dow Jones fund (DIA): up 8.7% · Nasdaq-100 fund (QQQ): up 8.9% · TSX fund (XIC): up 17.4% · All 3 grew more than prices did (about 2.0%).
+- **Under her total** (Dad, 2026-11-03: the whole thought, never half of one): Prices usually go up a little each year (about {inflation}% right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.
 - **? Inflation:** the existing glossary entry (since stage 1): Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
 
 ### What if? (Graphs)

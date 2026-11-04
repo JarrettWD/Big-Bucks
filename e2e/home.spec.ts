@@ -49,8 +49,9 @@ test('Home shows her money exactly as the database works it out', async ({ page 
   // Each fund says which real fund it follows (Dad, 2026-10-19), with a ? on why its price isn't the index's points.
   for (const name of ['Dow Jones fund (DIA)', 'Nasdaq-100 fund (QQQ)', 'TSX fund (XIC)'])
     await expect(funds.filter({ hasText: name })).toHaveCount(1);
+  // The day change says which day it's for (Dad, 2026-11-03): "▲ Up 0.62% on Nov 3".
   await expect(funds.locator('.move').first()).toHaveText(
-    /^(▲ Up|▼ Down) \d+\.\d\d%$|^● No change$/,
+    /^((▲ Up|▼ Down) \d+\.\d\d%|● No change) on [A-Z][a-z]{2} \d{1,2}(, \d{4})?$/,
   );
   await page.getByRole('button', { name: 'What does "TSX fund (XIC)" mean?' }).click();
   await expect(page.getByRole('dialog')).toContainText('Watch the percent, not the number.');

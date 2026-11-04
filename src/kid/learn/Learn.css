@@ -29,6 +29,17 @@
   color: var(--bb-ink);
   line-height: 1.45;
 }
+/* One card for all her funds (Dad, 2026-11-03). */
+.infl__funds p {
+  margin: 0;
+}
+.infl__funds ul {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+.infl__funds li {
+  overflow-wrap: anywhere;
+}
 
 /* Home's footer and the mode switch */
 .home__learn {
