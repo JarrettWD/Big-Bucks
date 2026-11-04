@@ -40,8 +40,8 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 - [ ] A buy in each fund settles at the next market close (a Friday-evening request settles Monday)
 - [ ] Only one trade per fund per day is allowed
-- [ ] Settlement times read 2:00 pm in Alberta in summer and 3:00 pm in winter (4:00 pm Toronto), and a 2:30 pm winter request settles the same day
-- [ ] A partial sell works, and proceeds land in savings
+- [x] Settlement times read 2:00 pm in Alberta in summer and 3:00 pm in winter (4:00 pm Toronto), and a 2:30 pm winter request settles the same day (2026-11-03: in October request #22 settled at the 2:00 pm close (Oct 27); from Nov 1 Alberta stays at UTC−6, so the 💡 line reads 3:00 pm (Dad, Nov 1), and request #26, a TSX buy placed at 2:22 pm Nov 2, between the old and new cutoffs, settled the same day at the 3:00 pm close, $57.23, 0.17473354 units; PROGRESS Nov 2)
+- [x] A partial sell works, and proceeds land in savings (2026-11-03: request #32, $10.00 of the TSX fund sold at 9:24 am, settled at the Nov 3 close: 0.17621145 units × $56.75, $10.00 into savings; PROGRESS Nov 3)
 - [ ] Each fund’s value tracks its ETF (DIA, QQQ, XIC) to the cent
 - [ ] The standard note appears on a day a fund moves more than 2%
 - [ ] A quarterly dividend posts correctly (live, or in the time machine if no quarter falls in the solo beta)
@@ -50,7 +50,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 - [x] A savings rate change sends the notice, with the 7-day default, and applies on its effective date (2026-10-29: Dad saved 2.0% → 1.0% on Oct 19, effective Oct 26, 7 days ahead; the kid had the notice that evening and "The new savings rate is now 1.0%" on Oct 26; backup `37e9784` shows Oct 25 at 2.000% and Oct 26 and Oct 27 at 1.000% (rate 12), each day once; PROGRESS Oct 26–29)
 - [ ] Existing GICs keep their locked-in rate after a GIC rate change
-- [ ] A special switches back to the regular rate on its end date
+- [x] A special switches back to the regular rate on its end date (2026-11-03: the 1-month GIC special at 5.0%, Oct 26 to Nov 1; the rate is 2.5% from Nov 2, "The 1-month GIC special has ended" arrived Nov 2 at 4:30 pm, and Buy / Sell shows 2.5% with no Special tag; PROGRESS Nov 2)
 - [ ] A deposit-cap change reaches both girls with a notice
 
 **Phase 1, live: safeguards and backups**
@@ -75,7 +75,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 - [ ] Badges unlock at the right moments, with their accessories
 - [ ] Inflation view numbers match a hand check
 - [ ] Monthly statements match the ledger
-- [ ] What-if, compare the markets and the reflection prompt work
+- [x] What-if, compare the markets and the reflection prompt work (2026-11-03: what-if and compare the markets on Dad's Oct 24 phone test (Stage 11 step 9); the reflection prompt on Nov 3: after request #32's sell, "Why did you sell?" with "Mom and Dad can see this. You can skip this.", saved, and the row is stored with the sale, read by her history and View as; PROGRESS Nov 3)
 
 **Ready for the girls’ launch when**
 
