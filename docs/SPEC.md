@@ -431,6 +431,7 @@ Build a small version 1 that the girls use for a month, then add features based 
 - A "family market day" review screen
 - Push notifications for GIC maturities and approvals (on Android, these work once the app is installed from Chrome)
 - **"Up next" goals** (Dad, 2026-10-25; revisit after the girls have used the Wish List for a few weeks): one main goal with the progress bar, plus up to two wishes she orders as "Up next". When the main goal is bought, the next one moves up. The same savings must never count toward more than one goal.
+- **A one-month look-back on each reflection** (Dad, 2026-11-03): a month after each sale with a reflection, "You sold because {reason}. Since then the {fund} went up/down {x}%." It celebrates thinking it through and never judges the choice.
 
 ## Testing and launch gates
 
