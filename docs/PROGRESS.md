@@ -149,7 +149,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **Buy / Sell's 💡 line shows the 3:00 pm close**, right now that Alberta stays at UTC−6 from Nov 1 (Alberta's Official Time Act; the market closes at 4:00 pm Toronto time).
 - **Approved for the Stage 12 list (Dad, 2026-11-01):** a breakdown of each month's savings interest by rate period, from the daily rows (see the list under "Before Stage 12").
 
-### Beta results Nov 2–3 (Dad, on production as the test kid; checked read-only 2026-11-03, 7:15 pm)
+### Beta results Nov 2–4 (Dad, on production as the test kid; checked read-only Nov 3 and 4)
 
 - **Nov 2, the new 3:00 pm cutoff: passed.** Request #26, $10.00 into the TSX fund (XIC), placed at 2:22 pm (between the old 2:00 pm and the new 3:00 pm cutoff), settled the same day at the 3:00 pm close: XIC $57.23, 0.17473354 units ($10.00 ÷ $57.23 = 0.174733531…, rounded up), matching the real close.
 - **Nov 3, a partial sell and the reflection prompt: passed.** Request #32 sold $10.00 of the TSX fund, placed at 9:24 am. "Why did you sell?" showed with "Mom and Dad can see this. You can skip this."; Dad typed a reason and saved ("Saved. You can find it in your history.").
@@ -157,7 +157,11 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
   - The sale settled at the Nov 3 3:00 pm close: 0.17621145 units × $56.75 = $10.00 into savings. The fund's ledger line is −$10.11, what she had paid for those units (average cost), so the sale shows an 11¢ loss. That's by design: a fund's amounts add up to the cost of the units she holds.
 - **Nov 2, the 1-month GIC special ended on schedule: passed.** Its last day was Nov 1; the rate is 2.5% from Nov 2. "The 1-month GIC special has ended: 1-month GICs are back to 2.5%. GICs bought during the special keep 5.0%." arrived Nov 2 at 4:30 pm, and Buy / Sell shows the 1-month GIC at 2.5% with no Special tag.
 - **ACCEPTANCE ticked (2026-11-03):** settlement times (2:00 pm in October, 3:00 pm from Nov 1, and a 2:22 pm request settling the same day); a partial sell; a special switching back; and what-if, compare the markets and the reflection prompt.
-- **Still open nearby:** "A buy in each fund settles at the next market close (a Friday-evening request settles Monday)" (only the TSX fund so far, and no Friday-evening request yet) and "Only one trade per fund per day is allowed" (not yet tried on production).
+- **Still open nearby:** "A buy in each fund settles at the next market close (a Friday-evening request settles Monday)": the TSX fund done (Nov 2); the Nasdaq-100 and Dow Jones funds and a Friday-evening request below.
+- **Nov 3, one trade per fund per day: passed** (Dad, about 9:00 pm). After that morning's TSX fund sale (#32), a second TSX fund trade was refused with "already traded today". No request was created (read-only check, Nov 4). ACCEPTANCE ticked.
+- **Nov 4, a Nasdaq-100 fund (QQQ) buy after the cutoff:** request #35, $10.00, placed at 5:45 pm, pending with $10.00 on hold, due at **Nov 5's 3:00 pm close** (read-only, Nov 4 at 6:09 pm). Check after Nov 5's nightly run: settled at Nov 5's close, not Nov 4's ($691.95).
+- **Next:** a Dow Jones fund (DIA) buy on Friday Nov 6 evening, due at Monday Nov 9's close (checked that evening with the new nightly function's first real prices, Nov 7 plan step 8). With the TSX (Nov 2) and QQQ buys, that completes "A buy in each fund settles at the next market close (a Friday-evening request settles Monday)".
+- **`home-learning-text` (3abad9b) approved as built** for Nov 7 (Dad, 2026-11-04).
 
 ### Production session Sat Nov 7, after 11:45 am (planned; Dad, 2026-10-29)
 
