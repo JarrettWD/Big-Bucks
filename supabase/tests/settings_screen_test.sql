@@ -111,10 +111,10 @@ select is(tests.preview('add_rate',
               "to": "Oct 12", "back_to": "5.0%"},
     "notices": [
       {"title": "Special: 1-year GICs at 6.5% from Oct 6 to Oct 12", "kids": 2, "on": null,
-       "body": "Fall special. After Oct 12 the rate goes back to 5.0%. A GIC bought during the special keeps 6.5% until it matures."},
-      {"title": "The 1-year GIC special at 6.5% starts today", "kids": 2, "on": "Oct 6", "body": "It ends after Oct 12."},
+       "body": "Fall special. Last day: Oct 12. Then the rate goes back to 5.0%. A GIC bought during the special keeps 6.5% until it matures."},
+      {"title": "The 1-year GIC special at 6.5% starts today", "kids": 2, "on": "Oct 6", "body": "Last day: Oct 12."},
       {"title": "The 1-year GIC special has ended", "kids": 2, "on": "Oct 13",
-       "body": "1-year GICs are back to 5.0%. GICs bought during the special keep 6.5%."}]}'::jsonb,
+       "body": "1-year GICs are back to 5.0%. GICs bought during the special keep 6.5% until they mature."}]}'::jsonb,
   'a one-week special: the notice now, the day it starts, and the day after it ends');
 
 select is(tests.preview('add_rate', '{"vehicle": "gic", "gic_term": 3, "rate": "3.25", "effective_date": "2026-10-05"}') -> 'notices',

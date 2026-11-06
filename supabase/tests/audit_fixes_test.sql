@@ -410,7 +410,7 @@ select results_eq(
   $$select title, body from public.notifications
      where account_id = tests.acct('kid_s') and type = 'rate_change' order by id desc limit 1$$,
   $$values ('Savings rate after the special: 2.5%',
-            'The special at 5.0% keeps going until Jan 20. After that, the rate will be 2.5%.')$$,
+            'The special at 5.0% keeps going. Last day: Jan 20. After that, the rate will be 2.5%.')$$,
   'it doesn''t say the rate drops: she keeps the special until it ends');
 rollback to savepoint rates;
 

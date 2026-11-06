@@ -40,8 +40,18 @@ export function GlossaryProvider({ children }: { children: ReactNode }) {
   return <GlossaryContext.Provider value={glossary}>{children}</GlossaryContext.Provider>;
 }
 
-/** A small "?" that explains a glossary term. Renders nothing if the term isn't in the glossary. */
-export function Explain({ term, light = false }: { term: string; light?: boolean }) {
+/** A small "?" that explains a glossary term. Renders nothing if the term isn't in the glossary.
+ * `live` adds lines worked out for her by the database (her own rate and figures), after the
+ * glossary's words (Dad, 2026-10-26). */
+export function Explain({
+  term,
+  light = false,
+  live = [],
+}: {
+  term: string;
+  light?: boolean;
+  live?: string[];
+}) {
   const glossary = useContext(GlossaryContext);
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -79,6 +89,11 @@ export function Explain({ term, light = false }: { term: string; light?: boolean
           >
             <h2 id={`${id}-t`}>{entry.term}</h2>
             <p>{entry.text}</p>
+            {live.map((line) => (
+              <p key={line} className="explain__live">
+                {line}
+              </p>
+            ))}
             <button
               ref={closeRef}
               type="button"

@@ -55,6 +55,12 @@ test('Home shows her money exactly as the database works it out', async ({ page 
   await page.getByRole('button', { name: 'What does "TSX fund (XIC)" mean?' }).click();
   await expect(page.getByRole('dialog')).toContainText('Watch the percent, not the number.');
   await page.keyboard.press('Escape');
+  // The Interest rate ? uses her own rate and savings (Dad, 2026-10-26), not a fixed 2% example.
+  await page.getByRole('button', { name: 'What does "Interest rate" mean?' }).click();
+  await expect(page.getByRole('dialog')).toContainText(/a year, every \$100 earns (about )?\$/);
+  await expect(page.getByRole('dialog')).toContainText(/Your \$[\d,]+\.\d\d would earn about /);
+  await expect(page.getByRole('dialog')).not.toContainText('At 2% a year');
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'What does "Daily change" mean?' })).toBeVisible();
 
   // Her mix adds up to 100%.

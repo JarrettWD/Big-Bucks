@@ -19,6 +19,7 @@ import { daysBetween, formatDate, formatPct, formatRate, termLabel } from '../..
 import { formatCents } from '../../lib/money';
 import { useKid } from '../KidShell';
 import { kidMarkRead, useKidView } from '../kidView';
+import { interestLines, useRateHelp } from '../rateHelp';
 import { SetupBanner, WhatsNew } from '../onboarding/HomeOnboarding';
 import { MeCard } from '../look/MeCard';
 import { GoalCard } from '../wishlist/GoalCard';
@@ -302,6 +303,7 @@ function Banner({ data, year, onChange }: { data: HomeData; year: number; onChan
 function SavingsCard({ data, year }: { data: HomeData; year: number }) {
   const b = data.balances;
   const rate = data.rates.find((r) => r.vehicle === 'savings');
+  const help = useRateHelp(useKidView(), b.savings_cents);
   const held = Number(b.held_cents) > 0;
   return (
     <section className="card home__savings" aria-labelledby="h-savings">
@@ -331,7 +333,8 @@ function SavingsCard({ data, year }: { data: HomeData; year: number }) {
       <SavingsInflation />
       {rate && (
         <p className="card__note">
-          Earning <strong>{formatRate(rate.rate)}</strong> a year <Explain term="Interest rate" />
+          Earning <strong>{formatRate(rate.rate)}</strong> a year{' '}
+          <Explain term="Interest rate" live={interestLines(help)} />
           {rate.next_rate && rate.next_effective && (
             <>
               <br />

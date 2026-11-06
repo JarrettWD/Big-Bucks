@@ -16,6 +16,7 @@ import { checkMyBadges } from '../lib/badgeCheck';
 import { supabase } from '../lib/supabase';
 import { useKid } from './KidShell';
 import { isWaiting, type Gic, type Rate } from './home/useHome';
+import { specialTag } from './trade/tradeText';
 import './home/Home.css';
 import './GicChoice.css';
 
@@ -202,7 +203,9 @@ export default function GicChoice() {
                   >
                     <span className="term__len">{termWords(t)}</span>
                     {r && <span className="term__rate">{formatRate(r.rate)}</span>}
-                    {r?.is_special && <span className="term__special">Special!</span>}
+                    {r?.is_special && (
+                      <span className="term__special">{specialTag(r.special_ends, year)}</span>
+                    )}
                   </button>
                 );
               })}

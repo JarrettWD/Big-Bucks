@@ -144,11 +144,13 @@ select is(public.kid_inflation(tests.acct('ln_a')) ->> 'inflation_rate', '2.0', 
 select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'now_cents', '18367',
   'her savings now ($184.11 in, $0.44 of it to the fund)');
 select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'savings_rate', '2.000', 'at the regular savings rate, 2%');
--- $183.67 × (1 + 2%/12)^12 = $187.377..., about $187.38; ÷ 1.02 = $183.703..., about $183.70.
-select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'in_a_year_cents', '18738',
-  '...in a year, compounding monthly: about $187.38');
-select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'buys_like_cents', '18370',
-  '...which buys what about $183.70 buys today');
+-- Month by month like the real interest (2026-10-26), each month's 2%/12 rounded up to the cent:
+-- $183.67 → 183.98, 184.29, 184.60, 184.91, 185.22, 185.53, 185.84, 186.15, 186.47, 186.79, 187.11, $187.43;
+-- ÷ 1.02 = $183.754..., about $183.75.
+select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'in_a_year_cents', '18743',
+  '...in a year, monthly and rounded up like the real interest: about $187.43');
+select is(public.kid_inflation(tests.acct('ln_a')) -> 'savings' ->> 'buys_like_cents', '18375',
+  '...which buys what about $183.75 buys today');
 select is(public.kid_inflation(tests.acct('ln_a')) -> 'gics' -> 0 ->> 'at_maturity_cents', '10075',
   'a $100 3-month GIC at 3%: $100.75 when it finishes');
 select is(public.kid_inflation(tests.acct('ln_a')) -> 'gics' -> 0 ->> 'buys_like_cents', '10030',

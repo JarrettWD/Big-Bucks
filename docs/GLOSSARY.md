@@ -1,6 +1,6 @@
 # Big Bucks — Glossary (draft for review)
 
-These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned; `20261012000000_request_expiry_dashboard.sql` added Request expiry; `20261031000000_rate_notice_wording.sql` added the three fund labels; `20261101000000_matures_wording.sql` added Matures and reworded Maturity and GIC ladder).
+These are the kid-friendly explanations behind every **?** in the app, exported from the database. The source is `supabase/migrations/20261002050000_reference_data.sql`, with later changes in newer migrations (the graphs migration `20261010000000_graphs.sql` added Growth and Money earned; `20261012000000_request_expiry_dashboard.sql` added Request expiry; `20261031000000_rate_notice_wording.sql` added the three fund labels; `20261101000000_matures_wording.sql` added Matures and reworded Maturity and GIC ladder; `20261103000000_rate_help.sql` reworded Interest rate and Inflation).
 
 **To suggest changes:** edit the wording here and tell Claude Code. Your edits come back to the database as a new migration; the existing migration isn't changed. This file is a review copy and is regenerated from the database after each change.
 
@@ -27,9 +27,9 @@ These are the kid-friendly explanations behind every **?** in the app, exported 
 - **GIC ladder:** Having several GICs that mature at different times, like the steps of a ladder. Some of your money is always close to being free.
 - **Growth:** How much an option grew by itself, as a percent. Money you put in or take out doesn't count, only what your money earned.
 - **Index:** A list of companies used to measure how part of the stock market is doing, like a scoreboard. The Dow, the Nasdaq-100 and the TSX are all indexes.
-- **Inflation:** Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
+- **Inflation:** Prices slowly going up over time. Your money needs to grow at least as fast as prices just to buy the same stuff. *(2026-10-26: the fixed 2% example went; beside her savings the **?** adds the live rate and her own figure.)*
 - **Interest:** Money the bank pays you for keeping your money there. The more you have saved, and the longer you leave it, the more interest you get.
-- **Interest rate:** How much interest you earn in a year, shown as a percent. At 2% a year, $100 earns $2 in a year.
+- **Interest rate:** How much interest you earn in a year, shown as a percent. *(2026-10-26: the fixed "At 2% a year" example went; beside her rate the **?** adds "At {rate} a year, every $100 earns …" and her own figure.)*
 - **Liquidity:** How quickly you can get your money out. Savings is very liquid. A GIC isn't, because you promised to wait.
 - **Locked-in rate:** The rate you get on the day you buy a GIC. It stays the same until the GIC matures, even if rates change later.
 - **Loss:** When something is worth less than you paid for it. If you sell while it's down, you get less money back. Losses are real.

@@ -37,6 +37,7 @@ import {
   isCaution,
   placeBlocked,
   placeLabel,
+  specialTag,
   withFundLabels,
   sellsAll,
   summaryFor,
@@ -613,7 +614,9 @@ function TradeForm(p: {
                   <span className="term__len">{termWords(r.term_months)}</span>
                   <span className="term__rate">{formatRate(r.rate)}</span>
                   {q && <span className="term__earns">earns {formatCents(q.interest_cents)}</span>}
-                  {r.is_special && <span className="term__special">Special!</span>}
+                  {r.is_special && (
+                    <span className="term__special">{specialTag(r.special_ends, p.ctx.year)}</span>
+                  )}
                 </button>
               );
             })}
