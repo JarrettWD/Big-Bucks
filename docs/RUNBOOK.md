@@ -10,6 +10,15 @@ Step-by-step jobs for Dad: setting up production (Stage 4) and the backups (Stag
 - **Never make the big-bucks-backups repo public.** It holds the girls' names, the ledger and the logins.
 - **Never paste a key or password into a chat, an issue, a commit or a SQL query.** Keys go only into Supabase's secret settings, GitHub's secret settings and your password manager. The setup script asks for the service role key itself and never saves it.
 
+
+## When production may change
+
+Migrations, function deploys and Pages deploys happen only in the quiet times, always with a dry run first (Dad, 2026-11-05):
+
+- **Not 7:00–11:45 am:** the morning timer starts the Backup and the Health check.
+- **Not from 4:00 pm until the evening's nightly run is done:** about 5:00 pm today. From the price fix (planned Nov 21, 2026), closes are confirmed at 9:00 pm, so the nightly finishes about **9:30 pm**: no changes from 4:00 pm until then.
+- To see that the evening is done: ask Buck to check (read-only), or in Supabase → **SQL Editor** run `select public.nightly_status(public.app_today()) ->> 'done';` (read-only): it must answer `true`. (The Dashboard only shows a line when the nightly is behind.)
+
 ## Production setup (Stage 4)
 
 Do these in order. ✋ means you do it by hand. Claude runs nothing on production without your OK for that step.

@@ -50,6 +50,7 @@ Big Bucks is a pretend bank and brokerage for two kids. Dad holds the real cash;
 - Run npm run timemachine locally only when a step changes money logic: anything that posts, moves, rounds or calculates money, rates, interest, dividends, trades, expiry or the nightly jobs. For screen-only or permission-only steps, skip the local run and rely on CI, which runs it on every push. When it is needed, start it in the background and hand Dad the step to review while it runs; report its result before committing.
 - **Ask before** adding a paid service, a new third-party service, a new dependency with a large footprint, or anything that touches the production project.
 - **Never point tests or the time machine at production.** Production gets migrations and deploys only, after the local run passes.
+- **Change production only in the quiet times**, with a dry run first: never 7:00–11:45 am (the morning backup and health check), and never from 4:00 pm until the evening's nightly run is done (about 9:30 pm once closes are confirmed at 9:00 pm, from the price fix; about 5:00 pm before it). RUNBOOK, "When production may change".
 - When the spec is unclear or two parts conflict, stop and ask. Don't guess about money.
 - **End every stage** by updating `docs/PROGRESS.md` (what was built, test results, known issues, anything Dad must do by hand), then stop.
 - Write for a non-developer: Dad is technical but not a professional programmer. Explain what he has to do in numbered steps, with exact menu names.
