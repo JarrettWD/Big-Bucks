@@ -103,6 +103,7 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **The 9:00 pm missing-close alert, which clears itself when the close arrives:** another evening, the timer off before 4:00 pm and back on at about 9:05 pm. The 9:30 pm kick finds that day's closes missing and raises one `missing_price` alert per fund (on the Dashboard; the next morning's Health check would report any still open), then fetches the closes; each alert settles as its close is stored. Suggested Thu Oct 22.
 
 **Before Stage 12 (nothing lost):**
+- **BLOCKER, the price fix** (Dad, 2026-11-05): the girls' real accounts don't open until it's done. Confirmed closes (trades wait for a confirmed close), a way to adjust trades that settled at a wrong close in her favour (applied to #17 and #35), designed together with the "fix a close" parent screen below, and tests where the first fetch is a pre-close snapshot. A reviewed money-function change: plan, known-answer tests, time machine, Dad's review. Planned after the Nov 9 price check (see "Price issue" in the beta results).
 - the daily-backup box above, after a few clean mornings;
 - the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`); until then, RUNBOOK says "stop and ask";
 - **the install check on a girl's phone** (Family Link; Stage 12 entry above);
