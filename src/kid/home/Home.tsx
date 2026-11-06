@@ -24,7 +24,7 @@ import { SetupBanner, WhatsNew } from '../onboarding/HomeOnboarding';
 import { MeCard } from '../look/MeCard';
 import { GoalCard } from '../wishlist/GoalCard';
 import {
-  FundInflation,
+  FundsInflation,
   GicInflation,
   InflationProvider,
   SavingsInflation,
@@ -491,18 +491,18 @@ function FundsCard({ data, year }: { data: HomeData; year: number }) {
       )}
       <ul className="funds">
         {data.funds.map((f) => (
-          <FundRow key={f.fund_id} f={f} updating={data.updating} />
+          <FundRow key={f.fund_id} f={f} updating={data.updating} year={year} />
         ))}
       </ul>
-      {owned.map((f) => (
-        <FundInflation key={f.fund_id} fundId={f.fund_id} />
-      ))}
+      <FundsInflation />
     </section>
   );
 }
 
-function FundRow({ f, updating }: { f: Fund; updating: boolean }) {
+function FundRow({ f, updating, year }: { f: Fund; updating: boolean; year: number }) {
   const pct = f.day_change_pct === null ? null : String(f.day_change_pct);
+  // Which day the change is for (Dad, 2026-11-03): "Up 0.62% on Nov 3".
+  const on = f.latest_close_date ? ` on ${formatDate(f.latest_close_date, year)}` : '';
   const dir =
     pct === null ? null : pct.startsWith('-') ? 'down' : /^0(\.0+)?$/.test(pct) ? 'flat' : 'up';
   return (
@@ -525,16 +525,19 @@ function FundRow({ f, updating }: { f: Fund; updating: boolean }) {
           {dir === 'up' && (
             <>
               <span aria-hidden="true">▲ </span>Up {formatPct(pct, 2)}
+              {on}
             </>
           )}
           {dir === 'down' && (
             <>
               <span aria-hidden="true">▼ </span>Down {formatPct(pct, 2)}
+              {on}
             </>
           )}
           {dir === 'flat' && (
             <>
               <span aria-hidden="true">● </span>No change
+              {on}
             </>
           )}
         </span>

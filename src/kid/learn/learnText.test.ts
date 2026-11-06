@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { visibleTabs } from '../graphs/graphData';
 import {
-  fundInflation,
+  fundsInflation,
   gicInflation,
   gicsGrowing,
   interestNote,
@@ -11,6 +11,7 @@ import {
   savingsInflation,
   startLine,
   TEXT,
+  totalInflationNote,
 } from './learnText';
 
 describe('what-if wording teaches, never scolds', () => {
@@ -98,17 +99,102 @@ describe('the inflation view', () => {
       'When it matures on Jan 10, 2027, it pays $100.75. With prices going up meanwhile, that buys about what $100.30 buys today.',
     );
   });
-  it('looks back for funds, never a promise', () => {
-    expect(fundInflation({ fund: 'dow', name: 'Dow Jones', year_change_pct: '10.00' }, '2.0')).toBe(
-      "Funds don't have a set rate. Over the past year, the Dow Jones fund (DIA) went up 10%, while prices went up about 2%.",
+  // Dad, 2026-11-03: one card for her funds, with a closing line that's only ever true.
+  const dow = { fund: 'dow', name: 'Dow Jones' };
+  const qqq = { fund: 'nasdaq100', name: 'Nasdaq-100' };
+  const xic = { fund: 'tsx', name: 'TSX' };
+  it('one card: the intro, a line per fund to one decimal, all three ahead of prices', () => {
+    // Nov 3, 2026's real figures: closes Nov 3 against Oct 31, 2025.
+    expect(
+      fundsInflation(
+        [
+          { ...dow, year_change_pct: '8.69' },
+          { ...qqq, year_change_pct: '8.94' },
+          { ...xic, year_change_pct: '17.40' },
+        ],
+        '2.0',
+      ),
+    ).toEqual({
+      intro: "Funds don't have a set rate. They go up and down. Over the past year:",
+      lines: [
+        'Dow Jones fund (DIA): up 8.7%',
+        'Nasdaq-100 fund (QQQ): up 8.9%',
+        'TSX fund (XIC): up 17.4%',
+      ],
+      closing: 'All 3 grew more than prices did (about 2.0%).',
+    });
+  });
+  it('never claims they all beat prices when one grew less or went down', () => {
+    const t = fundsInflation(
+      [
+        { ...dow, year_change_pct: '1.20' },
+        { ...qqq, year_change_pct: '-4.06' },
+        { ...xic, year_change_pct: '9.00' },
+      ],
+      '2.0',
     );
-    expect(fundInflation({ name: 'TSX', year_change_pct: '-3.50' }, '2.0')).toContain(
-      'went down 3.50%',
+    expect(t.lines).toEqual([
+      'Dow Jones fund (DIA): up 1.2%',
+      'Nasdaq-100 fund (QQQ): down 4.1%',
+      'TSX fund (XIC): up 9.0%',
+    ]);
+    expect(t.closing).toBe(
+      'The TSX fund (XIC) grew more than prices did (about 2.0%). The Dow Jones fund (DIA) grew less than prices did (about 2.0%), so it buys a little less than a year ago. The Nasdaq-100 fund (QQQ) went down, so it buys less than a year ago.',
     );
+    expect(t.closing).not.toMatch(/\ball\b|both/i);
+  });
+  it('compares at the one decimal she sees, says "both" for two, and "it" for one', () => {
+    // 2.04% shows as 2.0%, the same as prices: "about as much", not "more".
+    expect(fundsInflation([{ ...dow, year_change_pct: '2.04' }], '2.0').closing).toBe(
+      'The Dow Jones fund (DIA) grew about as much as prices did (about 2.0%).',
+    );
+    expect(
+      fundsInflation(
+        [
+          { ...dow, year_change_pct: '5' },
+          { ...xic, year_change_pct: '6' },
+        ],
+        '2.0',
+      ).closing,
+    ).toBe('Both grew more than prices did (about 2.0%).');
+    expect(fundsInflation([{ ...xic, year_change_pct: '6' }], '2.0').closing).toBe(
+      'It grew more than prices did (about 2.0%).',
+    );
+    // Two funds below prices: "they buy".
+    expect(
+      fundsInflation(
+        [
+          { ...dow, year_change_pct: '-1' },
+          { ...xic, year_change_pct: '-2' },
+        ],
+        '2.0',
+      ).closing,
+    ).toBe(
+      'The Dow Jones fund (DIA) and the TSX fund (XIC) went down, so they buy less than a year ago.',
+    );
+  });
+  it('a fund without a year of prices is listed, and left out of the comparison', () => {
+    const t = fundsInflation(
+      [
+        { ...dow, year_change_pct: null },
+        { ...xic, year_change_pct: '9' },
+      ],
+      '2.0',
+    );
+    expect(t.lines[0]).toBe('Dow Jones fund (DIA): not a full year of prices yet');
+    expect(t.closing).toBe('It grew more than prices did (about 2.0%).');
+    expect(fundsInflation([{ ...dow, year_change_pct: null }], '2.0').closing).toBeNull();
+  });
+  it('the Total card has the whole thought, never half of one', () => {
+    expect(totalInflationNote('2.0')).toBe(
+      "Prices usually go up a little each year (about 2.0% right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.",
+    );
+    expect(totalInflationNote('2.5')).toContain('about 2.5% right now');
   });
   it('is never scary', () => {
     const words = [
-      TEXT.inflationNote,
+      totalInflationNote('2.0'),
+      fundsInflation([{ ...dow, year_change_pct: '-3' }], '2.0').closing,
       savingsInflation(
         { now_cents: 1, savings_rate: 1, in_a_year_cents: 1, buys_like_cents: 1 },
         '2',

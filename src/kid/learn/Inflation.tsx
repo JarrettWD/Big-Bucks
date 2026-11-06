@@ -7,7 +7,13 @@ import { Explain } from '../../components/Glossary';
 import { useKid } from '../KidShell';
 import { kidRpc } from '../kidView';
 import { inflationLines, useRateHelp } from '../rateHelp';
-import { fundInflation, gicInflation, savingsInflation, TEXT } from './learnText';
+import {
+  fundsInflation,
+  gicInflation,
+  savingsInflation,
+  TEXT,
+  totalInflationNote,
+} from './learnText';
 import './Learn.css';
 
 export interface InflationData {
@@ -133,16 +139,30 @@ export function GicInflation({ gicId }: { gicId: number }) {
   );
 }
 
-export function FundInflation({ fundId }: { fundId: string }) {
+/** One card for all the funds she owns (Dad, 2026-11-03), not one line per fund. */
+export function FundsInflation() {
   const { data } = useContext(Ctx);
-  const f = data?.funds.find((x) => x.fund === fundId);
-  if (!data || !f) return null;
-  return <Line>{fundInflation(f, data.inflation_rate)}</Line>;
+  if (!data || data.funds.length === 0) return null;
+  const t = fundsInflation(data.funds, data.inflation_rate);
+  return (
+    <div className="infl__line infl__funds">
+      <p>
+        <span aria-hidden="true">💡 </span>
+        {t.intro}
+      </p>
+      <ul>
+        {t.lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
+      {t.closing && <p>{t.closing}</p>}
+    </div>
+  );
 }
 
-/** Under her total: the gentle closing note. */
+/** Under her total: the whole thought, never half of one (Dad, 2026-11-03). */
 export function TotalInflation() {
   const { data } = useContext(Ctx);
   if (!data) return null;
-  return <p className="infl__total">{TEXT.inflationNote}</p>;
+  return <p className="infl__total">{totalInflationNote(data.inflation_rate)}</p>;
 }

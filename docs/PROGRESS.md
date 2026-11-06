@@ -181,6 +181,15 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **Next:** a Dow Jones fund (DIA) buy on Friday Nov 6 evening, due at Monday Nov 9's close (checked that evening with the new nightly function's first real prices, Nov 7 plan step 8). With the TSX (Nov 2) and QQQ buys, that completes "A buy in each fund settles at the next market close (a Friday-evening request settles Monday)".
 - **`home-learning-text` (3abad9b) approved as built** for Nov 7 (Dad, 2026-11-04).
 
+### Home learning text (branch `home-learning-text`; approved by Dad 2026-11-03, ships Nov 7)
+
+Front end only: **no migration**, so Nov 7's dry run is unchanged. No money function.
+- **The whole thought on the Total card:** "Prices usually go up a little each year (about 2.0% right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too." Before, only its last two sentences showed there. The other Stage 11 lines (savings, each GIC, What if?, Compare the markets, the statement note) were each already complete.
+- **One fund card instead of one per fund:** "Funds don't have a set rate. They go up and down. Over the past year:", a line per fund she owns to one decimal, then a closing line that says only what's true. Each fund is compared with prices at the same one-decimal figure she sees: "All 3 grew more than prices did (about 2.0%)." only when they all did; otherwise which grew more, about as much, less, or went down.
+- **Each fund's day change says its day:** "▲ Up 0.62% on Nov 3".
+- **Two existing end-to-end tests fixed:** they assumed the demo kid Sky has exactly one badge, which stopped being true on Nov 1 (October's interest gives her "First dollar of interest"). The Settings switch test and the Badges screen test now compare with the badges the database says she has. This would have failed on `main` too from Nov 1.
+- **Tests:** Vitest 417 (the closing line in every case: all ahead, one less, one down, one level at one decimal, two, one, no full year), lint and types, Playwright **127 of 127**.
+
 ### Production session Sat Nov 7, after 11:45 am (planned; Dad, 2026-10-29)
 
 Ships three reviewed branches: `rate-wording` (the rate **?**s and "Last day", two migrations), `price-down-test` (the outage test, the made-up source's switch, test order; it changes the nightly and health functions' shared code, no migration) and `home-learning-text` (the whole inflation note on the Total card and one combined fund card, Dad 2026-11-03; front end only, no migration). Production changes stay outside 4:00–5:00 pm. In order:

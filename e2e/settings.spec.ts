@@ -284,17 +284,24 @@ test('a feature switch, a note and a ? explanation', async ({ page }) => {
   );
   expect(badges.v).toBe('test');
   // Stage 10: after the switch, Dad's screen checks badges (a separate call): Sky's GIC
-  // from July gives her First GIC, dated then, and the check is logged.
-  const [given] = await rows<{ earned: string; logged: string }>(
+  // from July gives her First GIC, dated then, and the check is logged. Which other badges she
+  // has depends on the date the demo runs to (from Nov 1, 2026, October's interest gives her
+  // First dollar of interest), so the log is compared with what she was actually given.
+  const [given] = await rows<{ earned: string; logged: string; badges: string }>(
     `select (select count(*)::text from public.badges b join public.profiles p on p.account_id = b.account_id
               where p.username = 'demo_sky' and b.badge = 'first_gic' and b.earned_on < public.app_today()) as earned,
             (select summary from public.parent_actions where action = 'check_badges'
-              order by id desc limit 1) as logged`,
+              order by id desc limit 1) as logged,
+            (select string_agg(k.name, ', ' order by k.sort) from public.badges b
+               join public.profiles p on p.account_id = b.account_id
+               join public.badge_kinds k on k.key = b.badge
+              where p.username = 'demo_sky') as badges`,
   );
-  expect(given).toEqual({
-    earned: '1',
-    logged: "Checked every kid's badges after changing a feature switch: gave First GIC to Sky.",
-  });
+  expect(given.earned).toBe('1');
+  expect(given.badges).toMatch(/^First GIC\b/);
+  expect(given.logged).toBe(
+    `Checked every kid's badges after changing a feature switch: gave ${given.badges} to Sky.`,
+  );
 
   // Reword the note already written (the demo's big Nasdaq-100 day).
   const notes = page.getByRole('region', { name: 'Market-move notes' });
