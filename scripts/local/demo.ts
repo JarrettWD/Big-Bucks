@@ -151,11 +151,20 @@ async function main(): Promise<void> {
         `${m / 1000n}.${(m % 1000n).toString().padStart(3, '0')}`;
     });
     // One big day for the Graphs tab's market-move notes: about 15 market days
-    // before the end, the Nasdaq-100 jumps 3% and stays up (every later close is
-    // 3% higher too, so the next day isn't a big drop). Made-up prices.
+    // before the end, the Nasdaq-100 closes exactly 3% above the day before, and every
+    // later close moves up by the same factor (so each later day's own move is kept and
+    // the next day isn't a big drop). Exactly 3% over the day before, whatever that day's
+    // made-up move was: the demo's dates follow today's, so a plain "×1.03" could land on a
+    // day that fell 1.2% by itself and give only +1.75%, no note (it did on Nov 6, 2026).
+    // Made-up prices, exact to 3 decimals.
     const nasdaqCloses = closes.filter((c) => c.fund === 'nasdaq100');
-    nasdaqCloses.slice(nasdaqCloses.length - 15).forEach((c) => {
-      const m = (BigInt(c.close.replace('.', '')) * 1030n) / 1000n;
+    const big = nasdaqCloses.length - 15;
+    const mills = (s: string) => BigInt(s.replace('.', ''));
+    const before = mills(nasdaqCloses[big - 1].close);
+    const target = (before * 1030n) / 1000n;
+    const bigOld = mills(nasdaqCloses[big].close);
+    nasdaqCloses.slice(big).forEach((c) => {
+      const m = (mills(c.close) * target) / bigOld;
       c.close = `${m / 1000n}.${(m % 1000n).toString().padStart(3, '0')}`;
     });
     const published = new Set<string>();
