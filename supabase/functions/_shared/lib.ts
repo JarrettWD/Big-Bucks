@@ -176,3 +176,39 @@ export function keyProblem(key: string, hosted: boolean): string | null {
     return 'The function key is the local test key. Set a real one (RUNBOOK).';
   return null;
 }
+
+/** The value of PRICE_SOURCE_SWITCHES that turns the test switches on (supabase/config.toml). */
+export const LOCAL_SWITCHES = 'local-only';
+
+/**
+ * Where tonight's prices come from (Dad, 2026-10-29):
+ *   - 'real': the provider (hosted Supabase always);
+ *   - 'fake': the made-up source (your own computer: PRICE_SOURCE=fake);
+ *   - 'down': the made-up source, failing every call, as in a price-service outage. Only on
+ *     your own computer, only with the made-up source, only when PRICE_SOURCE_SWITCHES is
+ *     "local-only" (supabase/config.toml), and only for a call carrying "x-fake-prices: down"
+ *     (the end-to-end test). Nothing in the database or the app can turn it on.
+ * On hosted Supabase the made-up source, the switches setting and the header are each
+ * refused before anything runs, never ignored.
+ */
+export function priceSource(
+  env: { priceSource: string | undefined; switches: string | undefined },
+  header: string | null,
+  hosted: boolean,
+): { source: 'real' | 'fake' | 'down' } | { refused: string } {
+  const fake = env.priceSource === 'fake';
+  if (hosted) {
+    if (fake) return { refused: 'The made-up price source only runs on your own computer.' };
+    if (env.switches !== undefined && env.switches !== '')
+      return { refused: 'The price test switches only run on your own computer.' };
+    if (header !== null)
+      return { refused: 'The price test switches only run on your own computer.' };
+    return { source: 'real' };
+  }
+  if (header === null) return { source: fake ? 'fake' : 'real' };
+  if (header !== 'down') return { refused: `Unknown price test switch "${header.slice(0, 20)}".` };
+  if (!fake) return { refused: 'Only the made-up price source can be switched down.' };
+  if (env.switches !== LOCAL_SWITCHES)
+    return { refused: 'The price test switches are off (PRICE_SOURCE_SWITCHES).' };
+  return { source: 'down' };
+}

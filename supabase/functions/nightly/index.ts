@@ -19,7 +19,9 @@
 // weekly. The TSX fund goes first, so a wrong provider symbol costs one call.
 //
 // On Dad's computer (PRICE_SOURCE=fake, never on hosted Supabase) the closes are made
-// up, so no provider key is needed to test it.
+// up, so no provider key is needed to test it. There, and only with PRICE_SOURCE_SWITCHES
+// = "local-only", a call with "x-fake-prices: down" gets a made-up source that never answers,
+// as in a price-service outage (the end-to-end test). Hosted Supabase refuses all three.
 //
 // Runs with verify_jwt = false (supabase/config.toml): callers prove themselves with
 // the x-nightly-key header (NIGHTLY_KEY). It uses the service role inside, and its
@@ -33,6 +35,7 @@ import {
   parseDaily,
   parseSplits,
   parseWeekly,
+  priceSource,
   providerSymbol,
   sameKey,
   weeklyForBackfill,
@@ -95,6 +98,8 @@ class Prices {
   constructor(
     private db: SupabaseClient,
     private apiKey: string | null,
+    /** The made-up source is "down" (your own computer's end-to-end test only). */
+    private down = false,
   ) {}
 
   get fake(): boolean {
@@ -120,7 +125,10 @@ class Prices {
       return { ok: false, kind: 'limit', message: "Today's 20 price calls are used up." };
     }
     let result: Fetched<unknown>;
-    if (this.fake) {
+    if (this.fake && this.down) {
+      // A price-service outage, as the real provider's would look: no answer, no closes.
+      result = { ok: false, kind: 'network', message: 'No answer from the provider (down).' };
+    } else if (this.fake) {
       result = {
         ok: true,
         value:
@@ -331,16 +339,24 @@ Deno.serve(async (req) => {
     // An empty body means the nightly run.
   }
 
-  const fake = Deno.env.get('PRICE_SOURCE') === 'fake';
-  if (fake && hosted)
-    return reply(500, { error: 'The made-up price source only runs on your own computer.' });
+  // The made-up source and its "down" switch: your own computer only (priceSource).
+  const choice = priceSource(
+    {
+      priceSource: Deno.env.get('PRICE_SOURCE'),
+      switches: Deno.env.get('PRICE_SOURCE_SWITCHES'),
+    },
+    req.headers.get('x-fake-prices'),
+    hosted,
+  );
+  if ('refused' in choice) return reply(500, { error: choice.refused });
+  const fake = choice.source !== 'real';
   const apiKey = fake ? null : (Deno.env.get('ALPHAVANTAGE_API_KEY') ?? '');
   if (apiKey === '') return reply(500, { error: 'ALPHAVANTAGE_API_KEY is not set (RUNBOOK).' });
 
   const db = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const prices = new Prices(db, apiKey);
+  const prices = new Prices(db, apiKey, choice.source === 'down');
   try {
     const result = mode === 'backfill' ? await backfill(db, prices) : await nightly(db, prices);
     return reply(result.mode === 'backfill' && !result.ok ? 502 : 200, result);

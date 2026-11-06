@@ -60,25 +60,27 @@ export default defineConfig({
       dependencies: ['parent-fix'],
       use: { ...devices['Pixel 7'] },
     },
-    // The nightly run moves the app clock forward two days, so it runs after everything.
-    {
-      name: 'nightly',
-      testMatch: /nightly.spec.ts/,
-      dependencies: ['onboarding'],
-      use: { ...devices['Pixel 7'] },
-    },
-    // Stage 10: Sky's look, badges and three GICs (a GIC ladder). Last, as it changes her money.
+    // Stage 10: Sky's look, badges and three GICs (a GIC ladder). It changes her money.
     {
       name: 'look',
       testMatch: /look.spec.ts/,
-      dependencies: ['nightly'],
+      dependencies: ['onboarding'],
       use: { ...devices['Pixel 7'] },
     },
-    // Stage 11: the learning features. Last: it sells a little of Sky's fund and switches her view.
+    // Stage 11: the learning features. It sells a little of Sky's fund and switches her view.
     {
       name: 'learn',
       testMatch: /learn.spec.ts/,
       dependencies: ['look'],
+      use: { ...devices['Pixel 7'] },
+    },
+    // The nightly runs move the app clock forward about a week (into the next month near a
+    // month's end, when interest is paid and a badge can be earned), so they run after
+    // everything (2026-10-29: the badges test had run after them and met Sky's new badge).
+    {
+      name: 'nightly',
+      testMatch: /nightly.spec.ts/,
+      dependencies: ['learn'],
       use: { ...devices['Pixel 7'] },
     },
   ],
