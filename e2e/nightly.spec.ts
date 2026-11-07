@@ -55,17 +55,37 @@ async function firstNight(db: LocalDb): Promise<string> {
 const plus = (db: LocalDb, d: string, n: number) =>
   db.q<{ d: string }>(`select ($1::date + $2::int)::text as d`, [d, n]).then((r) => r[0].d);
 
+/**
+ * Brings the nightly up to the evening before `day`, a week at a time (2026-11-06). The first
+ * test night can be a month away (firstNight), and one call catching up a month ran past the
+ * database's statement time limit in reconcile; a week per call stays well inside it. (A long
+ * gap catching up in one go is the price fix's job: docs/plans/price-fix-plan.md.)
+ */
+async function catchUpTo(db: LocalDb, day: string): Promise<void> {
+  const [{ d: today }] = await db.q<{ d: string }>(`select public.app_today()::text as d`);
+  let at = today;
+  for (;;) {
+    const next = await plus(db, at, 7);
+    if (next >= day) break;
+    at = next;
+    await db.setClock(`${at} 17:00`);
+    expect((await nightly()).done, `caught up to ${at}`).toBe(true);
+  }
+}
+
 test('a wrong key gets nothing', async () => {
   const r = await fetch(URL, { method: 'POST', headers: { 'x-nightly-key': 'nope' }, body: '{}' });
   expect(r.status).toBe(401);
 });
 
 test('the nightly run catches up after a skipped day', async () => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   await withDb(async (db) => {
     const d1 = await firstNight(db);
     const [d2, d3] = [await plus(db, d1, 1), await plus(db, d1, 2)];
     try {
+      // Up to the week before the first test night, a week at a time.
+      await catchUpTo(db, d1);
       // Tonight, at 5:00 pm.
       await db.setClock(`${d1} 17:00`);
       const first = await nightly();
