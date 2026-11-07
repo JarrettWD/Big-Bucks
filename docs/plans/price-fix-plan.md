@@ -66,6 +66,14 @@ Under 1¢: "worth less than 1¢". The exact units go under "How was this calcula
 - **#35** (QQQ, Nov 5): $10.00 ÷ $647.05 rounded up = 0.01545476; she got 0.01541830: **+0.00003646 units**, worth about 2.4¢.
 - **#17** (DIA, Oct 19): $10.00 ÷ $518.92 rounded up = 0.01927080; she got 0.01926709: **+0.00000371 units**, worth less than 1¢.
 
+## 2b. Catch-up in bounded steps (Dad, 2026-11-06)
+
+**Found Nov 6:** the local end-to-end test catching up 27 days in one call ran past the statement time limit in `reconcile_through`. Every retry would start over and time out again, so a long gap would never recover on its own.
+
+- **Production's limit, read-only Nov 6:** the nightly function reaches the database through PostgREST as `authenticator` (`statement_timeout=8s`, `lock_timeout=8s`) acting as `service_role` (no setting of its own), so each call (`run_daily`, `reconcile_through`, `check_badges_through`) has **8 seconds**. On Oct 28 the two-day catch-up took about 0.15 s (`run_daily`) and 0.23 s (`reconcile_through`) for one account: roughly 50–100 days in one call today, fewer as the girls' history and accounts grow (reconcile re-adds the ledger). Measured properly during the build, with a girl's-size history.
+- **The change:** each call does a bounded amount and commits: `run_daily` and `reconcile_through` take at most a few days (for example 5) per call, and the nightly function calls again until it reaches tonight's day or runs short of its own time (it already stops new price calls after 95 s and lets the next kick carry on). Each day's jobs stay in one transaction, so nothing half-happens. A gap of any length then recovers over one or more evenings with no help.
+- **Test:** the timer off for 35+ days with trades and a rate change in the gap; catching up completes fully (several calls, or several evenings), every day's jobs once, nothing posted twice (posting keys, interest days, job-days), reconcile ok, the waiting trades at their own days' confirmed closes. Plus a pgTAP check that one call never takes more than its bound.
+
 ## 3. Tests
 
 - **Known-answer (pgTAP):** the confirm rule (before 9:00 pm not final; at or after 9:00 pm, or a later day, final); the 10:00 pm missing-close alert; the 10-day comparison and its alert; the correction path in all four directions plus a dividend; a sell's missing cents **and their interest**, rounded up; #35's and #17's exact figures; no correction twice; the action logged; the preview changes nothing; the notice wording, including "worth less than 1¢".
