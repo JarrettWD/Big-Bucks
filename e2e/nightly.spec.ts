@@ -179,12 +179,18 @@ test('the database kicks the run by itself, through its one sender', async () =>
           { timeout: 90_000, intervals: [1000] },
         )
         .toBe(true);
-      const [reply] = await db.q<{ status_code: number }>(
-        `select r.status_code from net._http_response r
-           join public.outbox o on o.net_request_id = r.id
-          order by o.id desc limit 1`,
-      );
-      expect(reply.status_code).toBe(200);
+      // pg_net records the function's reply a moment after the function's own work has been
+      // saved, so "done" can come first (Nov 6, 2026): wait for this call's reply, up to 30 s.
+      const reply = async () =>
+        (
+          await db.q<{ status_code: number | null }>(
+            `select r.status_code from public.outbox o
+               left join net._http_response r on r.id = o.net_request_id
+              where o.kind = 'http' and o.payload ->> 'target' = 'nightly'
+              order by o.id desc limit 1`,
+          )
+        )[0]?.status_code ?? null;
+      await expect.poll(reply, { timeout: 30_000, intervals: [500] }).toBe(200);
 
       // Done: the next kick does nothing.
       await db.setClock(`${d4} 17:00`);
