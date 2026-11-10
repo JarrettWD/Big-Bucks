@@ -38,7 +38,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 1, live: stock funds**
 
-- [ ] A buy in each fund settles at the next market close (a Friday-evening request settles Monday)
+- [x] A buy in each fund settles at the next market close (a Friday-evening request settles Monday) (2026-11-09: TSX fund #26, placed Nov 2 at 2:22 pm, settled at that day's 3:00 pm close; Nasdaq-100 fund #35, placed Nov 4 at 5:45 pm after the cutoff, at Nov 5's close; Dow Jones fund #37, placed Fri Nov 6 at 3:02 pm after Friday's close, at Monday Nov 9's close. The day was right each time; #35's and #37's stored closes were a few cents off the official ones and are on the price fix's correction list; PROGRESS Nov 2–9)
 - [x] Only one trade per fund per day is allowed (2026-11-04: Dad, as the test kid on production, Nov 3 about 9:00 pm: after that morning's TSX fund sale (request #32), a second TSX fund trade was refused with "already traded today", and no request was created; PROGRESS Nov 3–4)
 - [x] Settlement times read 2:00 pm in Alberta in summer and 3:00 pm in winter (4:00 pm Toronto), and a 2:30 pm winter request settles the same day (2026-11-03: in October request #22 settled at the 2:00 pm close (Oct 27); from Nov 1 Alberta stays at UTC−6, so the 💡 line reads 3:00 pm (Dad, Nov 1), and request #26, a TSX buy placed at 2:22 pm Nov 2, between the old and new cutoffs, settled the same day at the 3:00 pm close, $57.23, 0.17473354 units; PROGRESS Nov 2)
 - [x] A partial sell works, and proceeds land in savings (2026-11-03: request #32, $10.00 of the TSX fund sold at 9:24 am, settled at the Nov 3 close: 0.17621145 units × $56.75, $10.00 into savings; PROGRESS Nov 3)

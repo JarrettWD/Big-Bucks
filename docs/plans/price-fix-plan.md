@@ -29,7 +29,7 @@ Stored close against the official close (Yahoo Finance daily history), with the 
 
 Also: QQQ Oct 12, $746.04, matches (trade #3). Every DIA close fetched at 4:30 pm on its own day was off; every DIA and QQQ close fetched at 7:30 pm or later matched. On Nov 5 the stored $648.58 and $514.89 match the prices traded at about 3:52 pm New York, not the 4:00 pm close or the after-hours price at 6:30 pm. The provider gives no "final" marker (its "last refreshed" is a date only).
 
-**Settled trades affected, both against her:** #17 and #35. **Other wrong closes:** DIA on 10 more days, with no trade or dividend from them. Monday Nov 9's Dow buy joins the list if its close is off.
+**Settled trades affected, all against her:** #17, #35 and #37 (added Nov 9). **Other wrong closes:** DIA on 12 more days (the 10 above plus Nov 6, $512.23 stored vs $512.22, and Nov 9, $523.36 vs $523.33), with no trade or dividend from them. DIA has been off on every close fetched at 4:30 pm on its own day so far; QQQ and XIC matched on Nov 6 and Nov 9.
 
 ## 1. Confirmed closes
 
@@ -65,6 +65,7 @@ Under 1¢: "worth less than 1¢". The exact units go under "How was this calcula
 
 - **#35** (QQQ, Nov 5): $10.00 ÷ $647.05 rounded up = 0.01545476; she got 0.01541830: **+0.00003646 units**, worth about 2.4¢.
 - **#17** (DIA, Oct 19): $10.00 ÷ $518.92 rounded up = 0.01927080; she got 0.01926709: **+0.00000371 units**, worth less than 1¢.
+- **#37** (DIA, Nov 9, added Nov 9; placed Fri Nov 6 at 3:02 pm, settled at Monday's close as it should): $10.00 ÷ $523.33 rounded up = 0.01910841; she got 0.01910731 (at $523.36): **+0.00000110 units**, worth less than 1¢.
 
 ## 2b. Catch-up in bounded steps (Dad, 2026-11-06)
 
@@ -73,6 +74,13 @@ Under 1¢: "worth less than 1¢". The exact units go under "How was this calcula
 - **Production's limit, read-only Nov 6:** the nightly function reaches the database through PostgREST as `authenticator` (`statement_timeout=8s`, `lock_timeout=8s`) acting as `service_role` (no setting of its own), so each call (`run_daily`, `reconcile_through`, `check_badges_through`) has **8 seconds**. On Oct 28 the two-day catch-up took about 0.15 s (`run_daily`) and 0.23 s (`reconcile_through`) for one account: roughly 50–100 days in one call today, fewer as the girls' history and accounts grow (reconcile re-adds the ledger). Measured properly during the build, with a girl's-size history.
 - **The change:** each call does a bounded amount and commits: `run_daily` and `reconcile_through` take at most a few days (for example 5) per call, and the nightly function calls again until it reaches tonight's day or runs short of its own time (it already stops new price calls after 95 s and lets the next kick carry on). Each day's jobs stay in one transaction, so nothing half-happens. A gap of any length then recovers over one or more evenings with no help.
 - **Test:** the timer off for 35+ days with trades and a rate change in the gap; catching up completes fully (several calls, or several evenings), every day's jobs once, nothing posted twice (posting keys, interest days, job-days), reconcile ok, the waiting trades at their own days' confirmed closes. Plus a pgTAP check that one call never takes more than its bound.
+
+## 2c. Two screens the change rewrites anyway (Dad, 2026-11-09)
+
+- **Her waiting line names its close** (moved here from the Stage 12 list, since the price fix rewrites that line): Recent activity and Buy / Sell say the same thing.
+  - Before the close: "Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6" ("Monday's 3:00 pm close (Nov 9)" when it's a later day).
+  - After 3:00 pm, until the close is confirmed: "Waiting for today's close to be confirmed (Nov 9) · asked Nov 6".
+- **The funds switch to a new day together.** On Nov 9 Home said "Last market day, Nov 9" while the TSX fund card still said "on Nov 6": XIC's close came in at 5:00 pm, DIA's and QQQ's at 4:30 pm. With confirmed closes (fetched at or after 9:00 pm) all three normally arrive in the same run and switch together. If a fund's day is still behind the others after the 9:00 pm confirm, its card says why in kid words ("Today's TSX close comes in later") instead of showing an older date silently; "Last market day" names the day all her funds have. Tested: one fund's close missing at 9:00 pm, the others confirmed.
 
 ## 3. Tests
 
@@ -84,5 +92,5 @@ Under 1¢: "worth less than 1¢". The exact units go under "How was this calcula
 
 1. Backup by hand; record the deployed functions for rollback.
 2. Merge, dry run (the price-fix migrations only), `db push`, deploy the nightly function, smoke check; the Pages deploy after the evening's nightly is done.
-3. **Before the safety net goes live**, with "fix a close": correct the 10 DIA closes (no trades), then #17 and #35 (with their adjustments, and Monday's Dow buy if its close was off), so `price_mismatch` doesn't fire on known history. Then switch the comparison on.
+3. **Before the safety net goes live**, with "fix a close": correct the 12 DIA closes with no trades, then #17, #35 and #37 (with their adjustments), so `price_mismatch` doesn't fire on known history. Then switch the comparison on.
 4. That evening: closes confirmed at 9:00 pm, the missing-close alert at 10:00 pm, re-test ACCEPTANCE's reworded box. A few evenings of confirmed closes before the girls' accounts can open.
