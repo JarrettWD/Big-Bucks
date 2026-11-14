@@ -168,7 +168,7 @@ Built per `docs/plans/price-fix-plan.md` with every approved addition; design no
   - **Screens:** her waiting line names its close (`waiting_words`, the same on Home and Buy / Sell); the confirm sentence in Buy / Sell's 💡; "Today's TSX close comes in later" and "Last market day" = the day all her funds have (`kid_close_days`); "Fix a close" history lines (units, working under "How was this calculated?"); Dad's **Fix a close** screen (`/parent/fix-close`, linked from price alerts and under the Dashboard's alerts); **The price check** card in Settings.
   - **Nightly function:** bounded loops, the provider log, the mismatch check, and a local-only "snapshot" source behind the same locks as "down".
   - **Time machine and demo:** two runs a day (4:30 pm, 9:30 pm), closes confirmed at 9:00 pm, every pre-close snapshot offered and refused, bounded calls. The reference model knows both runs.
-- **Migrations (5):** `20261113000000_price_confirm`, `20261113010000_close_fix`, `20261113020000_price_fix_words`, `20261113030000_fix_close_screen`, `20261113040000_price_fix_followups`.
+- **Migrations (6):** `20261113000000_price_confirm`, `20261113010000_close_fix`, `20261113020000_price_fix_words`, `20261113030000_fix_close_screen`, `20261113040000_price_fix_followups`, `20261114000000_fix_dividends` (Dad's review).
 - **Tests:**
   - pgTAP: 49 files, 2,378 checks, all pass. New: `price_confirm_test` (41), `close_fix_test` (52: #35, #17, #37 exactly, both sale cases, a dividend, no change, preview, log, nothing twice, reconcile, the Settings switch), `price_words_test` (12). Five older tests are pinned to the old rule with a 2100 cut-over (they test settlement and dividends under the timing they were written for). `stage4_nightly_test` moves to the new times; two `audit_fixes_test` refusals became fixes; two fingerprint guards updated for the price check's key in `set_setting_unlogged` (only those lines changed).
   - Vitest: 33 files, all pass.
@@ -176,8 +176,51 @@ Built per `docs/plans/price-fix-plan.md` with every approved addition; design no
   - End-to-end: **two full runs from fresh demos, 131 of 131 each** (Nov 13, 10:07 and 10:22 pm; earlier runs that night found two screen problems and three slips in the new tests, all fixed). New: the 38-day catch-up, the 5:00 pm wait, the snapshot evening (above for TSX, below for the Nasdaq-100), "Fix a close" through the screen.
   - CI: green on b79503d (database tests, unit tests, time machine).
 - **ACCEPTANCE:** "A close still missing at 9:00 pm…" reworded to 10:00 pm and unticked, to re-test on production the evening of the session.
-- **Known issues / for Dad:** see the review report (sell-by-amount units back, the widened correction guard, dividends on fixed units counted from the fix day, the emergency lever).
-- **Dad to do by hand:** review; then the production session (steps in the report).
+- **Dad's review (2026-11-14): approved with changes, all done on the branch:**
+  1. A sale by amount at a close that was too low gets its units back, not money (as built).
+  2. **Dividends on added units:** a fixed trade's missing units now earn what they would have since the trade day, rounded up, with the interest on it (migration `20261114000000_fix_dividends`): a dividend already paid gets the difference as its own correction (`fix:close:<fund>:<day>:<request>:dividends`), and later dividends count those units from the trade day. Known answers in `close_fix_test` (a Dec 1 TSX buy, Q4's dividend 24¢ short, plus 1¢ interest; Q1 counting 12 units every day). A fund that split after the close is refused ("Ask Buck").
+  3. The Monday check and the weekday re-test, below.
+  4. The production steps, below (Pages after "Nightly done?" is true, a backup after the corrections, the phone check).
+  5. **The rollback, tested:** `npm run rollback:check` puts nightly v4's exact code (main b99aac8) in front of the price-fix database for one evening and checks it: 13 of 13 (4:30 pm waits, nothing stored early; 9:30 pm today's closes stored and final, her buy settled at the confirmed close, reconcile clean, nothing twice), then puts v5 back. With v4, today's reconcile runs at 4:30 pm, so tonight's trades are checked the next evening, as before the price fix.
+  6. **Local ports** moved to 44320–44329 (API 44321, database 44322, Studio 44323), below Windows' dynamic range.
+- **Known issues / for Dad:** the correction guard is widened for exactly one case (a units-only fund correction on the same kid's fund line); a split after a wrong close is refused rather than worked out (none so far); a rollback to v4 keeps every money rule but loses the bounded catch-up and the price check.
+
+#### Production session: Sat Nov 21, after 11:45 am (finished before 4:00 pm)
+
+Saturday has no closes, so the evening is short: "Nightly done?" should read true soon after the 4:30 pm run (about 4:35–5:00 pm).
+
+1. **Before:** the morning backup and health check green (both after 7:15 am). Buck prepares, read-only, the list of every close stored since Oct 19 next to each day's official close (Yahoo Finance daily history, DIA, QQQ, XIC.TO), including the closes v4 stored at 4:30 pm from Nov 10 to Nov 20. Dad checks the official figures himself.
+2. **Backup by hand** (big-bucks-backups → Actions → Backup → Run workflow). Record the deployed functions for rollback: nightly v4 (main b99aac8), health v6.
+3. **Merge** `price-fix` into main locally; run the full local suite (`supabase test db`, `npm test`, `npm run timemachine`), `npm run rollback:check`, and the end-to-end suite twice. Push main; CI green.
+4. **Dry run:** `supabase db push --dry-run`: it must list exactly the 6 price-fix migrations (`20261113000000` … `20261113040000`, `20261114000000`). Then `supabase db push`.
+5. **Deploy the nightly function** (v5) just after a :00 or :30 timer run. Smoke check, read-only: the next timer run answers "too early: the run starts at 4:30 pm Alberta time" in `cron.job_run_details`.
+6. **Fix the known wrong closes** with "Fix a close" (Dashboard → under the alerts → **A stored close looks wrong? Fix a close**), each with the official close and its source:
+   - first the DIA closes no trade used: Oct 20, 21, 22, 23, 26, 30, Nov 2, 3, 4, 5, 6, plus any of Nov 10–20 that step 1 found off;
+   - then the three with trades: **#17** DIA Oct 19 → $518.92, **#35** QQQ Nov 5 → $647.05, **#37** DIA Nov 9 → $523.33 (each preview must show the test kid's buy with its added units), plus any trade on a Nov 10–20 close step 1 found off.
+7. **Backup by hand** again (after the corrections).
+8. **Phone check** (Dad's phone, as the test kid): the three "A price was fixed" notices (#17, #35, #37) read as in MESSAGES; her history shows each correction.
+9. **Settings → The price check → On.**
+10. **After "Nightly done?" is true** that evening (SQL Editor: `select public.nightly_status(public.app_today()) ->> 'done';`, expected about 4:35–5:00 pm): the **Pages deploy** (Actions → Deploy to GitHub Pages → Run workflow). Phone check of the new build: her waiting line, the Buy / Sell 💡 sentence.
+11. **If anything is off:** stop. Rollback: redeploy nightly v4 (its code is on main at b99aac8; tested by `npm run rollback:check`); Pages: re-run deploy #9 (ca92b6e). The migrations stay (they're safe with v4); if the 9:00 pm rule itself had to go, a one-line migration moves the cut-over to 2100.
+
+#### Mon Nov 23, about 9:45 pm: the first confirmed closes (read-only, Buck)
+
+1. `select fund_id, close, fetched_at from public.fund_prices where price_date = '2026-11-23';`: three closes, each fetched at or after 9:00 pm Alberta time (03:00 UTC Nov 24).
+2. `select public.nightly_status('2026-11-23');`: done; the 4:30 pm call ran the jobs that need no price, the 9:00 pm call the closes (`price_calls`: 3 daily calls after 9:00 pm, none for Nov 23 before).
+3. `cron.job_run_details` for 5:00–8:30 pm: the timer answered "waiting: today's closes are confirmed at 9:00 pm" (no calls in between).
+4. Any trade waiting for Nov 23 settled at its confirmed close; reconcile for Nov 23 ok; no `price_mismatch` alert.
+5. Next morning, Dad compares the three stored closes with Yahoo Finance's Nov 23 closes: all three should match to the cent (the snapshot problem gone). Health check green.
+
+#### Tue Nov 24: re-test the reworded ACCEPTANCE box ("A close still missing at 10:00 pm…")
+
+The same way the 9:00 pm box was proven on Oct 29, an hour later. It needs Dad's OK for one timer change inside the evening window (the test itself).
+
+1. **Before 4:00 pm:** Supabase → **Integrations** → **Cron** → `big-bucks-nightly` → **off**. (No test-kid trade is needed; one may be waiting, it just settles at 10:00 pm.)
+2. **About 9:50 pm:** the same switch **on**. Check it saved (the Oct 29 attempt didn't save the first time).
+3. **10:00 pm**, the first kick: it raises one `missing_price` alert per fund for Nov 24 (on the Dashboard), then calls the nightly function, which fetches the closes; as each is stored its alert clears itself.
+4. **About 10:15 pm, Buck checks read-only:** the three alerts, created at 10:00 pm and resolved a few seconds later; the closes fetched after 10:00 pm; nightly done; no alert open. Then the ACCEPTANCE box is ticked with the times.
+5. **Next morning:** the health check green (no open alert).
+- **Dad to do by hand:** the production session and the two evening checks below.
 
 ### Nov 1 checks (Dad, on production as the test kid; recorded 2026-11-01)
 

@@ -26,9 +26,9 @@ Working notes for the build of `docs/plans/price-fix-plan.md` (approved by Dad 2
 7. **The parent "fix a close" screen** (pre-Stage-12 list) is built here, because production day needs it: pick a fund and day, see the stored close, type the official one and where it comes from, see the preview of every adjustment, then Yes.
 8. **Her screens:** the waiting line names its close ("Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6"; after 3:00 pm "Waiting for today's close to be confirmed (Nov 9) · asked Nov 6"), the same on Buy / Sell and in Recent activity; a fund whose day is behind the others after 9:00 pm says "Today's TSX close comes in later" on its card.
 
-## Production day (from the plan, kept in step here)
+## Production day
 
-Backup; record functions for rollback; merge; dry run (only the price-fix migrations); `db push`; deploy the nightly function; then, with "fix a close": the 12 DIA closes with no trades, then #17, #35 and #37 with their adjustments; then switch `price_mismatch_check` on; then the Pages deploy after the evening's nightly is done; that evening, closes confirmed at 9:00 pm and the alert at 10:00 pm (re-test the reworded ACCEPTANCE box).
+Sat Nov 21 after 11:45 am, then Mon Nov 23 (first confirmed closes) and Tue Nov 24 (the 10:00 pm box): the steps are in docs/PROGRESS.md, "Price fix: built, ready for Dad's review".
 
 ## Progress
 
