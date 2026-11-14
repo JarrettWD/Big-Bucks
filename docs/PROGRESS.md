@@ -680,6 +680,15 @@ Ships three reviewed branches: `rate-wording` (the rate **?**s and "Last day", t
   - it appears in Android's app list;
   - Family Link didn't block or hold the install for approval. If it asks, the approval is Dad's, in Family Link.
   - Then sign in with the test kid's login to check the app works there (her own account comes at Stage 12). Do this before Stage 12's real accounts.
+- **1. The inflation switch, made obvious** (approved by Dad 2026-11-14; **first** of these two). Today's "💡 What will it buy?" doesn't look like a switch, and the lines it adds appear on other cards.
+  - **Button:** "🛒 Will my money buy as much next year?" with a state tag: **Show** when off, **Hide** when on (still `aria-pressed`). When on, under it: "The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them." Each added line starts with 🛒 instead of 💡 (💡 stays for Buy / Sell tips).
+  - **Total card**, her own figures instead of the general note: "Prices go up about {rate}% a year, so if it didn't grow at all, next year your {total} would buy about what {real} buys today. Growing your money is how you keep up. That's why GICs and funds matter." {real} = her total ÷ (1 + inflation), rounded to the nearest cent, as the savings line's "buys about what…" figure.
+  - **Build:** app-only for the button and lines; one small migration so the read-only `kid_inflation` also gives her total and what it would buy. No money function touched. Detailed mode only, remembered per device, as now.
+- **2. "Why save? Why invest?" cards** (approved by Dad 2026-11-14; may slip to post-launch if Stage 12 gets tight). From the **?** beside Total worth: "Why save? Why invest? →" opens four cards, one at a time (**Next**, **Done**). Stored as glossary entries (one data-only migration), so Dad can edit them in Settings → **?** explanations. No money function touched.
+  1. **Why save?** "Saving means keeping some of your money for later instead of spending it all now. It helps you reach something bigger, like a wish on your Wish List. It also gives you a cushion for surprises, like a broken bike or a gift you forgot."
+  2. **Why does interest help?** "When your money is in savings or a GIC, the bank pays you a little extra for keeping it there. (In Big Bucks, that's Mom and Dad.) That's interest: your money earning money. The longer you leave it, the more it earns, and later your interest earns interest too."
+  3. **Why do rising prices matter?** "Most things cost a little more each year. That's called inflation. Money that just sits still buys a bit less every year. Money that grows at least as fast as prices keeps up."
+  4. **Why do funds go up and down?** "A stock fund owns tiny pieces of many real companies. Its price changes every day, and it can drop, sometimes a lot. Over many years, funds like these have usually grown more than savings, but nobody knows what will happen next. That's why fund money is money you can leave alone for a long time." Last line: "You choose your mix. There's no single right answer, just trade-offs."
 
 ### Stage 5 — Backups and data protection (done 2026-10-10)
 
