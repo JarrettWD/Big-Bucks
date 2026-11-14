@@ -9,6 +9,13 @@ import { fundLabel } from '../fundNames';
 
 // What the database sends ---------------------------------------------------------------------
 
+// The price fix (2026-11): a close is confirmed at 9:00 pm Alberta time, and the evening's run
+// settles the trade soon after.
+const CONFIRMED_BUY =
+  'The close is confirmed in the evening, by about 9:30 pm, then your units appear.';
+const CONFIRMED_SELL =
+  'The close is confirmed in the evening, by about 9:30 pm, then the money goes into your savings.';
+
 export interface TradeFund {
   fund_id: string;
   name: string;
@@ -54,6 +61,8 @@ export interface Waiting {
   on_day: string;
   approve_from: string | null;
   settles: string | null;
+  /** "Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6" (the price fix, 2c). */
+  waiting_words?: string | null;
 }
 
 export interface TradeOptions {
@@ -167,10 +176,10 @@ export function warningText(
       return `Your ${ctx.fundName} is worth ${formatCents(w.value_cents)} right now, but you paid ${formatCents(w.cost_cents)}. Selling now makes a loss of ${formatCents(w.loss_cents)} final. Markets go up and down, and nobody knows what comes next.`;
     case 'market_price':
       if (ctx.kind === 'buy_fund')
-        return `Your buy happens at ${w.settles}, at that day's price. It could be higher or lower than today's, so you'll see how many units you got after the close.`;
+        return `Your buy happens at ${w.settles}, at that day's price. It could be higher or lower than today's. ${CONFIRMED_BUY}`;
       if (ctx.sellAll)
-        return `Your sale happens at ${w.settles}. You'll get whatever your units are worth at that day's price.`;
-      return `Your sale happens at ${w.settles}. You'll get ${ctx.amount ?? 'that amount'}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them.`;
+        return `Your sale happens at ${w.settles}. You'll get whatever your units are worth at that day's price. ${CONFIRMED_SELL}`;
+      return `Your sale happens at ${w.settles}. You'll get ${ctx.amount ?? 'that amount'}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them. ${CONFIRMED_SELL}`;
     case 'sells_all':
       return `That's what all of your ${ctx.fundName} is worth, so this sells all of it.`;
   }
@@ -315,7 +324,8 @@ export function waitingLine(w: Waiting, funds: TradeFund[]): { title: string; de
       title: `Asked to take out ${amount}`,
       detail: w.approve_from ? `Dad can say yes from ${w.approve_from}` : 'Waiting for Dad',
     };
-  const happens = w.settles ? `Happens at ${w.settles}` : 'Waiting for the market close';
+  const happens =
+    w.waiting_words ?? (w.settles ? `Happens at ${w.settles}` : 'Waiting for the market close');
   return w.to_vehicle === 'stock'
     ? { title: `Buying ${fund}: ${amount}`, detail: happens }
     : { title: `Selling ${fund}: ${w.sell_all ? 'all of it' : amount}`, detail: happens };

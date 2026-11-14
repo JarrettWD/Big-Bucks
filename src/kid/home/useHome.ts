@@ -61,8 +61,16 @@ export interface Notice {
   related_gic_id: number | null;
 }
 
+/** The funds' newest market day (the price fix, 2c): the day all her funds have, and late closes. */
+export interface CloseDays {
+  last_market_day: string | null;
+  /** fund_id → "Today's TSX close comes in later". */
+  later: Record<string, string>;
+}
+
 export interface HomeData {
   today: string;
+  closeDays: CloseDays;
   balances: Balances;
   gics: Gic[];
   funds: Fund[];
@@ -78,23 +86,35 @@ export const isWaiting = (g: Gic) => g.status === 'matured' && g.maturity_choice
 
 export async function loadHome(view: KidView): Promise<HomeData> {
   const accountId = view.accountId;
-  const [today, bal, gics, funds, activity, rates, notices, updating, goal] = await Promise.all([
-    kidRpc<string>(view, 'app_today'),
-    kidBalances<Balances>(view),
-    kidHomeGics<Gic>(view),
-    kidRpc<Fund[]>(view, 'fund_overview', { p_account_id: accountId }),
-    kidRpc<ActivityRow[]>(view, 'my_activity', { p_account_id: accountId, p_limit: 5 }),
-    kidRpc<Rate[]>(view, 'current_rates'),
-    kidUnreadNotices<Notice>(view),
-    kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
-    kidRpc<Goal | null>(view, 'kid_goal', { p_account_id: accountId }),
-  ]);
-  const failed = [today, bal, gics, funds, activity, rates, notices, updating, goal].find(
-    (r) => r.error,
-  );
+  const [today, bal, gics, funds, activity, rates, notices, updating, goal, closeDays] =
+    await Promise.all([
+      kidRpc<string>(view, 'app_today'),
+      kidBalances<Balances>(view),
+      kidHomeGics<Gic>(view),
+      kidRpc<Fund[]>(view, 'fund_overview', { p_account_id: accountId }),
+      kidRpc<ActivityRow[]>(view, 'my_activity', { p_account_id: accountId, p_limit: 5 }),
+      kidRpc<Rate[]>(view, 'current_rates'),
+      kidUnreadNotices<Notice>(view),
+      kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
+      kidRpc<Goal | null>(view, 'kid_goal', { p_account_id: accountId }),
+      kidRpc<CloseDays>(view, 'kid_close_days'),
+    ]);
+  const failed = [
+    today,
+    bal,
+    gics,
+    funds,
+    activity,
+    rates,
+    notices,
+    updating,
+    goal,
+    closeDays,
+  ].find((r) => r.error);
   if (failed?.error) throw new Error(failed.error.message);
   return {
     today: today.data as string,
+    closeDays: (closeDays.data as CloseDays | null) ?? { last_market_day: null, later: {} },
     balances: bal.data as Balances,
     gics: (gics.data ?? []) as Gic[],
     funds: (funds.data ?? []) as Fund[],

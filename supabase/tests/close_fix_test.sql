@@ -11,7 +11,7 @@
 -- then the stored close is corrected. Her notice leads with money. Known answers include the
 -- three real trades on production (#35, #17, #37), rebuilt here with their own closes.
 begin;
-select plan(47);
+select plan(48);
 
 create schema tests;
 create function tests.clock(p_at text) returns void language sql as $$
@@ -117,6 +117,11 @@ select tests.as_parent();
 
 -- 1. The preview: every trade that used the close, and what it gets -----------------------------
 
+select is(public.close_fix_preview('nasdaq100', date '2027-03-08', null) - 'fetched_at' - 'fetched_words',
+  '{"date": "2027-03-08", "final": true, "fund_id": "nasdaq100", "day_words": "Mar 8", "fund_name": "Nasdaq-100",
+    "new_close": null, "old_close": 648.58000000, "adjustments": [], "new_close_words": null,
+    "old_close_words": "$648.5800"}'::jsonb,
+  'before Dad types a close, the screen shows the stored one');
 create temp table pv as select public.close_fix_preview('nasdaq100', date '2027-03-08', 647.05) as p;
 select is((select p -> 'adjustments' -> 0 ->> 'request_id' from pv)::bigint, (select req from t where name = 'a'),
   'the preview finds the trade that settled at that close');

@@ -420,6 +420,12 @@
   color: var(--bb-ink-soft);
   overflow-wrap: anywhere;
 }
+/* The price fix: a fund whose newest close isn't in yet says so in kid words. */
+.fund__later {
+  color: var(--bb-ink-soft);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
 .move {
   font-weight: 700;
   text-align: right;

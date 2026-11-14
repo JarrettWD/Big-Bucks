@@ -104,3 +104,13 @@
 .fix__check label {
   font-weight: 600;
 }
+
+/* Fix a close: one line per trade or dividend that used the close. */
+.fix__adjustments {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+.fix__adjustments li {
+  margin: 0.2rem 0;
+  overflow-wrap: anywhere;
+}

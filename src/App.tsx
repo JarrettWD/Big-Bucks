@@ -30,6 +30,7 @@ import ParentShell from './parent/ParentShell';
 import Dashboard from './parent/dashboard/Dashboard';
 import Settings from './parent/settings/Settings';
 import FixMistake from './parent/fix/FixMistake';
+import FixClose from './parent/fix/FixClose';
 import Welcome from './kid/onboarding/Welcome';
 import MakeItYours from './kid/look/MakeItYours';
 import Badges from './kid/look/Badges';
@@ -214,6 +215,7 @@ export default function App() {
               <Route path="approvals" element={<Approvals />} />
               <Route path="wishlists" element={<ParentWishlists />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="fix-close" element={<FixClose />} />
               <Route path="fix/:accountId" element={<FixMistake />} />
               <Route path="*" element={<Navigate to="/parent" replace />} />
             </Route>

@@ -450,7 +450,9 @@ function GicRow({
 
 function FundsCard({ data, year }: { data: HomeData; year: number }) {
   const owned = data.funds.filter((f) => f.owned && f.mix_pct !== null);
-  const lastDay = data.funds.map((f) => f.latest_close_date).find(Boolean);
+  // The day all her funds have (the price fix, 2c), so the funds switch to a new day together.
+  const lastDay =
+    data.closeDays.last_market_day ?? data.funds.map((f) => f.latest_close_date).find(Boolean);
   return (
     <section className="card home__funds" aria-labelledby="h-funds">
       <div className="card__head">
@@ -491,7 +493,13 @@ function FundsCard({ data, year }: { data: HomeData; year: number }) {
       )}
       <ul className="funds">
         {data.funds.map((f) => (
-          <FundRow key={f.fund_id} f={f} updating={data.updating} year={year} />
+          <FundRow
+            key={f.fund_id}
+            f={f}
+            updating={data.updating}
+            year={year}
+            later={data.closeDays.later[f.fund_id] ?? null}
+          />
         ))}
       </ul>
       <FundsInflation />
@@ -499,7 +507,18 @@ function FundsCard({ data, year }: { data: HomeData; year: number }) {
   );
 }
 
-function FundRow({ f, updating, year }: { f: Fund; updating: boolean; year: number }) {
+function FundRow({
+  f,
+  updating,
+  year,
+  later,
+}: {
+  f: Fund;
+  updating: boolean;
+  year: number;
+  /** "Today's TSX close comes in later" (the price fix, 2c), or null. */
+  later: string | null;
+}) {
   const pct = f.day_change_pct === null ? null : String(f.day_change_pct);
   // Which day the change is for (Dad, 2026-11-03): "Up 0.62% on Nov 3".
   const on = f.latest_close_date ? ` on ${formatDate(f.latest_close_date, year)}` : '';
@@ -519,6 +538,7 @@ function FundRow({ f, updating, year }: { f: Fund; updating: boolean; year: numb
               ? 'Updating…'
               : `Yours: ${formatCents(f.value_cents)}`}
         </span>
+        {later && <span className="fund__later">{later}</span>}
       </span>
       {dir && pct !== null && (
         <span className={`move move--${dir}`}>

@@ -160,6 +160,9 @@ export default function Dashboard() {
               />
             </details>
           )}
+          <p className="dash__muted">
+            <Link to="/parent/fix-close">{TEXT.fixCloseAny}</Link>
+          </p>
         </section>
 
         <section className="dash__card" aria-labelledby="dash-kids">
@@ -317,6 +320,11 @@ function AlertList({ items, onDone }: { items: DashAlert[]; onDone: () => Promis
           <span className="dash__who">{a.kid ?? 'Big Bucks'}</span>
           <span>{a.message}</span>
           <span className="dash__muted">Since {a.since}</span>
+          {(a.kind === 'price_mismatch' || a.kind === 'price_jump') && (
+            <Link className="dash__btn dash__btn--quiet" to="/parent/fix-close">
+              {TEXT.fixClose}
+            </Link>
+          )}
           {open === a.id ? (
             <AckConfirm id={a.id} onCancel={() => setOpen(null)} onDone={onDone} />
           ) : (

@@ -119,6 +119,40 @@ describe('history lines', () => {
     ).toBe('Waiting for the market close');
   });
 
+  // The price fix (Dad, 2026-11-09): the waiting line names its close, as the database words it.
+  it('a pending trade shows the database’s waiting line', () => {
+    const note = "Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6";
+    expect(
+      describeActivity(row({ kind: 'request_pending', request_type: 'sell', fund_id: 'dow', note }))
+        .detail,
+    ).toBe(note);
+  });
+
+  it('a "Fix a close" line shows the units added, with its working kept for the details', () => {
+    const line = describeActivity(
+      row({
+        kind: 'correction',
+        item_key: 'fix:close:nasdaq100:2026-11-05:35',
+        amount_cents: 0,
+        units: '0.00003646',
+        note: 'The Nasdaq-100 close for Nov 5 was fixed to $647.05. …',
+        fixes: 'Bought Nasdaq-100 on Nov 5',
+      }),
+    );
+    expect(line.amount).toBe('+0.00003646 units');
+    expect(line.detail).toBeNull();
+    expect(line.title).toBe('A correction · fixes Bought Nasdaq-100 on Nov 5');
+    expect(line.tone).toBe('in');
+  });
+
+  it('a "Fix a close" money line shows its cents', () => {
+    expect(
+      describeActivity(
+        row({ kind: 'correction', item_key: 'fix:close:tsx:2027-03-12:9', amount_cents: 6 }),
+      ).amount,
+    ).toBe('+$0.06');
+  });
+
   it('every line keeps the date the database gave it', () => {
     expect(describeActivity(row({ on_day: '2026-09-05' })).day).toBe('2026-09-05');
   });

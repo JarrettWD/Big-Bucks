@@ -17,7 +17,7 @@ import { TEXT as LEARN } from '../learn/learnText';
 import '../learn/Learn.css';
 import { useQuestions, type Question } from '../useQuestions';
 import { Avatar } from '../../components/Avatar';
-import { describeActivity, type ActivityLine, type ActivityRow } from './activityText';
+import { describeActivity, isCloseFix, type ActivityLine, type ActivityRow } from './activityText';
 
 /** Lines whose note is the database's working ("$100.00 × 5.0% × 12/12 = $5.00"). */
 const WORKING_KINDS = new Set([
@@ -124,7 +124,8 @@ function LineDetails(p: {
   onAsked: () => void;
 }) {
   const view = useKidView();
-  const working = WORKING_KINDS.has(p.row.kind) && p.row.note ? p.row.note : null;
+  const working =
+    (WORKING_KINDS.has(p.row.kind) || isCloseFix(p.row)) && p.row.note ? p.row.note : null;
   return (
     <div id={p.id} className="activity__more">
       {working && (

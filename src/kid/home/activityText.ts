@@ -56,6 +56,9 @@ export function correctionTitle(r: ActivityRow): string {
     : `A correction · fixes ${r.fixes}`;
 }
 
+/** A correction from "Fix a close" (the price fix): its key is fix:close:<fund>:<day>:<what>. */
+export const isCloseFix = (r: ActivityRow) => r.item_key.startsWith('fix:close:');
+
 export function describeActivity(r: ActivityRow): ActivityLine {
   const money = (c = r.amount_cents) => (c === null ? '' : formatCents(c));
   const base = { key: r.item_key, day: r.on_day, detail: null as string | null };
@@ -137,12 +140,18 @@ export function describeActivity(r: ActivityRow): ActivityLine {
       };
     case 'correction': {
       const c = Number(r.amount_cents ?? 0);
+      // "Fix a close" (the price fix): its working opens under "How was this calculated?", and
+      // missing units come at no cost, so the line shows the units.
+      const closeFix = isCloseFix(r);
       return {
         ...base,
         icon: '🛠️',
         title: correctionTitle(r),
-        detail: r.note,
-        amount: formatCents(r.amount_cents ?? 0, { sign: true }),
+        detail: closeFix ? null : r.note,
+        amount:
+          closeFix && c === 0 && r.units !== null
+            ? `+${String(r.units)} units`
+            : formatCents(r.amount_cents ?? 0, { sign: true }),
         tone: c >= 0 ? 'in' : 'out',
       };
     }
@@ -211,7 +220,8 @@ function pending(r: ActivityRow, amount: string): Omit<ActivityLine, 'key' | 'da
       return {
         icon: '⏳',
         title: `Buying ${fund(r.fund_id)}`,
-        detail: 'Waiting for the market close',
+        // "Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6" (the price fix, 2c).
+        detail: r.note ?? 'Waiting for the market close',
         amount,
         tone: 'waiting',
       };
@@ -219,7 +229,7 @@ function pending(r: ActivityRow, amount: string): Omit<ActivityLine, 'key' | 'da
       return {
         icon: '⏳',
         title: `Selling ${fund(r.fund_id)}`,
-        detail: 'Waiting for the market close',
+        detail: r.note ?? 'Waiting for the market close',
         amount: amount || 'All of it',
         tone: 'waiting',
       };

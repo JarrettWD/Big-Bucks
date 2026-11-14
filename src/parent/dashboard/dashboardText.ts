@@ -133,6 +133,8 @@ export const TEXT = {
   alerts: 'Alerts',
   noAlerts: 'No open alerts.',
   acknowledge: 'Acknowledge',
+  fixClose: 'Fix a close',
+  fixCloseAny: 'A stored close looks wrong? Fix a close',
   ackHeading: 'Mark this alert as dealt with?',
   ackLine:
     "It moves off the dashboard and the daily health check stops reporting it. It's recorded with your name and the time.",
