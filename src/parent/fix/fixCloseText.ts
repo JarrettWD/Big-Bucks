@@ -36,6 +36,7 @@ export const TEXT = {
   day: 'Day of the close',
   stored: (p: ClosePreview) =>
     `Stored close for ${p.day_words}: ${p.old_close_words} (fetched ${p.fetched_words}${p.final ? '' : ', not final yet'}).`,
+  rightClose: 'The right close',
   official: 'The official close',
   officialHelp: 'Type it exactly as published, for example 647.05.',
   officialBad: 'That doesn’t look like a price. Type numbers only, for example 647.05.',

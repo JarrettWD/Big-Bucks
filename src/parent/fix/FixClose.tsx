@@ -159,7 +159,7 @@ export default function FixClose() {
 
       {p && (
         <section className="set__card" aria-labelledby={`${id}-fix`}>
-          <h2 id={`${id}-fix`}>The official close</h2>
+          <h2 id={`${id}-fix`}>{TEXT.rightClose}</h2>
           <div className="set__change">
             <label htmlFor={`${id}-close`}>{TEXT.official}</label>
             <input
