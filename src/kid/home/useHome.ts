@@ -2,6 +2,7 @@
 // (views and read functions); the screen only arranges it.
 
 import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import { kidBalances, kidHomeGics, kidRpc, kidUnreadNotices, type KidView } from '../kidView';
 import type { Goal } from '../wishlist/wishText';
 import type { ActivityRow } from './activityText';
@@ -97,7 +98,10 @@ export async function loadHome(view: KidView): Promise<HomeData> {
       kidUnreadNotices<Notice>(view),
       kidRpc<boolean>(view, 'figures_updating', { p_account_id: accountId }),
       kidRpc<Goal | null>(view, 'kid_goal', { p_account_id: accountId }),
-      kidRpc<CloseDays>(view, 'kid_close_days'),
+      // Market data only (nothing of hers), so read directly, in "View as" too.
+      supabase
+        .rpc('kid_close_days')
+        .then((r) => ({ data: r.data as CloseDays | null, error: r.error })),
     ]);
   const failed = [
     today,

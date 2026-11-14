@@ -161,7 +161,9 @@ export default function Dashboard() {
             </details>
           )}
           <p className="dash__muted">
-            <Link to="/parent/fix-close">{TEXT.fixCloseAny}</Link>
+            <Link className="dash__btn dash__btn--quiet" to="/parent/fix-close">
+              {TEXT.fixCloseAny}
+            </Link>
           </p>
         </section>
 
