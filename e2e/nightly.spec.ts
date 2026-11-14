@@ -486,11 +486,20 @@ let snapBuy = 0;
 test('a pre-close snapshot at 4:30 pm is never used: the trades settle at the 9:00 pm close', async () => {
   test.setTimeout(180_000);
   await withDb(async (db) => {
-    const from = await plus(db, await firstNight(db), 8);
+    // After every earlier test day, and after any trade she has already asked for (one trade
+    // per fund per day: the outage test's buy can fall on firstNight + 8).
+    const [{ d: from }] = await db.q<{ d: string }>(
+      `select greatest($1::date,
+                       (select max(public.edmonton_local(r.created_at))::date + 2 from public.requests r
+                         join public.profiles p on p.account_id = r.account_id
+                        where p.username = 'demo_robin'))::text as d`,
+      [await plus(db, await firstNight(db), 8)],
+    );
     const [{ d: day }] = await db.q<{ d: string }>(
       `select min(g)::date::text as d
          from generate_series($1::date, $1::date + 14, interval '1 day') g
-        where public.is_trading_day('nyse', g::date) and public.is_trading_day('tsx', g::date)`,
+        where public.is_trading_day('nyse', g::date) and public.is_trading_day('tsx', g::date)
+          and public.is_trading_day('nyse', (g - interval '1 day')::date)`,
       [from],
     );
     snapDay = day;
