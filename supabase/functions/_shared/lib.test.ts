@@ -8,6 +8,7 @@ import {
   LOCAL_SWITCHES,
   parseDaily,
   priceSource,
+  fakeSnapshot,
   parseSplits,
   parseWeekly,
   providerSymbol,
@@ -202,5 +203,33 @@ describe('the price source and its test switches', () => {
     expect(priceSource(env('fake', 'yes'), 'down', false)).toHaveProperty('refused');
     expect(priceSource(env(undefined, LOCAL_SWITCHES), 'down', false)).toHaveProperty('refused');
     expect(priceSource(env('fake', LOCAL_SWITCHES), 'up', false)).toHaveProperty('refused');
+  });
+
+  // The price fix (2026-11-13): "snapshot" has exactly the same locks as "down".
+  it('"snapshot" only on your own computer, with every lock open', () => {
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'snapshot', false)).toEqual({
+      source: 'snapshot',
+    });
+    expect(priceSource(env('fake'), 'snapshot', false)).toHaveProperty('refused');
+    expect(priceSource(env(undefined, LOCAL_SWITCHES), 'snapshot', false)).toHaveProperty(
+      'refused',
+    );
+    expect(priceSource(env('fake', LOCAL_SWITCHES), 'snapshot', true)).toHaveProperty('refused');
+    expect(priceSource(env(), 'snapshot', true)).toHaveProperty('refused');
+  });
+
+  it('a snapshot is a fixed step from the close: above for DIA and XIC, below for QQQ', () => {
+    expect(fakeSnapshot('DIA', { date: '2027-03-08', close: '500.000000' })).toEqual({
+      date: '2027-03-08',
+      close: '502.000000',
+    });
+    expect(fakeSnapshot('QQQ', { date: '2027-03-08', close: '600.000000' })).toEqual({
+      date: '2027-03-08',
+      close: '597.000000',
+    });
+    expect(fakeSnapshot('XIC', { date: '2027-03-08', close: '50.000000' })).toEqual({
+      date: '2027-03-08',
+      close: '50.200000',
+    });
   });
 });

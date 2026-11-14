@@ -188,6 +188,9 @@ export const LOCAL_SWITCHES = 'local-only';
  *     your own computer, only with the made-up source, only when PRICE_SOURCE_SWITCHES is
  *     "local-only" (supabase/config.toml), and only for a call carrying "x-fake-prices: down"
  *     (the end-to-end test). Nothing in the database or the app can turn it on.
+ *   - 'snapshot' (the price fix, 2026-11-13): the made-up source, behind the same locks, whose
+ *     answer also holds a price for today from a few minutes before the close, as the real
+ *     provider's did on Nov 5, 2026, until today's close is ready (9:00 pm Alberta time).
  * On hosted Supabase the made-up source, the switches setting and the header are each
  * refused before anything runs, never ignored.
  */
@@ -195,7 +198,7 @@ export function priceSource(
   env: { priceSource: string | undefined; switches: string | undefined },
   header: string | null,
   hosted: boolean,
-): { source: 'real' | 'fake' | 'down' } | { refused: string } {
+): { source: 'real' | 'fake' | 'down' | 'snapshot' } | { refused: string } {
   const fake = env.priceSource === 'fake';
   if (hosted) {
     if (fake) return { refused: 'The made-up price source only runs on your own computer.' };
@@ -206,9 +209,22 @@ export function priceSource(
     return { source: 'real' };
   }
   if (header === null) return { source: fake ? 'fake' : 'real' };
-  if (header !== 'down') return { refused: `Unknown price test switch "${header.slice(0, 20)}".` };
-  if (!fake) return { refused: 'Only the made-up price source can be switched down.' };
+  if (header !== 'down' && header !== 'snapshot')
+    return { refused: `Unknown price test switch "${header.slice(0, 20)}".` };
+  if (!fake) return { refused: `Only the made-up price source can be switched ${header}.` };
   if (env.switches !== LOCAL_SWITCHES)
     return { refused: 'The price test switches are off (PRICE_SOURCE_SWITCHES).' };
-  return { source: 'down' };
+  return { source: header };
+}
+
+/**
+ * The "snapshot" switch's price for today: the made-up close moved by a fixed amount, up for
+ * one fund and down for another, as a price from a few minutes before the close can be either
+ * way (Nov 5, 2026: DIA and QQQ both above the close). Whole-number arithmetic.
+ */
+export function fakeSnapshot(symbol: string, close: Close): Close {
+  // DIA and XIC a little above the close, QQQ a little below.
+  const bp = symbol === 'QQQ' ? -50n : 40n;
+  const v = (toMicros(close.close) * (10000n + bp)) / 10000n;
+  return { date: close.date, close: fromMicros(v) };
 }

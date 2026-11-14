@@ -7,8 +7,14 @@
 //      missing trading day. A failed call is retried once; nothing is ever guessed.
 //      At most 20 provider calls a day (the database keeps count).
 //   2. Splits: the provider's split list, once a week per fund.
-//   3. Jobs: run_daily through tonight's day (today from 4:30 pm, else yesterday).
-//   4. Check: reconcile every day not yet checked.
+//   3. Jobs: run_daily through tonight's day (today from 4:30 pm, else yesterday), at most
+//      5 days per call, calling again until done or out of time (the price fix, 2b: each call
+//      has an 8-second limit on production). The next kick carries on.
+//   4. Check: reconcile every day not yet checked, in the same bounded steps.
+// Since the price fix, a day's close is ready only from 9:00 pm Alberta time: the database
+// doesn't list it as missing before then and refuses it if offered. Each daily call's last
+// 15 days are kept as the provider gave them (record_price_observations) and compared with
+// the stored closes (check_price_mismatches, off until Dad turns it on).
 //   5. Badges (stage 10): check_badges_through, after 3 and 4, in its own call. A failure
 //      there is caught here and never changes the money jobs, the check or "done".
 // All the rules (which days are missing, whether a close may be stored, what a split
@@ -21,7 +27,9 @@
 // On Dad's computer (PRICE_SOURCE=fake, never on hosted Supabase) the closes are made
 // up, so no provider key is needed to test it. There, and only with PRICE_SOURCE_SWITCHES
 // = "local-only", a call with "x-fake-prices: down" gets a made-up source that never answers,
-// as in a price-service outage (the end-to-end test). Hosted Supabase refuses all three.
+// as in a price-service outage, and "x-fake-prices: snapshot" one whose answer also holds a
+// price for today from before the close until 9:00 pm, as on Nov 5, 2026 (the end-to-end
+// tests). Hosted Supabase refuses all of them.
 //
 // Runs with verify_jwt = false (supabase/config.toml): callers prove themselves with
 // the x-nightly-key header (NIGHTLY_KEY). It uses the service role inside, and its
@@ -30,6 +38,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import {
   fakeCloses,
+  fakeSnapshot,
   isHosted,
   keyProblem,
   parseDaily,
@@ -68,6 +77,11 @@ const RETRY_MS = 15_000;
 // The platform stops a function after 150 seconds. Past this, no new calls: the
 // next kick (half an hour later) carries on.
 const CALLS_UNTIL_MS = 95_000;
+// Bounded catch-up: no new job or check call past this; the next kick carries on.
+const JOBS_UNTIL_MS = 125_000;
+const STEP_DAYS = 5;
+// The provider's values kept from each daily call (the safety net compares 10 trading days).
+const OBSERVED_DAYS = 15;
 
 function reply(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
@@ -91,16 +105,22 @@ async function rpc<T>(
 /** Fetches from the price provider (or the made-up source), within the day's budget. */
 class Prices {
   private last = 0;
-  private readonly started = Date.now();
+  readonly started = Date.now();
+  /** Today in Alberta (from the plan), for the snapshot switch. */
+  today = '';
   /** The budget is used up, or this run is out of time: no more calls. */
   stopped = false;
 
   constructor(
     private db: SupabaseClient,
     private apiKey: string | null,
-    /** The made-up source is "down" (your own computer's end-to-end test only). */
-    private down = false,
+    /** The made-up source is "down" or "snapshot" (your own computer's end-to-end tests only). */
+    private mode: 'fake' | 'down' | 'snapshot' = 'fake',
   ) {}
+
+  get snapshot(): boolean {
+    return this.fake && this.mode === 'snapshot';
+  }
 
   get fake(): boolean {
     return this.apiKey === null;
@@ -125,16 +145,13 @@ class Prices {
       return { ok: false, kind: 'limit', message: "Today's 20 price calls are used up." };
     }
     let result: Fetched<unknown>;
-    if (this.fake && this.down) {
+    if (this.fake && this.mode === 'down') {
       // A price-service outage, as the real provider's would look: no answer, no closes.
       result = { ok: false, kind: 'network', message: 'No answer from the provider (down).' };
     } else if (this.fake) {
       result = {
         ok: true,
-        value:
-          kind === 'daily'
-            ? fakeCloses(fund.symbol, fund.last_close, fund.missing)
-            : ([] as unknown[]),
+        value: kind === 'daily' ? this.fakeDaily(fund) : ([] as unknown[]),
       };
     } else {
       const wait = this.last + SPACING_MS - Date.now();
@@ -177,6 +194,15 @@ class Prices {
     return result;
   }
 
+  /** The made-up answer; with the snapshot switch, today's bar holds a pre-close price until its close is ready. */
+  private fakeDaily(fund: PlanFund): Close[] {
+    const closes = fakeCloses(fund.symbol, fund.last_close, fund.missing);
+    if (this.mode !== 'snapshot' || this.today === '' || fund.missing.includes(this.today))
+      return closes;
+    const [real] = fakeCloses(fund.symbol, fund.last_close, [this.today]);
+    return [...closes, fakeSnapshot(fund.symbol, real)];
+  }
+
   /** One retry, except for a wrong symbol, a used-up budget or a run out of time. */
   async get<T>(kind: Kind, fund: PlanFund): Promise<Fetched<T>> {
     let r = await this.once(kind, fund);
@@ -191,23 +217,56 @@ class Prices {
 async function nightly(db: SupabaseClient, prices: Prices) {
   const plan = await rpc<Plan>(db, 'nightly_plan');
   const report: Record<string, unknown>[] = [];
+  prices.today = plan.today;
 
   // 1. Prices.
   for (const fund of plan.funds) {
-    if (fund.missing.length === 0) continue;
+    // The snapshot switch asks every evening, as the function did before the price fix.
+    if (fund.missing.length === 0 && !prices.snapshot) continue;
     const r = await prices.get<Close[]>('daily', fund);
     if (!r.ok) {
       report.push({ fund: fund.fund_id, missing: fund.missing, error: r.message });
       continue;
     }
-    const wanted = r.value.filter((c) => fund.missing.includes(c.date));
-    const stored = await rpc<unknown>(db, 'store_closes', {
-      p_fund_id: fund.fund_id,
-      p_closes: wanted,
-      p_source: 'daily',
-    });
+    // What the provider said for the last few days, kept for the safety net. Never stops the run.
+    let observed: unknown;
+    try {
+      observed = await rpc<number>(db, 'record_price_observations', {
+        p_fund_id: fund.fund_id,
+        p_values: [...r.value].sort((a, b) => a.date.localeCompare(b.date)).slice(-OBSERVED_DAYS),
+      });
+    } catch (e) {
+      observed = { error: (e as Error).message.slice(0, 200) };
+    }
+    // Only the missing days, which the database lists only once ready. With the snapshot
+    // switch, today's pre-close price is offered too, to show the database refuses it.
+    const wanted = r.value.filter(
+      (c) => fund.missing.includes(c.date) || (prices.snapshot && c.date === plan.today),
+    );
+    const stored =
+      wanted.length === 0
+        ? null
+        : await rpc<unknown>(db, 'store_closes', {
+            p_fund_id: fund.fund_id,
+            p_closes: wanted,
+            p_source: 'daily',
+          });
     const still = fund.missing.filter((d) => !wanted.some((c) => c.date === d));
-    report.push({ fund: fund.fund_id, missing: fund.missing, stored, not_published_yet: still });
+    report.push({
+      fund: fund.fund_id,
+      missing: fund.missing,
+      stored,
+      not_published_yet: still,
+      observed,
+    });
+  }
+
+  // The safety net: a stored close the provider now disagrees with is an alert for Dad.
+  let mismatches: unknown;
+  try {
+    mismatches = await rpc<number>(db, 'check_price_mismatches');
+  } catch (e) {
+    mismatches = { error: (e as Error).message.slice(0, 200) };
   }
 
   // 2. Splits, once a week per fund.
@@ -237,11 +296,30 @@ async function nightly(db: SupabaseClient, prices: Prices) {
     }
   }
 
-  // 3. Jobs, then 4. the check.
-  const jobs = await rpc<Record<string, unknown>>(db, 'run_daily', { p_through: plan.target });
-  const reconciled = await rpc<Record<string, unknown>>(db, 'reconcile_through', {
-    p_through: plan.target,
-  });
+  // 3. Jobs, then 4. the check, each in bounded steps.
+  const outOfTime = () => Date.now() - prices.started > JOBS_UNTIL_MS;
+  let jobs: Record<string, unknown> = {};
+  let jobCalls = 0;
+  do {
+    jobs = await rpc<Record<string, unknown>>(db, 'run_daily', {
+      p_through: plan.target,
+      p_max_days: STEP_DAYS,
+    });
+    jobCalls++;
+  } while (jobs.more === true && !outOfTime());
+  let reconciled: Record<string, unknown> = {};
+  const checkedDays: unknown[] = [];
+  let checkCalls = 0;
+  if (jobs.more !== true) {
+    do {
+      reconciled = await rpc<Record<string, unknown>>(db, 'reconcile_through', {
+        p_through: plan.target,
+        p_max_days: STEP_DAYS,
+      });
+      checkedDays.push(...((reconciled.reconciled as unknown[]) ?? []));
+      checkCalls++;
+    } while (reconciled.more === true && !outOfTime());
+  }
   const status = await rpc<Record<string, unknown>>(db, 'nightly_status', { p_date: plan.target });
 
   // 5. Badges (stage 10), only after the money jobs and the check have committed. Its own call,
@@ -258,13 +336,22 @@ async function nightly(db: SupabaseClient, prices: Prices) {
     mode: 'nightly',
     target: plan.target,
     prices: report,
+    mismatches,
     splits,
     jobs: {
       status: jobs.status,
       completed_through: jobs.completed_through,
       core_completed_through: jobs.core_completed_through,
+      calls: jobCalls,
+      more: jobs.more === true,
     },
-    reconciled,
+    reconciled: {
+      reconciled: checkedDays,
+      days_with_problems: reconciled.days_with_problems,
+      held_for_tonight: reconciled.held_for_tonight,
+      calls: checkCalls,
+      more: jobs.more === true || reconciled.more === true,
+    },
     done: status.done,
     badges,
   };
@@ -356,7 +443,11 @@ Deno.serve(async (req) => {
   const db = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const prices = new Prices(db, apiKey, choice.source === 'down');
+  const prices = new Prices(
+    db,
+    apiKey,
+    choice.source === 'down' || choice.source === 'snapshot' ? choice.source : 'fake',
+  );
   try {
     const result = mode === 'backfill' ? await backfill(db, prices) : await nightly(db, prices);
     return reply(result.mode === 'backfill' && !result.ok ? 502 : 200, result);
