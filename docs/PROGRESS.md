@@ -173,7 +173,7 @@ Built per `docs/plans/price-fix-plan.md` with every approved addition; design no
   - pgTAP: 49 files, 2,378 checks, all pass. New: `price_confirm_test` (41), `close_fix_test` (52: #35, #17, #37 exactly, both sale cases, a dividend, no change, preview, log, nothing twice, reconcile, the Settings switch), `price_words_test` (12). Five older tests are pinned to the old rule with a 2100 cut-over (they test settlement and dividends under the timing they were written for). `stage4_nightly_test` moves to the new times; two `audit_fixes_test` refusals became fixes; two fingerprint guards updated for the price check's key in `set_setting_unlogged` (only those lines changed).
   - Vitest: 33 files, all pass.
   - Time machine: **20 of 20**, to the cent with the reference model; 740 pre-close snapshots refused; 721 bounded `run_daily` calls.
-  - End-to-end: see the review report (two full runs). New: the 38-day catch-up, the 5:00 pm wait, the snapshot evening (above for TSX, below for the Nasdaq-100), "Fix a close" through the screen.
+  - End-to-end: **two full runs from fresh demos, 131 of 131 each** (Nov 13, 10:07 and 10:22 pm; earlier runs that night found two screen problems and three slips in the new tests, all fixed). New: the 38-day catch-up, the 5:00 pm wait, the snapshot evening (above for TSX, below for the Nasdaq-100), "Fix a close" through the screen.
   - CI: green on b79503d (database tests, unit tests, time machine).
 - **ACCEPTANCE:** "A close still missing at 9:00 pm…" reworded to 10:00 pm and unticked, to re-test on production the evening of the session.
 - **Known issues / for Dad:** see the review report (sell-by-amount units back, the widened correction guard, dividends on fixed units counted from the fix day, the emergency lever).

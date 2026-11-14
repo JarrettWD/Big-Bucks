@@ -38,5 +38,5 @@ Backup; record functions for rollback; merge; dry run (only the price-fix migrat
 - [x] Nightly function.
 - [x] Screens (her waiting line, late-close note, confirm tip, close-fix lines; Fix a close; the price check in Settings).
 - [x] Time machine: 20 of 20.
-- [ ] End-to-end, two full runs; CI (CI green on b79503d).
+- [x] End-to-end, two full runs (131 of 131 each); CI.
 - [x] Docs (MESSAGES §14 and her lines, RUNBOOK, ACCEPTANCE wording, PROGRESS).
