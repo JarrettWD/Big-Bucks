@@ -33,10 +33,10 @@ Backup; record functions for rollback; merge; dry run (only the price-fix migrat
 ## Progress
 
 - [x] Worktree and branch; design read from the current code (2026-11-13).
-- [ ] Known-answer database tests.
-- [ ] Migrations.
-- [ ] Nightly function.
-- [ ] Screens.
-- [ ] Time machine.
-- [ ] End-to-end, two full runs; CI.
-- [ ] Docs (MESSAGES, RUNBOOK, ACCEPTANCE wording, PROGRESS).
+- [x] Known-answer database tests (price_confirm 41, close_fix 52, price_words 12).
+- [x] Migrations (five, 20261113000000 to 20261113040000).
+- [x] Nightly function.
+- [x] Screens (her waiting line, late-close note, confirm tip, close-fix lines; Fix a close; the price check in Settings).
+- [x] Time machine: 20 of 20.
+- [ ] End-to-end, two full runs; CI (CI green on b79503d).
+- [x] Docs (MESSAGES §14 and her lines, RUNBOOK, ACCEPTANCE wording, PROGRESS).

@@ -515,17 +515,22 @@ test('a pre-close snapshot at 4:30 pm is never used: the trades settle at the 9:
         `insert into public.settings (key, value, effective_date) values ('price_mismatch_check', 'on', '2026-01-01')`,
       );
 
-      // That morning: $10.00 of the TSX fund, and $1.00 of her Nasdaq-100 sold.
+      // That morning: $10.00 of the TSX fund, and $10.00 of her Nasdaq-100 sold (the smallest trade).
       await db.setClock(`${day} 09:00`);
       const [held] = await db.q<{ u: string }>(
         `select coalesce(sum(units), 0)::text as u from public.transactions
           where account_id = $1 and fund_id = 'nasdaq100' and vehicle = 'stock'`,
         [robin.account_id],
       );
-      expect(Number(held.u), 'Robin holds some Nasdaq-100 to sell').toBeGreaterThan(0.01);
+      const [{ worth }] = await db.q<{ worth: string }>(
+        `select ($1::numeric * (select close from public.fund_prices where fund_id = 'nasdaq100'
+                                 order by price_date desc limit 1))::text as worth`,
+        [held.u],
+      );
+      expect(Number(worth), 'Robin holds more than $10.00 of the Nasdaq-100').toBeGreaterThan(12);
       for (const sql of [
         `select public.request_trade('tsx', 'buy', 1000, false)`,
-        `select public.request_trade('nasdaq100', 'sell', 100, false)`,
+        `select public.request_trade('nasdaq100', 'sell', 1000, false)`,
       ]) {
         const r = await db.call(ROBIN, sql);
         expect(r.ok, JSON.stringify(r)).toBe(true);

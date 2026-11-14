@@ -155,6 +155,30 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
+### Price fix: built, ready for Dad's review (branch `price-fix`, 2026-11-13)
+
+Built per `docs/plans/price-fix-plan.md` with every approved addition; design notes in `docs/plans/price-fix-build-notes.md`. Its own worktree (`C:\Dev\Big-Bucks-price-fix`) and branch, off main b99aac8. **Not merged, nothing on production.**
+
+- **Built:**
+  - **Confirmed closes:** a day's close is ready only from 9:00 pm Alberta time (`confirm_time`, `close_ready_at`). `missing_closes` doesn't ask for it earlier, `store_close` refuses it ("The Dow Jones close for Nov 9 is confirmed at 9:00 pm Alberta time, so that price isn't final yet."), and `final_close` never counts an earlier fetch. Cut-over: the setting `closes_confirmed_from`, the day the migration runs; earlier closes keep their rule.
+  - **The evening timer:** missing-close alerts from 10:00 pm. Between the 4:30 pm run and 9:00 pm: "waiting: today's closes are confirmed at 9:00 pm", unless an earlier close is missing or a nightly job failed.
+  - **Bounded catch-up:** `run_daily(through, 5)` and `reconcile_through(through, 5)` with a "more" flag; the nightly function loops them within 125 s. Today's reconcile waits for tonight's work.
+  - **Safety net:** `price_observations` (append-only, explicit grants), `record_price_observations`, `check_price_mismatches` (`price_mismatch` alert). Off until Dad turns it on in Settings ("The price check").
+  - **Fix a close, in her favour:** `close_fix_adjustments` (shared by the preview and the action), `close_fix_preview`, `correct_fund_price` extended. Missing units for a buy (at $0), units back for a sale by amount, missing money plus its interest for a sale of everything or a dividend, "no change" otherwise; posting keys `fix:close:<fund>:<day>:<request>`; her notice leads with money; one log row. The links guard allows a fund-side correction on the same fund line; reconcile checks a trade or dividend against the close it used (`day_closes`).
+  - **Screens:** her waiting line names its close (`waiting_words`, the same on Home and Buy / Sell); the confirm sentence in Buy / Sell's 💡; "Today's TSX close comes in later" and "Last market day" = the day all her funds have (`kid_close_days`); "Fix a close" history lines (units, working under "How was this calculated?"); Dad's **Fix a close** screen (`/parent/fix-close`, linked from price alerts and under the Dashboard's alerts); **The price check** card in Settings.
+  - **Nightly function:** bounded loops, the provider log, the mismatch check, and a local-only "snapshot" source behind the same locks as "down".
+  - **Time machine and demo:** two runs a day (4:30 pm, 9:30 pm), closes confirmed at 9:00 pm, every pre-close snapshot offered and refused, bounded calls. The reference model knows both runs.
+- **Migrations (5):** `20261113000000_price_confirm`, `20261113010000_close_fix`, `20261113020000_price_fix_words`, `20261113030000_fix_close_screen`, `20261113040000_price_fix_followups`.
+- **Tests:**
+  - pgTAP: 49 files, 2,378 checks, all pass. New: `price_confirm_test` (41), `close_fix_test` (52: #35, #17, #37 exactly, both sale cases, a dividend, no change, preview, log, nothing twice, reconcile, the Settings switch), `price_words_test` (12). Five older tests are pinned to the old rule with a 2100 cut-over (they test settlement and dividends under the timing they were written for). `stage4_nightly_test` moves to the new times; two `audit_fixes_test` refusals became fixes; two fingerprint guards updated for the price check's key in `set_setting_unlogged` (only those lines changed).
+  - Vitest: 33 files, all pass.
+  - Time machine: **20 of 20**, to the cent with the reference model; 740 pre-close snapshots refused; 721 bounded `run_daily` calls.
+  - End-to-end: see the review report (two full runs). New: the 38-day catch-up, the 5:00 pm wait, the snapshot evening (above for TSX, below for the Nasdaq-100), "Fix a close" through the screen.
+  - CI: green on b79503d (database tests, unit tests, time machine).
+- **ACCEPTANCE:** "A close still missing at 9:00 pm…" reworded to 10:00 pm and unticked, to re-test on production the evening of the session.
+- **Known issues / for Dad:** see the review report (sell-by-amount units back, the widened correction guard, dividends on fixed units counted from the fix day, the emergency lever).
+- **Dad to do by hand:** review; then the production session (steps in the report).
+
 ### Nov 1 checks (Dad, on production as the test kid; recorded 2026-11-01)
 
 - **October's interest was paid: 11¢**, and Dad's rough check matches. From the daily rows (read-only): the account opened Oct 10, so 22 days. Oct 10–25 at 2.0%, on five balances from $70.00 to $140.00: 8.630138¢. Oct 26–31 at 1.0%, on $95.00, then $85.00 after the Oct 27 buy: 1.424658¢. Together 10.054795¢, rounded up to 11¢ (posting `interest:2026-10:…`, its note "October: 22 days of interest added up to $0.1005, rounded up to $0.11").
