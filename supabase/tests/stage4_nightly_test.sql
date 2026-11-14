@@ -1,13 +1,14 @@
 -- Stage 4, Part A (plan approved by Dad, 2026-10-09): saving closes, splits, the
 -- price-call budget, the nightly kick and its timing, the one sender in a preview,
--- the 9:00 pm missing-close alert and the database-size alert. Known answers over
+-- the missing-close alert (10:00 pm since the price fix; times here follow price_confirm_test.sql)
+-- and the database-size alert. Known answers over
 -- Feb and Mar 2027 (Alberta UTC−6; Toronto on standard time until Mar 14, so the
 -- markets close at 3:00 pm Alberta time).
 --
 -- Works on a fresh database (CI) and on one holding the local demo: expectations
 -- that depend on what's already stored are worked out from it.
 begin;
-select plan(90);
+select plan(91);
 
 -- Test helpers ----------------------------------------------------------------
 
@@ -57,8 +58,12 @@ select is(tests.err($$select public.store_close('dow', date '2027-03-01', 400)$$
 select is((select count(*)::int from public.fund_prices where price_date = '2027-03-01'), 0, '...and nothing is stored');
 
 select tests.clock('2027-03-01 15:00');
+select is(tests.err($$select public.store_close('dow', date '2027-03-01', 400)$$),
+  'The Dow Jones close for Mar 1 is confirmed at 9:00 pm Alberta time, so that price isn''t final yet.',
+  'at the close itself (3:00 pm Alberta) it isn''t stored yet: since the price fix a close waits for 9:00 pm');
+select tests.clock('2027-03-01 21:00');
 select is(public.store_close('dow', date '2027-03-01', tests.last_close('dow')), 'stored',
-  'at the close itself (3:00 pm Alberta), it is stored');
+  'at 9:00 pm Alberta, it is stored');
 select isnt(public.final_close('dow', date '2027-03-01'), null::numeric, '...and it is final');
 select is((select source from public.fund_prices where fund_id = 'dow' and price_date = '2027-03-01'), 'daily',
   '...as a daily close');
@@ -97,7 +102,7 @@ select is(tests.err(format($$select public.store_close('dow', %L, 400, 'weekly_b
 
 -- 3. A big move with no split -------------------------------------------------------------
 
-select tests.clock('2027-03-02 15:00');
+select tests.clock('2027-03-02 21:00');
 select is(public.store_close('dow', date '2027-03-02', round(tests.last_close('dow') * 1.26, 4)), 'stored',
   'a 26% jump is still stored (it may be real)...');
 select is((select count(*)::int from public.alerts where kind = 'price_jump' and is_quiet
@@ -111,7 +116,7 @@ select is(tests.alerts('price_jump', 'nasdaq100', '2027-03-02'), 0, '...with no 
 select tests.clock('2027-03-03 12:00');
 select is(public.record_split('dow', date '2027-03-04', 1, 2), 'recorded', 'a split for a later day is recorded');
 select is(public.record_split('dow', date '2027-03-04', 1, 2), 'already', '...and the same split again changes nothing');
-select tests.clock('2027-03-04 15:00');
+select tests.clock('2027-03-04 21:00');
 select is(public.store_close('dow', date '2027-03-04', round(tests.last_close('dow') / 2, 4)), 'stored',
   'the half-price close on the split day is stored...');
 select is(tests.alerts('price_jump', 'dow', '2027-03-04'), 0, '...with no alert, since the split explains it');
@@ -187,7 +192,7 @@ select is(public.nightly_kick(), 'queued', 'half an hour later, still not done: 
 select is(tests.queued(), 2, '...two in all');
 
 -- Finished work is never repeated.
-select tests.clock('2027-03-05 17:30');
+select tests.clock('2027-03-05 21:00');
 select public.store_close(f.id, date '2027-03-05', 100) from public.funds f
  where not exists (select 1 from public.fund_prices p where p.fund_id = f.id and p.price_date = '2027-03-05');
 select tests.finish_day(date '2027-03-05');
@@ -195,17 +200,17 @@ select is((public.nightly_status(date '2027-03-05') ->> 'done')::boolean, true, 
 select is(public.nightly_kick(), 'done: tonight''s work is finished', '...and the kick does nothing');
 select is(tests.queued(), 2, '...nothing more queued');
 
--- 8. The 9:00 pm missing-close alert ------------------------------------------------------------
+-- 8. The missing-close alert, at 10:00 pm since the price fix -------------------------------------
 
-select tests.clock('2027-03-08 20:59');
-select is(public.nightly_kick(), 'queued', 'Monday 8:59 pm with no closes: a call');
-select is(tests.alerts('missing_price', 'dow', '2027-03-08'), 0, '...but no alert before 9:00 pm');
-select tests.clock('2027-03-08 21:00');
+select tests.clock('2027-03-08 21:59');
+select is(public.nightly_kick(), 'queued', 'Monday 9:59 pm with no closes: a call');
+select is(tests.alerts('missing_price', 'dow', '2027-03-08'), 0, '...but no alert before 10:00 pm');
+select tests.clock('2027-03-08 22:00');
 select public.nightly_kick();
-select is(tests.alerts('missing_price', 'dow', '2027-03-08'), 1, 'at 9:00 pm, an alert for the missing Dow close');
+select is(tests.alerts('missing_price', 'dow', '2027-03-08'), 1, 'at 10:00 pm, an alert for the missing Dow close');
 select is((select count(*)::int from public.alerts where kind = 'missing_price' and not is_quiet
             and details ->> 'date' = '2027-03-08'), 3, '...one per fund, none of them quiet');
-select tests.clock('2027-03-08 21:30');
+select tests.clock('2027-03-08 22:30');
 select public.nightly_kick();
 select is(tests.alerts('missing_price', 'dow', '2027-03-08'), 1, 'a later kick doesn''t repeat it');
 select is((public.health_check() ->> 'ok')::boolean, false, 'an open missing-close alert fails the health check');

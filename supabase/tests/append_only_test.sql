@@ -59,7 +59,7 @@ create temp table append_only_tables (t text);
 insert into append_only_tables values
   ('transactions'), ('rates'), ('settings'), ('interest_accruals'), ('fund_prices'), ('fund_splits'),
   ('parent_actions'), ('cancellations'), ('agreement_versions'), ('agreement_signatures'),
-  ('whats_new_features'), ('whats_new_seen'), ('fund_price_corrections');
+  ('whats_new_features'), ('whats_new_seen'), ('fund_price_corrections'), ('price_observations');
 
 select is(
   array(select a.t from append_only_tables a

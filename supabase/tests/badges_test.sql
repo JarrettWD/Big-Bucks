@@ -7,6 +7,10 @@ begin;
 select plan(114);
 
 create schema tests;
+-- This test's closes are stored or inserted by the market-close rule it was written for; the price
+-- fix's 9:00 pm rule (and its cut-over) is tested in price_confirm_test.sql. A cut-over in 2100
+-- keeps every close here under the old rule.
+insert into public.settings (key, value, effective_date) values ('closes_confirmed_from', '2100-01-01', date '2026-01-01');
 grant usage on schema tests to anon, authenticated, service_role;
 
 -- Test closes count as fetched just after their close (only final closes count).
@@ -423,7 +427,7 @@ select is((select count(*) from jsonb_array_elements(public.jobs_behind()) b whe
   'the health check never waits for the badge check');
 select is((select prosrc not like '%badge%' from pg_proc where proname = 'nightly_status'), true,
   'tonight''s "done" doesn''t depend on badges');
-select is((select prosrc not like '%badge%' from pg_proc where proname = 'run_daily'), true,
+select is((select bool_and(prosrc not like '%badge%') from pg_proc where proname = 'run_daily'), true,
   'run_daily doesn''t run badges');
 select is((select array_agg(p.proname::text order by p.proname) from pg_proc p
             where p.pronamespace = 'public'::regnamespace and p.prosrc ilike '%badge%'

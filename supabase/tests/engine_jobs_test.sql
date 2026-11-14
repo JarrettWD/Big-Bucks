@@ -6,6 +6,10 @@ select plan(30);
 -- Test helpers ----------------------------------------------------------------
 
 create schema tests;
+-- This test's closes are stored or inserted by the market-close rule it was written for; the price
+-- fix's 9:00 pm rule (and its cut-over) is tested in price_confirm_test.sql. A cut-over in 2100
+-- keeps every close here under the old rule.
+insert into public.settings (key, value, effective_date) values ('closes_confirmed_from', '2100-01-01', date '2026-01-01');
 
 -- Test closes are stored ahead of the test clock. They count as fetched just after their
 -- close, as the real price fetcher only stores a close once the market has closed

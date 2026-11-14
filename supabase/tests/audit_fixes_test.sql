@@ -10,11 +10,15 @@
 --     the 7-day rule across midnight; TRUNCATE refused on the What's new tables.
 -- One simulated stretch, Oct 5, 2026 to Jan 6, 2027, with the nightly run each evening.
 begin;
-select plan(81);
+select plan(83);
 
 -- Test helpers ----------------------------------------------------------------
 
 create schema tests;
+-- This test's closes are stored or inserted by the market-close rule it was written for; the price
+-- fix's 9:00 pm rule (and its cut-over) is tested in price_confirm_test.sql. A cut-over in 2100
+-- keeps every close here under the old rule.
+insert into public.settings (key, value, effective_date) values ('closes_confirmed_from', '2100-01-01', date '2026-01-01');
 grant usage on schema tests to authenticated, service_role;
 
 create function tests.clock(p_at text) returns void language sql as $$
@@ -339,8 +343,9 @@ select is(tests.night('2026-12-16'), 'ok', 'the run carries on');
 select is(tests.units('kid_c', 'nasdaq100'), 1.98039216, 'the buy settled at $102: $100 ÷ 102 = 0.98039216 units (rounded up)');
 select tests.as_parent();
 select is(tests.err($$select public.correct_fund_price('nasdaq100', '2026-12-16', 103, 'Again')$$),
-  'A trade already settled at this close, so it can''t change. Fix that trade with a correction instead.',
-  'a close a trade settled at can''t change');
+  null::text,
+  'since the price fix a close a trade settled at can be fixed: her buy at $102 was already in her favour at $103, so nothing changes for her');
+select is(tests.units('kid_c', 'nasdaq100'), 1.98039216, '...nothing taken back');
 
 -- 9. Pro-rata dividends, a yield set after the quarter, and a late close --------------------------
 
@@ -396,8 +401,10 @@ select is(tests.err($$select public.correct_fund_price('dow', '2026-12-31', 251,
   'Only a parent signed in with the second step (the authenticator code) can do this.', 'a server can''t fix a close either');
 select tests.as_parent();
 select is(tests.err($$select public.correct_fund_price('dow', '2026-12-31', 251, 'Typo')$$),
-  'A dividend was already paid from this close, so it can''t change. Fix it with a correction instead.',
-  'a close a dividend was paid from can''t change');
+  null::text,
+  'since the price fix a close a dividend was paid from can be fixed (close_fix_test.sql has the known answers)');
+select ok((select summary from public.parent_actions where action = 'correct_fund_price' order by id desc limit 1)
+            like '%dividend%corrected%', '...and the dividends paid from it get their missing cents');
 
 -- 11. A regular change hidden by a running special: the notice says so ----------------------------
 

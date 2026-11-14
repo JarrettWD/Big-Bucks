@@ -128,7 +128,7 @@ select is(tests.fn_privs('authenticated', array['expire_requests', 'accrue_savin
 select is(array_length(tests.fn_privs('service_role', array['expire_requests', 'accrue_savings_interest', 'post_monthly_interest',
     'mature_gics', 'auto_move_unclaimed_maturities', 'settle_trades', 'pay_quarterly_dividends', 'apply_split',
     'write_market_move_notes', 'send_rate_notices', 'run_daily']), 1),
-  11, 'the server (service role) can run all eleven');
+  12, 'the server (service role) can run all eleven (run_daily twice: in one go, and in bounded steps since the price fix)');
 select is(tests.fn_privs('authenticated', array['notify', 'next_close', 'kid_account', 'require_parent', 'vehicle_cents', 'held_cents',
     'fmt_money', 'round_up_units']),
   '{}'::text[], 'the internal helpers are not callable from the app');
