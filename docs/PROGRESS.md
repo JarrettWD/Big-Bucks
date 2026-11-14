@@ -183,6 +183,7 @@ Built per `docs/plans/price-fix-plan.md` with every approved addition; design no
   4. The production steps, below (Pages after "Nightly done?" is true, a backup after the corrections, the phone check).
   5. **The rollback, tested:** `npm run rollback:check` puts nightly v4's exact code (main b99aac8) in front of the price-fix database for one evening and checks it: 13 of 13 (4:30 pm waits, nothing stored early; 9:30 pm today's closes stored and final, her buy settled at the confirmed close, reconcile clean, nothing twice), then puts v5 back. With v4, today's reconcile runs at 4:30 pm, so tonight's trades are checked the next evening, as before the price fix.
   6. **Local ports** moved to 44320–44329 (API 44321, database 44322, Studio 44323), below Windows' dynamic range.
+  - **Tests after the review changes (Nov 13–14, about midnight):** pgTAP 49 files, 2,386 checks; Vitest 438; time machine 20 of 20; rollback check 13 of 13; end-to-end two full runs from fresh demos, 131 of 131 each.
 - **Known issues / for Dad:** the correction guard is widened for exactly one case (a units-only fund correction on the same kid's fund line); a split after a wrong close is refused rather than worked out (none so far); a rollback to v4 keeps every money rule but loses the bounded catch-up and the price check.
 
 #### Production session: Sat Nov 21, after 11:45 am (finished before 4:00 pm)
