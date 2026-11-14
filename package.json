@@ -27,7 +27,8 @@
     "backup:local": "node scripts/local/backup-local.ts",
     "restore:drill": "node scripts/local/restore-drill.ts",
     "backup:growth": "node scripts/local/backup-growth.ts",
-    "check:workflows": "node scripts/ci/check-workflows.ts"
+    "check:workflows": "node scripts/ci/check-workflows.ts",
+    "rollback:check": "node scripts/local/rollback-check.ts"
   },
   "dependencies": {
     "@fontsource/fredoka": "^5.3.0",
