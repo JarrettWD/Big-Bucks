@@ -4,16 +4,16 @@ import { moveBp, nextClose } from './closes.ts';
 
 describe('local-only guard', () => {
   it('allows the local Supabase', () => {
-    expect(() => assertLocalApi('http://127.0.0.1:54321')).not.toThrow();
-    expect(() => assertLocalApi('http://localhost:54321')).not.toThrow();
+    expect(() => assertLocalApi('http://127.0.0.1:44321')).not.toThrow();
+    expect(() => assertLocalApi('http://localhost:44321')).not.toThrow();
   });
 
   it.each([
     'https://abcdefghijklmnop.supabase.co',
-    'http://127.0.0.1:54322', // the database port, not the API
-    'https://127.0.0.1:54321',
-    'http://192.168.1.20:54321',
-    'http://127.0.0.1:54321.supabase.co',
+    'http://127.0.0.1:44322', // the database port, not the API
+    'https://127.0.0.1:44321',
+    'http://192.168.1.20:44321',
+    'http://127.0.0.1:44321.supabase.co',
     'not a url',
   ])('refuses %s', (url) => {
     expect(() => assertLocalApi(url)).toThrow(/Refusing to run/);

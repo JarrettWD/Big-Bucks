@@ -8,7 +8,7 @@
 
 import pg from 'pg';
 
-export const LOCAL_DB_URL = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+export const LOCAL_DB_URL = 'postgresql://postgres:postgres@127.0.0.1:44322/postgres';
 
 export type Who =
   { role: 'authenticated'; sub: string; aal: 'aal1' | 'aal2' } | { role: 'service_role' };
@@ -21,8 +21,8 @@ export function addressProblem(url: string): string | null {
   } catch {
     return `Refusing to run: "${url}" isn't a database address.`;
   }
-  if (!['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname) || u.port !== '54322')
-    return `Refusing to run: the time machine only runs against the local database (127.0.0.1:54322), not ${u.hostname}:${u.port}.`;
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname) || u.port !== '44322')
+    return `Refusing to run: the time machine only runs against the local database (127.0.0.1:44322), not ${u.hostname}:${u.port}.`;
   if (/supabase\.(co|com|net)/i.test(url))
     return 'Refusing to run: that looks like a hosted Supabase project.';
   return null;

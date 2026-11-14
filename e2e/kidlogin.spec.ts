@@ -10,7 +10,7 @@ import { logins } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
-const URL = 'http://127.0.0.1:54321/functions/v1/kid-login';
+const URL = 'http://127.0.0.1:44321/functions/v1/kid-login';
 const anon = () =>
   readFileSync('.env.local', 'utf8')
     .match(/^VITE_SUPABASE_ANON_KEY=(.*)$/m)![1]

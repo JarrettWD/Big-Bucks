@@ -1,7 +1,7 @@
 // The LOCAL Supabase, for the setup script, the demo and jobs:local.
 //
 // Everything here refuses to work with anything but the local Supabase on this
-// computer: the API must be http://127.0.0.1:54321 and the database must say
+// computer: the API must be http://127.0.0.1:44321 and the database must say
 // is_local_dev = true (the time machine's guard). Production comes after stage 4.
 
 import { execSync } from 'node:child_process';
@@ -9,7 +9,7 @@ import { writeFileSync } from 'node:fs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { LocalDb } from '../timemachine/db.ts';
 
-export const LOCAL_API_URL = 'http://127.0.0.1:54321';
+export const LOCAL_API_URL = 'http://127.0.0.1:44321';
 
 export interface LocalKeys {
   apiUrl: string;
@@ -28,7 +28,7 @@ export function assertLocalApi(url: string): void {
   if (
     u.protocol !== 'http:' ||
     !['127.0.0.1', 'localhost'].includes(u.hostname) ||
-    u.port !== '54321' ||
+    u.port !== '44321' ||
     /supabase\.(co|com|net)/i.test(url)
   ) {
     throw new Error(

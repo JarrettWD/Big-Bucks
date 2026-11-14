@@ -478,7 +478,7 @@ test("resetting a girl's PIN: a one-time code, then she chooses a new PIN at sig
     .match(/^VITE_SUPABASE_ANON_KEY=(.*)$/m)![1]
     .trim();
   const readHistory = () =>
-    fetch('http://127.0.0.1:54321/rest/v1/rpc/my_activity', {
+    fetch('http://127.0.0.1:44321/rest/v1/rpc/my_activity', {
       method: 'POST',
       headers: {
         apikey: anon,

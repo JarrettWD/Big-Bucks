@@ -111,7 +111,7 @@ test("her PIN alone never signs in to Supabase Auth, so the lockout can't be ski
   const anon = readFileSync('.env.local', 'utf8')
     .match(/^VITE_SUPABASE_ANON_KEY=(.*)$/m)![1]
     .trim();
-  const r = await fetch('http://127.0.0.1:54321/auth/v1/token?grant_type=password', {
+  const r = await fetch('http://127.0.0.1:44321/auth/v1/token?grant_type=password', {
     method: 'POST',
     headers: { apikey: anon, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password: robin.pin }),

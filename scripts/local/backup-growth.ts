@@ -63,7 +63,7 @@ async function main(): Promise<void> {
   let kidId: string;
   try {
     const [r] = await db.q<{ words: string }>('select public.set_backup_login() as words');
-    url = `postgresql://backup_reader:${r.words.split(': ').pop()!.trim()}@127.0.0.1:54322/postgres`;
+    url = `postgresql://backup_reader:${r.words.split(': ').pop()!.trim()}@127.0.0.1:44322/postgres`;
     const [kid] = await db.q<{ account_id: string }>(
       `select p.account_id from public.profiles p join public.accounts a on a.id = p.account_id
         where a.is_test order by p.username limit 1`,

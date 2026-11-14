@@ -67,7 +67,7 @@ test('without the authenticator code a parent is blocked, on screen and in the d
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
-  const rest = 'http://127.0.0.1:54321/rest/v1';
+  const rest = 'http://127.0.0.1:44321/rest/v1';
 
   const liability = await fetch(`${rest}/rpc/liability_total`, {
     method: 'POST',

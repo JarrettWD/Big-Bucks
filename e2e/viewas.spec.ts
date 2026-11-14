@@ -154,7 +154,7 @@ test("the database refuses every one of her actions from Dad's session, and she 
   await viewRobin(page);
   const dad = await token(page);
   const call = (bearer: string, fn: string, body: Record<string, unknown>) =>
-    fetch(`http://127.0.0.1:54321/rest/v1/rpc/${fn}`, {
+    fetch(`http://127.0.0.1:44321/rest/v1/rpc/${fn}`, {
       method: 'POST',
       headers: {
         apikey: anon,

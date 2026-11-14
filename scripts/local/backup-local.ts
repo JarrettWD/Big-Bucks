@@ -5,7 +5,7 @@
 //   npm run backup:local
 //   npm run restore:drill -- .local-backup/backup
 //
-// It refuses anything but the local database (127.0.0.1:54322, is_local_dev = true).
+// It refuses anything but the local database (127.0.0.1:44322, is_local_dev = true).
 // It gives the local backup login a fresh password each time; nothing is saved. Like
 // the workflow, it records the backup in the database (record_backup).
 
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
   } finally {
     await db.close();
   }
-  const url = `postgresql://backup_reader:${password}@127.0.0.1:54322/postgres`;
+  const url = `postgresql://backup_reader:${password}@127.0.0.1:44322/postgres`;
   const { message } = await take(url, OUT);
   console.log(message);
   // As the workflow does once the commit is safe: prelaunch_reset() checks this record.

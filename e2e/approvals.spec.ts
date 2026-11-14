@@ -79,7 +79,7 @@ test('no app sign-in can call the originals directly, so nothing skips the log',
   ];
   for (const [who, bearer] of Object.entries(callers))
     for (const [fn, body] of calls) {
-      const r = await fetch(`http://127.0.0.1:54321/rest/v1/rpc/${fn}`, {
+      const r = await fetch(`http://127.0.0.1:44321/rest/v1/rpc/${fn}`, {
         method: 'POST',
         headers: {
           apikey: anon,

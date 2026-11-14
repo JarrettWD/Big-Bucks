@@ -31,7 +31,7 @@ describe('the backup connection', () => {
 
   it('uses no TLS for the local copy on this computer', () => {
     const local = clientConfig(
-      'postgresql://backup_reader:pw@127.0.0.1:54322/postgres',
+      'postgresql://backup_reader:pw@127.0.0.1:44322/postgres',
       join(dir, 'missing.crt'),
     );
     expect(local.ssl).toBeUndefined();

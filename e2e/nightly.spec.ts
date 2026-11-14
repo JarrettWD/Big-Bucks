@@ -10,7 +10,7 @@ import { parentSignIn } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
-const URL = 'http://127.0.0.1:54321/functions/v1/nightly';
+const URL = 'http://127.0.0.1:44321/functions/v1/nightly';
 const KEY = 'local-nightly-key-for-this-computer-only'; // supabase/config.toml, this computer only
 // The same function as the database container sees it.
 const INSIDE_URL = 'http://supabase_kong_big-bucks:8000/functions/v1/nightly';

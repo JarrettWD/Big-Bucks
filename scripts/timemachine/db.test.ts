@@ -9,7 +9,7 @@ describe('database address guard', () => {
   it.each([
     'postgresql://postgres:x@db.abcdefghijklmnop.supabase.co:5432/postgres',
     'postgresql://postgres:postgres@127.0.0.1:5432/postgres',
-    'postgresql://postgres:postgres@10.0.0.5:54322/postgres',
+    'postgresql://postgres:postgres@10.0.0.5:44322/postgres',
     'not a url',
   ])('refuses %s', (url) => {
     expect(addressProblem(url)).toMatch(/^Refusing to run/);
