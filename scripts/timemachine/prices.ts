@@ -5,7 +5,7 @@
 // day late, and one that arrives five days late (late money: second audit,
 // 2026-10-08).
 
-import { at, daysFrom, weekday, type Day, type Moment } from './model/calendar.ts';
+import { CONFIRM_AT, at, daysFrom, weekday, type Day, type Moment } from './model/calendar.ts';
 import { MARKET_OF, type FundId, type Holiday } from './model/model.ts';
 
 export interface GeneratedClose {
@@ -19,7 +19,7 @@ export const SPLIT = { fund: 'nasdaq100' as FundId, day: '2027-11-15', from: 1n,
 export const LATE_CLOSE = {
   fund: 'nasdaq100' as FundId,
   day: '2027-09-14',
-  publishedAt: '2027-09-15 15:30',
+  publishedAt: '2027-09-15 21:00',
   /** The nightly runs that wait for it. */
   waits: ['2027-09-14'],
 };
@@ -31,7 +31,7 @@ export const LATE_CLOSE = {
 export const LATE_CLOSE_2 = {
   fund: 'dow' as FundId,
   day: '2027-12-31',
-  publishedAt: '2028-01-05 15:30',
+  publishedAt: '2028-01-05 21:00',
   waits: ['2027-12-31', '2028-01-01', '2028-01-02', '2028-01-03', '2028-01-04'],
 };
 /**
@@ -43,7 +43,7 @@ export const LATE_CLOSE_2 = {
 export const LATE_CLOSE_3 = {
   fund: 'nasdaq100' as FundId,
   day: '2027-09-30',
-  publishedAt: '2027-10-04 15:30',
+  publishedAt: '2027-10-04 21:00',
   waits: ['2027-10-01', '2027-10-02', '2027-10-03'],
 };
 /** A day the Nasdaq-100 falls hard: the dollar sale requested the evening before sells everything. */
@@ -106,7 +106,8 @@ export function generateCloses(holidayList: Holiday[], from: Day, through: Day):
       const late = [LATE_CLOSE, LATE_CLOSE_2, LATE_CLOSE_3].find(
         (l) => l.fund === fund && l.day === d,
       );
-      const publishedAt = late ? late.publishedAt : at(d, '15:30');
+      // Confirmed at 9:00 pm Alberta time (the price fix); a late one on a later evening.
+      const publishedAt = late ? late.publishedAt : at(d, CONFIRM_AT);
       out.push({ fund, day: d, close: mills(price), publishedAt });
     }
   }

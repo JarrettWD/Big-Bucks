@@ -144,6 +144,18 @@ Sent right away when Dad adds to or takes from her savings to fix a mistake. The
 - **Body, money taken out:** Dad took {amount} out of your savings. Dad said: "{Dad's note}"
   - Example: A correction · fixes Savings interest on Oct 1 · Dad added $1.24 to your savings. Dad said: "September interest was short"
 
+### A price was fixed (the price fix, Nov 2026)
+
+Sent when Dad fixes a stored close with "Fix a close" and one of her trades or dividends used it. A fix only ever adds (Dad, 2026-11-05). Money first; the units and the working are on the history line, under "How was this calculated?" (§3). {worth} is "worth about {n}¢" (to the nearest cent), "worth less than 1¢", or "worth about {amount}" from $1; for money it's the exact amount ("6¢", "$1.23").
+
+- **Title:** A price was fixed
+- **A buy at a close that was too high:** The {fund} fund's {date} close was really {right close}, not {stored close}, so your buy should have got a little more. We added the missing bit — {worth}. A fix like this can only add, never take away.
+  - Example (#35): The Nasdaq-100 fund's Nov 5 close was really $647.05, not $648.58, so your buy should have got a little more. We added the missing bit — worth about 2¢. A fix like this can only add, never take away.
+- **A sale by amount at a close that was too low:** … so your sale should have used a little less of your fund. We put the extra back — {worth}. A fix like this can only add, never take away.
+- **A sale of everything at a close that was too low:** … so your sale should have paid a little more. We added the missing money and the interest it would have earned — {amount}. A fix like this can only add, never take away. (Without " and the interest it would have earned" when that interest is 0¢.)
+- **A dividend from a close that was too low:** … so your dividend should have been a little more. We added the missing money and the interest it would have earned — {amount}. A fix like this can only add, never take away.
+- Nothing is sent for a trade that was already in her favour.
+
 ### Questions
 
 - **Dad answered**
@@ -344,6 +356,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
     - Nasdaq-100 fund (QQQ): On the news, the Nasdaq-100 is measured in points. Your fund's price is the price of one unit of QQQ, a real fund that follows the Nasdaq-100. When the Nasdaq-100 goes up 1%, QQQ goes up about 1% too. Watch the percent, not the number.
     - TSX fund (XIC): On the news, the TSX (the S&P/TSX Composite) is measured in points. Your fund's price is the price of one unit of XIC, a real fund that follows the TSX. When the TSX goes up 1%, XIC goes up about 1% too. Watch the percent, not the number.
   - The daily change, with its day (Dad, 2026-11-03): ▲ Up {n}% on {date} · ▼ Down {n}% on {date} · ● No change on {date}. Both directions are shown equally clearly, in calm colours, never red.
+  - **The funds switch to a new day together** (the price fix, Dad 2026-11-09): "Last market day" names the newest day all her funds have. A fund whose close for a newer market day is still missing says so under its name: Today's {fund} close comes in later (or "The {fund} close for {date} comes in later" for an earlier day). A fund whose market was closed that day (Canada Day, for example) isn't late and says nothing.
 - **Recent activity** · See all · Nothing here yet. Your story starts with your first deposit!
 - **"Updating…"** in place of any amount: Updating… Your numbers are being double-checked. They'll be back soon.
 - **If Home can't load:** Big Bucks couldn't load your money just now. Please try again in a minute. · Try again
@@ -364,8 +377,13 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 | Fund bought / sold | Bought {fund} · Sold {fund} | {amount} |
 | Split | {fund} split its units · Same value, more units. | |
 | Correction | A correction · fixes {line} on {date} (or: A correction · about your question from {date}), with Dad's note | +/−{amount} |
+| A price was fixed (the price fix) | A correction · fixes {line} on {date}; its working opens under "How was this calculated?" (§3) | +{units} units (a buy's or sale's missing units, at no cost) or +{amount} |
 | Penalty | A penalty (its note opens under "How was this calculated?", §9) | −{amount} |
-| Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund} (Waiting for the market close) | {amount}, or All of it |
+| Waiting | Asked to put money in · Asked to take money out (Waiting for Dad) · Buying {fund} · Selling {fund}, with the close it waits for (below) | {amount}, or All of it |
+
+**A waiting trade names its close** (the price fix, Dad 2026-11-09), the same here and on Buy / Sell's Waiting list, worded by the database (`waiting_words`):
+- Before the close: Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6 (or "Monday's 3:00 pm close (Nov 9)", "tomorrow's …" when it's a later day; the time is 2:00 pm when Toronto is on summer time).
+- After the close, until the close is confirmed at 9:00 pm and the evening's run settles it: Waiting for today's close to be confirmed (Nov 9) · asked Nov 6 ("yesterday's close" if it's late).
 | Declined | Dad said not this time (money in / money out) · Dad says: "{reason}" | {amount} |
 | Expired | A request ran out of time · Nobody answered in time, so it was cancelled. You can ask again any time. | {amount} |
 
@@ -443,9 +461,10 @@ Shown under the box; nothing is checked with the bank until the amount makes sen
 - ⚠️ **Selling a fund worth less than she paid:** Your {fund} is worth {value} right now, but you paid {cost}. Selling now makes a loss of {loss} final. Markets go up and down, and nobody knows what comes next. (**?** Loss)
 - 💡 **Deposit:** Dad needs to say yes first. Give him the cash, and it lands in your savings when he approves.
 - 💡 **Withdrawal:** Withdrawals wait at least 24 hours, so you can sleep on it. Dad can say yes from {Oct 6 at 9:00 am}. Until then, this money is on hold.
-- 💡 **Fund buy:** Your buy happens at {Monday's 3:00 pm close (Nov 2)}, at that day's price. It could be higher or lower than today's, so you'll see how many units you got after the close. (**?** Market close)
-- 💡 **Fund sale, by amount:** Your sale happens at {close}. You'll get {amount}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them.
-- 💡 **Fund sale, all of it:** Your sale happens at {close}. You'll get whatever your units are worth at that day's price.
+- 💡 **Fund buy:** Your buy happens at {Monday's 3:00 pm close (Nov 2)}, at that day's price. It could be higher or lower than today's. The close is confirmed in the evening, by about 9:30 pm, then your units appear. (**?** Market close)
+- 💡 **Fund sale, by amount:** Your sale happens at {close}. You'll get {amount}, as long as your units are still worth that much at the close. If they're worth less, you'll sell all of them. The close is confirmed in the evening, by about 9:30 pm, then the money goes into your savings.
+- 💡 **Fund sale, all of it:** Your sale happens at {close}. You'll get whatever your units are worth at that day's price. The close is confirmed in the evening, by about 9:30 pm, then the money goes into your savings.
+  - (The price fix, Nov 2026: "…so you'll see how many units you got after the close" became the confirmed-close sentence.)
 - 💡 **Fund sale, typing the value she's shown:** That's what all of your {fund} is worth, so this sells all of it. (Then the "all of it" note above, and the summary asks "Sell all of your {fund}?".)
 
 The close reads "today's 2:00 pm close", "tomorrow's 2:00 pm close", "yesterday's …", or "{weekday}'s {time} close ({date})".
@@ -490,8 +509,8 @@ Each line ends with "· asked {date}". With nothing waiting: Nothing waiting rig
 
 - Asked to put in {amount} · Waiting for Dad
 - Asked to take out {amount} · Dad can say yes from {time} (after the 24 hours: Waiting for Dad)
-- Buying {fund}: {amount} · Happens at {close}
-- Selling {fund}: {amount} or all of it · Happens at {close}
+- Buying {fund}: {amount} · Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6
+- Selling {fund}: {amount} or all of it · the same waiting line (see §7, History lines)
 
 ### "Updating…" and errors
 
@@ -1044,3 +1063,23 @@ The last line is added only when "Make it yours" is on for her.
 - **One that doesn't add up (never shown with numbers):** This statement is being checked. It'll be here soon.
 - **Button:** 🖨️ Print or save as PDF
 - **None yet:** Your first statement comes at the end of your first month.
+
+## 14. The price fix (Nov 2026): Dad's screens and alerts
+
+### Fix a close (Dad's screen; from the Dashboard)
+
+- **Title:** Fix a close
+- **Intro:** Use this when a stored close doesn't match the official one (for example Yahoo Finance's daily history for the fund). Anything that used the wrong close is fixed in her favour, never against her: a buy gets its missing units, a sale its missing money with the interest it would have earned. Each girl gets a notice.
+- **Which close:** Fund (Dow Jones (DIA) · Nasdaq-100 (QQQ) · TSX (XIC)) · Day of the close · "Choose the fund and day to see the stored close." · Stored close for {date}: {close} (fetched {moment}) (", not final yet" when it isn't)
+- **The official close:** "Type it exactly as published, for example 647.05." (A typing slip: "That doesn't look like a price. Type numbers only, for example 647.05.") · **Where it comes from:** "For example "Yahoo Finance daily history, checked Nov 21". It goes in the log."
+- **What changes:** {fund}, {date}: {stored} → {official}, then one line per trade or dividend that used it: {name}'s buy: Adds {units} units, worth about 2¢. · {name}'s sale: Puts back {units} units, worth less than 1¢. · {name}'s sale: Adds 6¢ (5¢ missing, plus 1¢ of interest). · {name}'s dividend: Adds 2¢ (1¢ missing, plus 1¢ of interest). · {name}'s buy: No change: this one was in her favour. With none: "No trade or dividend used this close, so only the stored close changes." The same close again: "That's the close already stored."
+- **Button:** Yes, fix the close (Fixing…) · **Done:** Done. The {fund} close for {date} is now {close}, and everything that used it is fixed. It's in your log.
+- **Dad's log:** Fixed the {fund} close for {date}: {old} → {new}. 1 trade corrected; 1 dividend corrected; 1 left as it was: no change (in her favour).
+- **Refusals:** That's the close already stored, and it's already final. · Say where the right close comes from, so the fix explains itself. · The {fund} close for {date} is confirmed at 9:00 pm Alberta time, so wait until then to fix it.
+
+### Alerts (Dashboard)
+
+- **A close still missing** (now from 10:00 pm, after the 9:00 and 9:30 pm tries): There's still no {fund} close for {date}. Its trades and dividends wait until it arrives; savings and GICs carry on. See RUNBOOK, "A close is missing".
+- **The provider disagrees with a stored close** (`price_mismatch`, only while Settings' price check is on): The {fund} close stored for {date} is {stored}, but the provider now says {now}. Check it against the official close; if it's wrong, fix it with "Fix a close". With a **Fix a close** button beside it (also beside a "moved more than 25%" alert), and under every alert list: "A stored close looks wrong? Fix a close".
+- **The nightly function, refusing an early close:** The {fund} close for {date} is confirmed at 9:00 pm Alberta time, so that price isn't final yet. (Reported in the run's result, never shown to the girls.)
+

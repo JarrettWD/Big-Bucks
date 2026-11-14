@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { Q } from './rational.ts';
 import {
   NIGHTLY_RUN,
+  CONFIRM_AT,
+  CONFIRM_RUN,
   addHours,
   addMonths,
   daysInYear,
@@ -74,6 +76,10 @@ describe('calendar', () => {
   });
   it('the nightly run is after every close', () => {
     expect(NIGHTLY_RUN > '15:00').toBe(true);
+  });
+  it('the evening run is after the closes are confirmed (the price fix)', () => {
+    expect(CONFIRM_RUN > CONFIRM_AT).toBe(true);
+    expect(CONFIRM_AT).toBe('21:00');
   });
 });
 
@@ -181,15 +187,16 @@ describe('stock funds', () => {
     m.advanceTo('2027-03-03 16:00');
     expect(m.postings.find((p) => p.kind === 'sell')!.cents).toBe(10239n); // paid rounded up
   });
-  it('a day’s close is known from the nightly run (or later, if it arrives late)', () => {
+  it('a day’s close is known from the evening run (or later, if it arrives late)', () => {
     const m = new Model('2027-03-01 09:00', holidays);
-    m.addClose('dow', '2027-03-01', '420', '2027-03-01 15:30');
-    m.addClose('dow', '2027-03-02', '430', '2027-03-02 15:30');
-    m.addClose('dow', '2027-03-03', '440', '2027-03-04 10:00'); // a late close
-    expect(m.knownClose('dow', '2027-03-02 16:00')?.toFixed(0)).toBe('420');
-    expect(m.knownClose('dow', `2027-03-02 ${NIGHTLY_RUN}`)?.toFixed(0)).toBe('430');
-    expect(m.knownClose('dow', '2027-03-04 09:00')?.toFixed(0)).toBe('430');
-    expect(m.knownClose('dow', '2027-03-04 10:00')?.toFixed(0)).toBe('440');
+    m.addClose('dow', '2027-03-01', '420', '2027-03-01 21:00');
+    m.addClose('dow', '2027-03-02', '430', '2027-03-02 21:00');
+    m.addClose('dow', '2027-03-03', '440', '2027-03-04 22:00'); // a late close
+    expect(m.knownClose('dow', `2027-03-02 ${NIGHTLY_RUN}`)?.toFixed(0)).toBe('420');
+    expect(m.knownClose('dow', '2027-03-02 21:00')?.toFixed(0)).toBe('420');
+    expect(m.knownClose('dow', `2027-03-02 ${CONFIRM_RUN}`)?.toFixed(0)).toBe('430');
+    expect(m.knownClose('dow', '2027-03-04 21:30')?.toFixed(0)).toBe('430');
+    expect(m.knownClose('dow', '2027-03-04 22:00')?.toFixed(0)).toBe('440');
   });
   it('typing the shown value sells all; more is refused (Dad, stage 7 2b review)', () => {
     const m = funded('2027-03-01 09:00', 20000n);

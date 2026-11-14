@@ -6,8 +6,9 @@
 //    random values on every run.
 // 3. Walks about 3 months, ending yesterday evening, with the time machine's
 //    engine: its price generator and clock, every action through the real kid
-//    and parent functions, then each day at 4:30 pm the closes, run_daily and
-//    reconcile. It stops if reconcile ever finds a problem.
+//    and parent functions, then each day run_daily at 4:30 pm for everything that needs
+//    no price, and at 9:30 pm the day's confirmed closes (the price fix), run_daily again
+//    and reconcile. It stops if reconcile ever finds a problem.
 // 4. Hands the clock back to real time, sets up the parent's authenticator,
 //    points the app at the local Supabase (.env.local), and prints the logins.
 //    They're also saved to .demo-logins.local (gitignored) for `npm run demo:code`
@@ -18,6 +19,7 @@ import { randomBytes, randomInt } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import type { LocalDb, Who } from '../timemachine/db.ts';
 import {
+  CONFIRM_RUN,
   NIGHTLY_RUN,
   addDays,
   addMonths,
@@ -534,8 +536,15 @@ async function main(): Promise<void> {
     };
     let reconciled = 0;
     for (const day of daysFrom(S, yesterday)) {
-      const runAt = at(day, NIGHTLY_RUN);
-      await runSteps(day, runAt, null);
+      // 4:30 pm: everything that needs no price.
+      const coreAt = at(day, NIGHTLY_RUN);
+      await runSteps(day, coreAt, null);
+      await db.setClock(coreAt);
+      const core = await db.call({ role: 'service_role' }, 'select public.run_daily($1)', [day]);
+      if (!core.ok) throw new Error(`run_daily(${day}) at 4:30 pm failed: ${core.error}`);
+      // 9:30 pm: the day's confirmed closes, the fund work and the check.
+      const runAt = at(day, CONFIRM_RUN);
+      await runSteps(day, runAt, coreAt);
       await db.setClock(runAt);
       await publishUpTo(runAt);
       const r = await nightly(db, day);

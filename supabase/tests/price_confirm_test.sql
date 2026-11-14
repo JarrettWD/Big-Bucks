@@ -92,8 +92,11 @@ select j::public.job_name, case when j = 'interest' then date '2027-03-10' else 
 insert into public.fund_prices (fund_id, price_date, close)
 select m.fund_id, m.price_date, 100 from public.missing_closes(date '2027-03-10') m;
 select tests.clock('2027-03-11 17:00');
+-- GitHub's backup failing isn't the nightly function's to fix: it has its own alert.
+insert into public.job_runs (job, run_for_date, status, finished_at, details)
+values ('backup', '2027-03-11', 'failed', public.app_now(), '{"error": "test"}');
 select is(public.nightly_kick(), 'waiting: today''s closes are confirmed at 9:00 pm',
-  'between the 4:30 pm run and 9:00 pm, no call just to wait for today''s closes');
+  'between the 4:30 pm run and 9:00 pm, no call just to wait for today''s closes (a failed backup doesn''t change that)');
 select is(tests.queued(), 0, '...nothing queued');
 select tests.clock('2027-03-11 21:00');
 select is(public.nightly_kick(), 'queued', 'at 9:00 pm, a call for the closes');

@@ -16,7 +16,7 @@ Step-by-step jobs for Dad: setting up production (Stage 4) and the backups (Stag
 Migrations, function deploys and Pages deploys happen only in the quiet times, always with a dry run first (Dad, 2026-11-05):
 
 - **Not 7:00–11:45 am:** the morning timer starts the Backup and the Health check.
-- **Not from 4:00 pm until the evening's nightly run is done:** about 5:00 pm today. From the price fix (planned Nov 21, 2026), closes are confirmed at 9:00 pm, so the nightly finishes about **9:30 pm**: no changes from 4:00 pm until then.
+- **Not from 4:00 pm until the evening's nightly run is done:** about 5:00 pm before the price fix. From the price fix, closes are confirmed at 9:00 pm, so the nightly finishes about **9:30 pm**: no changes from 4:00 pm until then.
 - To see that the evening is done: ask Buck to check (read-only), or in Supabase → **SQL Editor** run `select public.nightly_status(public.app_today()) ->> 'done';` (read-only): it must answer `true`. (The Dashboard only shows a line when the nightly is behind.)
 
 ## Production setup (Stage 4)
@@ -160,13 +160,14 @@ Stage 4 is done when production has a few nights of real closes for DIA, QQQ and
 ## How the nightly run works
 
 - From 4:00 to 10:30 pm Alberta time, every 30 minutes, the database's timer (pg_cron) wakes up. Before 4:30 pm it does nothing. From 4:30 pm, until tonight's work is finished, it calls the **nightly** Edge Function, which:
-  1. fetches each fund's missing closes (one Alpha Vantage call per fund covers every missing day; at most 20 calls a day);
+  1. fetches each fund's missing closes (one Alpha Vantage call per fund covers every missing day; at most 20 calls a day). **Since the price fix, a day's close is ready only from 9:00 pm Alberta time** (before then the provider can still hold a price from a few minutes before the close, as on Nov 5, 2026): the database doesn't ask for it earlier and refuses it if offered. It also keeps what the provider said for the last 15 days (`price_observations`) and, while Settings' price check is on, compares it with the stored closes;
   2. once a week, checks each fund for splits;
-  3. runs the daily jobs through today, catching up any missed days;
-  4. reconciles every day not yet checked;
+  3. runs the daily jobs through today, catching up any missed days, 5 days per database call (each call has 8 seconds on production), calling again until done or out of time;
+  4. reconciles every day not yet checked, in the same steps (today's only once tonight's work is done);
   5. last, in its own call, checks badges (stage 10). It never touches money, and its failure never stops or changes steps 1 to 4.
-- A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on.
-- At 9:00 pm, a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
+- So a normal evening has two calls: **4:30 pm** (everything that needs no price: interest, GICs, expiry, the monthly posting, rate notices) and **9:00 pm** (the confirmed closes, trades and dividends, the check), finishing by about 9:30 pm. Between them the timer answers "waiting: today's closes are confirmed at 9:00 pm" and calls nothing, unless an earlier close is missing or a nightly job failed.
+- A close is never guessed. If one isn't published yet, the next wake-up tries again. Trades and dividends for that fund wait; savings interest and GICs carry on. A long gap (a paused project) catches up over one or more evenings by itself.
+- At **10:00 pm** (after the 9:00 and 9:30 pm tries), a close that still hasn't come raises an alert (one per fund and day), which the next morning's health check reports.
 - Every morning, once the backup is in (about 7:15 am Alberta time, see "The daily backup"), **Health check** (in the private big-bucks-backups repo) asks production how it is. Any open alert, a job falling behind, or a database past about 400 MB fails the run, and GitHub emails you. It's also the keep-alive: a Free project with no activity for a week pauses.
 
 ## A badge alert ("Badges couldn't be checked for …")
@@ -186,7 +187,21 @@ The Dashboard shows "There's still no Dow Jones close for …", and the morning'
    - **"Invalid API call"**: the key or the symbol is wrong. Check `ALPHAVANTAGE_API_KEY` (**Edge Functions** → **Secrets**), then stop and ask.
    - **No rows at all for today**: the timer isn't calling the function. Check step 6.4 and step 7, then stop and ask.
 3. **The market really was closed that day** (a day of mourning, an outage): the screen for recording a closure isn't built yet (later in Stage 4). Stop and ask.
-4. Never type a close in yourself from memory or another site's rounded number. A wrong close is fixed only with the exchange's real number, through the fix-a-close screen (later in Stage 4).
+4. Never type a close in yourself from memory or another site's rounded number. A wrong close is fixed only with the exchange's real number, through **Fix a close** (below).
+
+## A stored close is wrong ("Fix a close")
+
+The Dashboard shows "The {fund} close stored for {date} is …, but the provider now says …" (the price check), or you found a difference yourself.
+
+1. Look up the official close: Yahoo Finance → the fund's symbol (DIA, QQQ, XIC.TO) → **Historical Data** → the day's **Close** (not "Adj Close").
+2. Parent Dashboard → **Fix a close** (beside the alert, or under the alerts). Choose the fund and the day: the screen shows the stored close and when it was fetched.
+3. Type the official close and where it comes from ("Yahoo Finance daily history, checked Nov 21"). The screen lists every trade and dividend that used that close and what each girl gets: missing units for a buy, missing money with its interest for a sale or dividend, or "No change: this one was in her favour". Nothing is ever taken away.
+4. **Yes, fix the close.** It's one step: the adjustments, her notices, your log line and the corrected close, all together. It can't be done twice. Only after 9:00 pm on the close's own day.
+5. Then **acknowledge** the alert on the Dashboard.
+
+## The price check (Settings)
+
+`price_mismatch_check` compares the provider's values with the stored closes every evening and alerts you about a difference of 1¢ or more. It starts **off**; switch it on once the known wrong closes are fixed (the production-day steps in the price-fix plan), so it doesn't alert on history you already know about.
 
 ## The project paused
 

@@ -47,6 +47,8 @@ export interface RateRow {
 
 export interface SettingsData {
   today: string;
+  /** The price check (the price fix): read separately, by parent_price_check. */
+  price_check: SettingCard;
   today_text: string;
   expiry: ExpirySettings;
   rate_from: string;
@@ -239,6 +241,17 @@ export const TEXT = {
   featuresExplain:
     'Try a new feature on a test account first. “Everyone” turns it on for the girls too.',
   featureHeading: (name: string) => `Switch ${name}?`,
+  // The price check (the price fix, Nov 2026).
+  priceCheckTitle: 'The price check',
+  priceCheckExplain:
+    'Every evening, compares what the price provider says for the last few days with the closes stored, and puts an alert on the Dashboard when one differs by 1¢ or more. It never changes money: you fix a wrong close with "Fix a close". Turn it on once the known wrong closes are fixed.',
+  priceCheckLabel: 'Price check',
+  priceCheckHeading: 'Switch the price check?',
+  priceCheckChoices: [
+    { value: 'on', label: 'On' },
+    { value: 'off', label: 'Off' },
+  ] as { value: string; label: string }[],
+  yesPriceCheck: (v: string) => (v === 'on' ? 'Yes, turn it on' : 'Yes, turn it off'),
   changeFeature: (name: string) => `Change the ${name} switch`,
   switchLabel: 'Who has it',
   yesSwitch: (label: string) => `Yes, switch to ${label.toLowerCase()}`,

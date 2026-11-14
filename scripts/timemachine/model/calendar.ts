@@ -170,3 +170,10 @@ export function torontoToEdmonton(d: Day, hhmm: string): Moment {
 
 /** The nightly run, in Alberta time, all year: after the latest close (3:00 pm in winter). */
 export const NIGHTLY_RUN = '16:30';
+/**
+ * The price fix (Dad, 2026-11-05): a day's close is confirmed at 9:00 pm Alberta time, and the
+ * evening run after it fetches the closes and does the fund work (settling trades, dividends).
+ * The 4:30 pm run (NIGHTLY_RUN) does everything that needs no price.
+ */
+export const CONFIRM_AT = '21:00';
+export const CONFIRM_RUN = '21:30';

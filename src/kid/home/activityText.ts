@@ -150,7 +150,7 @@ export function describeActivity(r: ActivityRow): ActivityLine {
         detail: closeFix ? null : r.note,
         amount:
           closeFix && c === 0 && r.units !== null
-            ? `+${String(r.units)} units`
+            ? `+${Number(r.units).toFixed(8)} units` // 8 places, never 3.7e-7
             : formatCents(r.amount_cents ?? 0, { sign: true }),
         tone: c >= 0 ? 'in' : 'out',
       };

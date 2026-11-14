@@ -26,8 +26,17 @@ import { formatCents } from '../../lib/money';
 import './Settings.css';
 
 async function fetchSettings(): Promise<{ data: SettingsData | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('parent_settings');
-  return error ? { data: null, error: error.message } : { data: data as SettingsData, error: null };
+  const [main, check] = await Promise.all([
+    supabase.rpc('parent_settings'),
+    supabase.rpc('parent_price_check'),
+  ]);
+  const error = main.error ?? check.error;
+  return error
+    ? { data: null, error: error.message }
+    : {
+        data: { ...(main.data as SettingsData), price_check: check.data as SettingCard },
+        error: null,
+      };
 }
 
 export default function Settings() {
@@ -347,6 +356,24 @@ export default function Settings() {
               )}
             </div>
           );
+        })}
+      </section>
+
+      {/* The price check (the price fix) ----------------------------------------------- */}
+      <section className="set__card" aria-labelledby="set-price-check">
+        <h2 id="set-price-check">{TEXT.priceCheckTitle}</h2>
+        <p className="set__muted">{TEXT.priceCheckExplain}</p>
+        {settingRow('price_check', TEXT.priceCheckLabel, data.price_check, {
+          settingKey: 'price_mismatch_check',
+          heading: TEXT.priceCheckHeading,
+          input: {
+            kind: 'choice',
+            label: TEXT.priceCheckLabel,
+            initial: data.price_check.value,
+            choices: TEXT.priceCheckChoices,
+            parse: (v) => ({ value: v }),
+          },
+          yes: (v) => TEXT.yesPriceCheck(v),
         })}
       </section>
 

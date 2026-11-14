@@ -8,6 +8,8 @@
 
 import { Q, sumQ } from './rational.ts';
 import {
+  CONFIRM_AT,
+  CONFIRM_RUN,
   NIGHTLY_RUN,
   type Day,
   type Moment,
@@ -414,15 +416,15 @@ export class Model {
   }
 
   /**
-   * The latest close the database knows at moment t: a day's close arrives with the
-   * nightly run (NIGHTLY_RUN), or later when it's published late. This is the price
-   * a request is checked against (a sale by amount), not the one it settles at.
+   * The latest close the database knows at moment t: since the price fix a day's close
+   * arrives with the evening run (CONFIRM_RUN), or later when it's published late. This is
+   * the price a request is checked against (a sale by amount), not the one it settles at.
    */
   knownClose(fund: FundId, t: Moment): Q | null {
     for (let x = dayOf(t), i = 0; i < 30; x = addDays(x, -1), i++) {
       const c = this.closes.get(`${fund}|${x}`);
       if (!c) continue;
-      const arrives = c.publishedAt > at(x, NIGHTLY_RUN) ? c.publishedAt : at(x, NIGHTLY_RUN);
+      const arrives = c.publishedAt > at(x, CONFIRM_RUN) ? c.publishedAt : at(x, CONFIRM_RUN);
       if (arrives <= t) return c.close;
     }
     return null;
@@ -538,15 +540,30 @@ export class Model {
     return d;
   }
 
-  private laterDay(a: Day | null, b: Day): Day {
+  /**
+   * The first run (as a moment) at or after moment m that can do fund work. Since the price fix
+   * each evening has two runs: 4:30 pm (NIGHTLY_RUN) and 9:30 pm (CONFIRM_RUN). A day's close is
+   * ready at 9:00 pm, so its own work is at 9:30 pm; after a gap, the next 4:30 pm run does the
+   * earlier days' work, whose closes are long ready.
+   */
+  private fundRunOf(m: Moment): Moment {
+    for (let d = dayOf(m); ; d = addDays(d, 1)) {
+      if (!this.runsOn(d)) continue;
+      if (at(d, NIGHTLY_RUN) >= m) return at(d, NIGHTLY_RUN);
+      if (at(d, CONFIRM_RUN) >= m) return at(d, CONFIRM_RUN);
+    }
+  }
+
+  private laterDay(a: Moment | null, b: Moment): Moment {
     return a !== null && a > b ? a : b;
   }
 
-  /** The run at which fund work for day d has a close it needs (never before d's own run). */
-  private needRun(fund: FundId, closeDay: Day, d: Day): Day {
+  /** The run at which fund work for day d has a close it needs (never before that close is ready). */
+  private needRun(fund: FundId, closeDay: Day, d: Day): Moment {
     const c = this.closes.get(`${fund}|${closeDay}`);
     if (!c) throw new Error(`reference model has no close for ${fund} on ${closeDay}`);
-    return this.runOf(c.publishedAt > at(d, NIGHTLY_RUN) ? c.publishedAt : at(d, NIGHTLY_RUN));
+    const ready = at(d, CONFIRM_AT);
+    return this.fundRunOf(c.publishedAt > ready ? c.publishedAt : ready);
   }
 
   /** The trades settling at day d's close. */
@@ -580,10 +597,10 @@ export class Model {
   }
 
   /** The run that finishes all of day d's fund work (null before the first day). */
-  private doneRun(d: Day): Day | null {
-    let done: Day | null = null;
+  private doneRun(d: Day): Moment | null {
+    let done: Moment | null = null;
     for (let x = this.firstDay; x <= d; x = addDays(x, 1)) {
-      let run = this.laterDay(done, this.runOf(at(x, NIGHTLY_RUN)));
+      let run = this.laterDay(done, this.fundRunOf(at(x, CONFIRM_AT)));
       for (const r of this.tradesOn(x)) run = this.laterDay(run, this.needRun(r.fund!, x, x));
       for (const v of this.dividendsOn(x))
         run = this.laterDay(run, this.needRun(v.fund, v.last, x));
@@ -593,21 +610,26 @@ export class Model {
   }
 
   /** The run that settles a trade at day d's close in this fund. */
-  private settleRun(fund: FundId, d: Day): Day {
+  private settleRun(fund: FundId, d: Day): Moment {
     return this.laterDay(this.doneRun(addDays(d, -1)), this.needRun(fund, d, d));
   }
 
   /** The run that pays fund f's dividend on day d: after all of d's settlements. */
-  private dividendRun(fund: FundId, last: Day, d: Day): Day {
-    let run = this.laterDay(this.doneRun(addDays(d, -1)), this.runOf(at(d, NIGHTLY_RUN)));
+  private dividendRun(fund: FundId, last: Day, d: Day): Moment {
+    let run = this.laterDay(this.doneRun(addDays(d, -1)), this.fundRunOf(at(d, CONFIRM_AT)));
     for (const r of this.tradesOn(d)) run = this.laterDay(run, this.needRun(r.fund!, d, d));
     return this.laterDay(run, this.needRun(fund, last, d));
   }
 
   /** The day money posted by `run` for day d counts from in savings: d itself, or the first
-   *  day whose interest wasn't worked out yet when that run posted it. */
-  private savingsDay(d: Day, run: Day): Day {
-    let prev = addDays(run, -1);
+   *  day whose interest wasn't worked out yet when that run posted it. At a 9:30 pm run, that
+   *  day's 4:30 pm run has already worked out the day before's interest, so late money counts
+   *  from the run's own day. At a 4:30 pm run, the fund work goes first, while interest is only
+   *  worked out through the day before the last run (as before the price fix). */
+  private savingsDay(d: Day, run: Moment): Day {
+    const r = dayOf(run);
+    if (run === at(r, CONFIRM_RUN)) return r > d ? r : d;
+    let prev = addDays(r, -1);
     while (!this.runsOn(prev)) prev = addDays(prev, -1);
     return prev > d ? prev : d;
   }
@@ -637,9 +659,9 @@ export class Model {
 
   /** Money into savings for day `from`'s fund work, posted by `run`: it counts from day
    *  `day`, with the interest it missed if that's later, and is usable once posted. */
-  private creditLate(kid: string, cents: bigint, from: Day, day: Day, run: Day): void {
+  private creditLate(kid: string, cents: bigint, from: Day, day: Day, run: Moment): void {
     const k = this.kid(kid);
-    const posted = at(run, NIGHTLY_RUN);
+    const posted = run;
     const credit = () => {
       let total = cents;
       const missed = this.lateInterest(cents, from, day);
@@ -737,7 +759,7 @@ export class Model {
           if (cents <= 0n) continue;
           const kidId = k.id;
           this.scheduled.push({
-            at: at(d, NIGHTLY_RUN),
+            at: at(d, CONFIRM_RUN),
             run: () => {
               const run = this.dividendRun(f, last, d);
               const day = this.savingsDay(d, run);

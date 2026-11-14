@@ -145,6 +145,19 @@ describe('history lines', () => {
     expect(line.tone).toBe('in');
   });
 
+  it('a tiny unit amount still shows 8 decimal places', () => {
+    expect(
+      describeActivity(
+        row({
+          kind: 'correction',
+          item_key: 'fix:close:dow:2027-03-10:7',
+          amount_cents: 0,
+          units: 3.7e-7,
+        }),
+      ).amount,
+    ).toBe('+0.00000037 units');
+  });
+
   it('a "Fix a close" money line shows its cents', () => {
     expect(
       describeActivity(

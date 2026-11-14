@@ -4,7 +4,10 @@
 // 1. Resets the local database (made-up data only; production is never touched).
 // 2. Creates a parent and two made-up kids (A regular, B a test account).
 // 3. Walks the clock a day at a time from Jul 1, 2027 to Jul 1, 2028: the scripted
-//    actions, then at 4:30 pm (NIGHTLY_RUN) the day's closes, run_daily and reconcile.
+//    actions; at 4:30 pm (NIGHTLY_RUN) run_daily for everything that needs no price, with
+//    each fund's pre-close "snapshot" offered and refused (the price fix, Nov 2026); at
+//    9:30 pm (CONFIRM_RUN) the day's confirmed closes, run_daily again for the fund work,
+//    and reconcile. run_daily and reconcile go in bounded steps, as the nightly function does.
 // 4. Compares what the screens would show (nearest cent) every day, then every
 //    posted amount (rounded up), every accrual and the graph history.
 // 5. Injects deliberate faults in transactions that are rolled back, and checks
@@ -17,6 +20,7 @@ import { writeFileSync } from 'node:fs';
 import { LocalDb, type Who } from './db.ts';
 import { Q } from './model/rational.ts';
 import {
+  CONFIRM_RUN,
   NIGHTLY_RUN,
   addDays,
   addMonths,
@@ -146,6 +150,11 @@ async function main(): Promise<void> {
       }
     };
     await publishUpTo(START);
+    // The price fix's safety net on for the whole year: a stored close the provider later
+    // disagrees with would be an alert (and "No alerts were raised" would fail).
+    await db.q(
+      `insert into public.settings (key, value, effective_date) values ('price_mismatch_check', 'on', '2027-01-01')`,
+    );
     await db.q(
       `insert into public.fund_splits (fund_id, split_date, ratio_from, ratio_to, source) values ($1, $2, $3, $4, 'time machine')`,
       [SPLIT.fund, SPLIT.day, Number(SPLIT.from), Number(SPLIT.to)],
@@ -486,35 +495,115 @@ async function main(): Promise<void> {
 
     const missed = (d: Day) => d >= MISSED.from && d <= MISSED.to;
 
+    // run_daily in bounded steps (5 days a call), as the nightly function calls it since the
+    // price fix; the last call's answer, and how many calls it took.
+    let boundedCalls = 0;
+    let longestCatchUp = 0;
+    const runDaily = async (day: Day) => {
+      let res: { status: string; completed_through: string | null; more: boolean };
+      let n = 0;
+      do {
+        const r = await db.call(SERVER, 'select public.run_daily($1, 5)', [day]);
+        if (!r.ok) throw new Error(`run_daily(${day}, 5) failed: ${r.error}`);
+        res = r.value as typeof res;
+        n++;
+        if (n > 100) throw new Error(`run_daily(${day}, 5) never finished`);
+      } while (res.more);
+      boundedCalls += n;
+      longestCatchUp = Math.max(longestCatchUp, n);
+      return res;
+    };
+
+    // The price fix: the 4:30 pm fetch can hold a price from a few minutes before the close.
+    // Each fund's snapshot (a little above the close for the Dow and TSX, below for the
+    // Nasdaq-100) is offered at 4:30 pm and must be refused; the provider log keeps it.
+    let snapshotsRefused = 0;
+    const snapshotsStored: string[] = [];
+    const snapshotOf = (fund: FundId, close: string) => {
+      const [w, f = ''] = close.split('.');
+      const mills = BigInt(w) * 1000n + BigInt((f + '000').slice(0, 3));
+      const v = (mills * (fund === 'nasdaq100' ? 9950n : 10040n)) / 10000n;
+      return `${v / 1000n}.${(v % 1000n).toString().padStart(3, '0')}`;
+    };
+    const offerSnapshots = async (day: Day) => {
+      for (const c of closes.filter((x) => x.day === day && x.publishedAt.startsWith(day))) {
+        const snap = snapshotOf(c.fund, c.close);
+        const o = await db.call(SERVER, 'select public.record_price_observations($1, $2::jsonb)', [
+          c.fund,
+          JSON.stringify([{ date: day, close: snap }]),
+        ]);
+        if (!o.ok) throw new Error(`record_price_observations failed: ${o.error}`);
+        const r = await db.call(SERVER, 'select public.store_close($1, $2, $3)', [
+          c.fund,
+          day,
+          snap,
+        ]);
+        if (!r.ok && r.error.includes('confirmed at 9:00 pm')) snapshotsRefused++;
+        else snapshotsStored.push(`${day} ${c.fund}: ${r.ok ? JSON.stringify(r.value) : r.error}`);
+      }
+    };
+    const reconcileDay = async (d: Day) => {
+      const rc = await db.call(SERVER, 'select public.reconcile($1)', [d]);
+      if (!rc.ok) throw new Error(`reconcile(${d}) failed: ${rc.error}`);
+      reconcileRuns++;
+      const v = rc.value as { status: string; problems: unknown[] };
+      if (v.status !== 'ok') {
+        reconcileProblems++;
+        if (reconcileProblemList.length < 8)
+          reconcileProblemList.push(`${d}: ${JSON.stringify(v.problems).slice(0, 600)}`);
+      }
+    };
+
+    // What the provider says once the close is confirmed, then the comparison.
+    let mismatchRuns = 0;
+    const observeConfirmed = async (day: Day) => {
+      for (const c of closes.filter((x) => x.day === day && published.has(`${x.fund}|${x.day}`))) {
+        const o = await db.call(SERVER, 'select public.record_price_observations($1, $2::jsonb)', [
+          c.fund,
+          JSON.stringify([{ date: day, close: c.close }]),
+        ]);
+        if (!o.ok) throw new Error(`record_price_observations failed: ${o.error}`);
+      }
+      const m = await db.call(SERVER, 'select public.check_price_mismatches()', []);
+      if (!m.ok) throw new Error(`check_price_mismatches failed: ${m.error}`);
+      mismatchRuns++;
+    };
+
     // The walk ----------------------------------------------------------------
     console.log('Walking the year…');
     for (const day of daysFrom(dayOf(START), END_DAY)) {
       const steps = STEPS.filter((s) => dayOf(s.at) === day).sort((a, b) => (a.at < b.at ? -1 : 1));
       for (const s of steps.filter((x) => x.at < at(day, NIGHTLY_RUN))) await doStep(s);
 
-      const runAt = at(day, NIGHTLY_RUN);
+      // 4:30 pm: everything that needs no price. Today's closes aren't confirmed yet.
+      const coreAt = at(day, NIGHTLY_RUN);
+      await db.setClock(coreAt);
+      model.advanceTo(coreAt);
+      if (!missed(day)) {
+        await offerSnapshots(day);
+        await runDaily(day);
+        // The earlier days are checked now; today's waits for tonight's work (reconcile_through).
+        const from = lastReconciled ? addDays(lastReconciled, 1) : day;
+        for (const d of daysFrom(from, addDays(day, -1))) await reconcileDay(d);
+        if (from <= addDays(day, -1)) lastReconciled = addDays(day, -1);
+      }
+      for (const s of steps.filter((x) => x.at >= coreAt && x.at < at(day, CONFIRM_RUN)))
+        await doStep(s);
+
+      // 9:30 pm: the confirmed closes and the fund work, then the check.
+      const runAt = at(day, CONFIRM_RUN);
       await db.setClock(runAt);
       await publishUpTo(runAt);
       model.advanceTo(runAt);
       if (!missed(day)) {
-        const r = await db.call(SERVER, 'select public.run_daily($1)', [day]);
-        if (!r.ok) throw new Error(`run_daily(${day}) failed: ${r.error}`);
-        const res = r.value as { status: string; completed_through: string | null };
+        await observeConfirmed(day);
+        const res = await runDaily(day);
         const complete = res.status === 'ok' && res.completed_through === day;
         if (!complete) runsWaiting.push(`${day}: ${res.status}`);
-        // Reconcile every day not yet checked (after the missed week, each missed day too).
+        // Reconcile every day not yet checked (after the missed week, each missed day too),
+        // in bounded steps.
         const from = lastReconciled ? addDays(lastReconciled, 1) : day;
-        for (const d of daysFrom(from, day)) {
-          const rc = await db.call(SERVER, 'select public.reconcile($1)', [d]);
-          if (!rc.ok) throw new Error(`reconcile(${d}) failed: ${rc.error}`);
-          reconcileRuns++;
-          const v = rc.value as { status: string; problems: unknown[] };
-          if (v.status !== 'ok') {
-            reconcileProblems++;
-            if (reconcileProblemList.length < 8)
-              reconcileProblemList.push(`${d}: ${JSON.stringify(v.problems).slice(0, 600)}`);
-          }
-        }
+        for (const d of daysFrom(from, day)) await reconcileDay(d);
         lastReconciled = day;
         // Badges last, in their own call, as the nightly function does.
         const bc = await db.call(SERVER, 'select public.check_badges_through($1)', [day]);
@@ -688,6 +777,18 @@ async function main(): Promise<void> {
       `select count(*)::text as n from public.alerts where resolved_at is null`,
     );
     record('No alerts were raised', openAlerts[0].n === '0', `${openAlerts[0].n} open alerts`);
+    record(
+      'A close before 9:00 pm is never stored (the price fix)',
+      snapshotsStored.length === 0 && snapshotsRefused > 0,
+      snapshotsStored.length === 0
+        ? `${snapshotsRefused} pre-close snapshots offered at 4:30 pm, every one refused; every trade settled at its confirmed close`
+        : snapshotsStored.slice(0, 5).join('; '),
+    );
+    record(
+      'Catch-up runs in bounded steps (the price fix)',
+      longestCatchUp > 1,
+      `${boundedCalls} run_daily calls of at most 5 days; the longest catch-up took ${longestCatchUp} calls; ${mismatchRuns} provider checks, no mismatch`,
+    );
     record(
       'Missed week and late close caught up',
       runsWaiting.join('; ') === expectedWaiting.join('; '),

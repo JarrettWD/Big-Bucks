@@ -265,8 +265,14 @@ select is(md5(replace(
   end if;$old$)),
   '758c6bc96c34b8c623881ebf65e2cf92', 'approve_request_unlogged: only the expiry check changed');
 
-select is(md5(replace(replace(
+select is(md5(replace(replace(replace(
   (select prosrc from pg_proc where proname = 'set_setting_unlogged'),
+  -- The price fix (Nov 2026) added the price check's key on purpose; taken out here too.
+  $new$  elsif v_key = 'price_mismatch_check' then
+    if v_value not in ('on', 'off') then
+      raise exception 'The price check is on or off.';
+    end if;
+$new$, ''),
   $new$  elsif v_key = 'request_expiry_days' then
     if v_value !~ '^[1-9]\d?$' or v_value::integer not between 3 and 30 then
       raise exception 'Request expiry is a whole number of days from 3 to 30.';
@@ -278,7 +284,7 @@ select is(md5(replace(replace(
   end if;
   return v_id;$new$,
   $old$  return v_id;$old$)),
-  'c9802e47266c30251f14d12ed1de6d23', 'set_setting_unlogged: only the new key and its notice were added');
+  'c9802e47266c30251f14d12ed1de6d23', 'set_setting_unlogged: only the new keys (request expiry, then the price check) and the expiry notice were added');
 
 -- 8. The nightly check: nothing waits past its expiry ---------------------------------------------
 

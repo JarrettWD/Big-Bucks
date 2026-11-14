@@ -11,7 +11,7 @@
 -- then the stored close is corrected. Her notice leads with money. Known answers include the
 -- three real trades on production (#35, #17, #37), rebuilt here with their own closes.
 begin;
-select plan(48);
+select plan(52);
 
 create schema tests;
 create function tests.clock(p_at text) returns void language sql as $$
@@ -259,6 +259,16 @@ select is(tests.recon('a'), '[]'::jsonb, 'reconcile: a buy fixed with missing un
 select is(tests.recon('d'), '[]'::jsonb, '...a sale by amount fixed with units put back');
 select is(tests.recon('e'), '[]'::jsonb, '...a sale of everything fixed with missing money');
 select is(tests.recon('f'), '[]'::jsonb, '...a trade left as it was');
+
+-- 9. Dad turns the price check on in Settings -------------------------------------------------------
+
+select is(public.parent_price_check() ->> 'value', 'off', 'the price check starts off');
+select is(tests.err($$select public.set_setting('price_mismatch_check', 'maybe')$$), 'The price check is on or off.',
+  'it''s on or off');
+select public.set_setting('price_mismatch_check', 'on', null, 'Known wrong closes fixed');
+select is(public.setting_on('price_mismatch_check', public.app_today()), 'on', 'Dad turns it on, from today');
+select is((select summary from public.parent_actions where action = 'set_setting' order by id desc limit 1),
+  'Price check turned on from ' || public.fmt_date(public.app_today()) || '.', '...logged in his words');
 
 select * from finish();
 rollback;
