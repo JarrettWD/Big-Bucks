@@ -32,8 +32,8 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 **Phase 1, live: savings and GICs**
 
 - [ ] Savings interest posts on the 1st and matches “How was this calculated?” (checked by hand once)
-- [ ] A 1-month GIC matures on the right day with the right interest, rounded up
-- [ ] The maturity banner appears; with no choice for 7 days, the money moves to savings
+- [x] A 1-month GIC matures on the right day with the right interest, rounded up (2026-11-22: the test kid's GIC #4, $30.00 at 2.5% opened Oct 15, matured Nov 15 at the 4:30 pm run with $0.07 = $30.00 × 2.5% × 1/12 = $0.0625 rounded up, posting `gic_interest:4`; checked read-only)
+- [x] The maturity banner appears; with no choice for 7 days, the money moves to savings (2026-11-22: Home showed "Choose what happens next by Nov 21" from Nov 15 (Dad); no choice made; the Nov 22 4:30 pm run on nightly v5 moved the $30.07 to savings, `gic_release:4` and `gic_release:4:savings` dated Nov 22, one "Your GIC money is in savings" notice, reconcile ok; the waiting $30.07 earned the savings rate from Nov 15; checked read-only)
 - [ ] Breaking a GIC early shows the warning, returns the principal and pays no interest
 
 **Phase 1, live: stock funds**
