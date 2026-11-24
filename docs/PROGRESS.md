@@ -243,6 +243,7 @@ Saturday has no closes, so the evening is short: "Nightly done?" should read tru
 The same way the 9:00 pm box was proven on Oct 29, an hour later. It needs Dad's OK for one timer change inside the evening window (the test itself).
 
 1. **Before 4:00 pm:** Supabase → **Integrations** → **Cron** → `big-bucks-nightly` → **off**. (No test-kid trade is needed; one may be waiting, it just settles at 10:00 pm.)
+   - **Done Mon Nov 23 at 9:53 pm** (after Nov 23 was done), confirmed by Dad after a refresh; checked read-only at 9:54 pm: `big-bucks-nightly` inactive, `big-bucks-morning` active.
 2. **About 9:50 pm:** the same switch **on**. Check it saved (the Oct 29 attempt didn't save the first time).
 3. **10:00 pm**, the first kick: it raises one `missing_price` alert per fund for Nov 24 (on the Dashboard), then calls the nightly function, which fetches the closes; as each is stored its alert clears itself.
 4. **About 10:15 pm, Buck checks read-only:** the three alerts, created at 10:00 pm and resolved a few seconds later; the closes fetched after 10:00 pm; nightly done; no alert open. Then the ACCEPTANCE box is ticked with the times.
