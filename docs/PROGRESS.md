@@ -229,6 +229,15 @@ Saturday has no closes, so the evening is short: "Nightly done?" should read tru
 4. Any trade waiting for Nov 23 settled at its confirmed close; reconcile for Nov 23 ok; no `price_mismatch` alert.
 5. Next morning, Dad compares the three stored closes with Yahoo Finance's Nov 23 closes: all three should match to the cent (the snapshot problem gone). Health check green.
 
+**Result (read-only, Mon Nov 23 at 9:49 pm): passed.**
+- **Closes, all stored by the 9:00 pm call, none earlier:** DIA **$495.80** (9:00:05 pm), QQQ **$651.03** (9:00:18 pm), XIC **$54.50** (9:00:30 pm). `price_calls`: three daily calls, all at 9:00 pm, each ok ("100 rows"); none before.
+- **Two calls to nightly v5, both 200:** 4:30 pm: no prices, jobs ok through Nov 23, reconcile held for tonight, not done. 9:00 pm: the three closes stored (none refused), 15 price observations each, `mismatches: 0`, reconcile Nov 23 ok, done.
+- **The wait, 5:00–8:30 pm:** every timer run succeeded and queued no call (no outbox row, no price call, no alert). As on Nov 21, `cron.job_run_details` records only "1 row", not the kick's answer, so step 3's "waiting" text can't be read there; the empty outbox is the evidence.
+- **Jobs:** each once and ok for Nov 23 (settle, monthly, gic_maturity, dividends, splits, rate_notices, expire, auto_move, reconcile); interest ok for Nov 22 ($95.18 all in savings now, the GIC money included, at 1.0%); notes waited at 4:30 pm and ran ok at 9:00 pm; badges ok after each call; Nov 23's interest waits for tomorrow, as every night.
+- **Reconcile:** no problems, no new alerts. **Alerts:** none open, none raised tonight, no `price_mismatch` ever (45 observations stored so far).
+- **Trades:** none waiting, no ledger rows tonight.
+- "Nightly done?" for Nov 23: **true**.
+
 #### Tue Nov 24: re-test the reworded ACCEPTANCE box ("A close still missing at 10:00 pm…")
 
 The same way the 9:00 pm box was proven on Oct 29, an hour later. It needs Dad's OK for one timer change inside the evening window (the test itself).
