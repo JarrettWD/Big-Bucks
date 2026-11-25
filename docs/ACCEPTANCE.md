@@ -17,12 +17,12 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 - [ ] Each girl logs in with her username and PIN
 - [ ] Five wrong PINs lock the login for 15 minutes and alert Dad
-- [ ] Dad’s login requires the second factor
+- [x] Dad’s login requires the second factor (2026-11-24: the authenticator code at every parent sign-in since Oct 10 (Dad); every parent function starts with `require_parent()`, which refuses without the second step, and production's parent log has rows through 94, including the 23 Fix a close actions 69–91 on Nov 21; read-only, PROGRESS Nov 24, the ACCEPTANCE review)
 - [ ] Both girls completed onboarding and signed the account agreement
 
 **Phase 1, live: money in and out**
 
-- [ ] A deposit request holds the money, Dad approves it, and it lands in savings
+- [x] A deposit request holds the money, Dad approves it, and it lands in savings (2026-11-24, from production read-only: request #9, a $100.00 deposit asked Oct 15 at 12:21 pm, waited for Dad, approved at 12:22 pm ("Approve test"), ledger `request:9` +$100.00 into savings at the same moment; also #1, $100.00, Oct 10)
 - [ ] A declined request shows her Dad’s reason
 - [ ] An unanswered request expires after 7 days and releases the held money
 - [ ] A deposit over the cap is blocked with a clear message
@@ -31,7 +31,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 
 **Phase 1, live: savings and GICs**
 
-- [ ] Savings interest posts on the 1st and matches “How was this calculated?” (checked by hand once)
+- [x] Savings interest posts on the 1st and matches “How was this calculated?” (checked by hand once) (2026-11-01: October's interest, 11¢, posted Nov 1 (`interest:2026-10:…`), its note "October: 22 days of interest added up to $0.1005, rounded up to $0.11"; the daily rows add up to 10.054795¢ (Oct 10–25 at 2.0%: 8.630138¢; Oct 26–31 at 1.0%: 1.424658¢); Dad's hand check matches; PROGRESS Nov 1)
 - [x] A 1-month GIC matures on the right day with the right interest, rounded up (2026-11-22: the test kid's GIC #4, $30.00 at 2.5% opened Oct 15, matured Nov 15 at the 4:30 pm run with $0.07 = $30.00 × 2.5% × 1/12 = $0.0625 rounded up, posting `gic_interest:4`; checked read-only)
 - [x] The maturity banner appears; with no choice for 7 days, the money moves to savings (2026-11-22: Home showed "Choose what happens next by Nov 21" from Nov 15 (Dad); no choice made; the Nov 22 4:30 pm run on nightly v5 moved the $30.07 to savings, `gic_release:4` and `gic_release:4:savings` dated Nov 22, one "Your GIC money is in savings" notice, reconcile ok; the waiting $30.07 earned the savings rate from Nov 15; checked read-only)
 - [ ] Breaking a GIC early shows the warning, returns the principal and pays no interest
@@ -42,14 +42,14 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 - [x] Only one trade per fund per day is allowed (2026-11-04: Dad, as the test kid on production, Nov 3 about 9:00 pm: after that morning's TSX fund sale (request #32), a second TSX fund trade was refused with "already traded today", and no request was created; PROGRESS Nov 3–4)
 - [x] Settlement times read 2:00 pm in Alberta in summer and 3:00 pm in winter (4:00 pm Toronto), and a 2:30 pm winter request settles the same day (2026-11-03: in October request #22 settled at the 2:00 pm close (Oct 27); from Nov 1 Alberta stays at UTC−6, so the 💡 line reads 3:00 pm (Dad, Nov 1), and request #26, a TSX buy placed at 2:22 pm Nov 2, between the old and new cutoffs, settled the same day at the 3:00 pm close, $57.23, 0.17473354 units; PROGRESS Nov 2)
 - [x] A partial sell works, and proceeds land in savings (2026-11-03: request #32, $10.00 of the TSX fund sold at 9:24 am, settled at the Nov 3 close: 0.17621145 units × $56.75, $10.00 into savings; PROGRESS Nov 3)
-- [ ] Each fund’s value tracks its ETF (DIA, QQQ, XIC) to the cent
-- [ ] The standard note appears on a day a fund moves more than 2%
+- [x] Each fund’s value tracks its ETF (DIA, QQQ, XIC) to the cent (2026-11-24: a fund's price is its ETF's close, and value = units × close. After the price fix every stored close Oct 19 – Nov 20 matches Yahoo's Close to the cent (75 fund-days, checked Nov 21), and the first confirmed closes, Nov 23 (DIA $495.80, QQQ $651.03, XIC $54.50), matched Yahoo (Dad, Nov 24); XIC matched every day throughout; PROGRESS Nov 21–24)
+- [x] The standard note appears on a day a fund moves more than 2% (2026-11-24, production `notes`, read-only: 21 automatic notes Oct 16 – Nov 23, each with the standard words, for example Nasdaq-100 Nov 20, −5.67% (645.04 → 608.45), "Big drop today. This happens a few times a year. Long-term, markets have recovered." and Nov 23, +7.0%, "Big jump today…". Every official move over 2% in that time has its note; one note too many, the Dow on Nov 20, written from the old wrong close (−2.02%; the official move is −1.98%); PROGRESS Nov 24, the ACCEPTANCE review)
 - [ ] A quarterly dividend posts correctly (live, or in the time machine if no quarter falls in the solo beta)
 
 **Phase 1, live: rates and settings**
 
 - [x] A savings rate change sends the notice, with the 7-day default, and applies on its effective date (2026-10-29: Dad saved 2.0% → 1.0% on Oct 19, effective Oct 26, 7 days ahead; the kid had the notice that evening and "The new savings rate is now 1.0%" on Oct 26; backup `37e9784` shows Oct 25 at 2.000% and Oct 26 and Oct 27 at 1.000% (rate 12), each day once; PROGRESS Oct 26–29)
-- [ ] Existing GICs keep their locked-in rate after a GIC rate change
+- [x] Existing GICs keep their locked-in rate after a GIC rate change (2026-11-22: the 1-month GIC rate went to 5.0% for the special Oct 26 – Nov 1 (rate 20) and back to 2.5% on Nov 2; GIC #4, a 1-month GIC bought Oct 15 at 2.5%, kept 2.5% through both changes and matured Nov 15 with $0.07 ($30.00 × 2.5% × 1/12 = $0.0625, rounded up); read-only, PROGRESS Nov 22)
 - [x] A special switches back to the regular rate on its end date (2026-11-03: the 1-month GIC special at 5.0%, Oct 26 to Nov 1; the rate is 2.5% from Nov 2, "The 1-month GIC special has ended" arrived Nov 2 at 4:30 pm, and Buy / Sell shows 2.5% with no Special tag; PROGRESS Nov 2)
 - [ ] A deposit-cap change reaches both girls with a notice
 
@@ -63,7 +63,7 @@ Tick each box as it’s proven. Some features only run on the calendar (monthly 
 - [x] Production has a few nights of real closes for DIA, QQQ and XIC, and about two years of history for the graphs (DIA and QQQ Oct 12–14, XIC Oct 13–14, 2026, the TSX closed for Thanksgiving on Oct 12; backfill: 100 daily closes and weekly closes back to Oct 11, 2024)
 - [x] A close still missing at 10:00 pm Alberta time alerts Dad, and the alert clears itself when the close arrives (2026-11-24, re-tested on nightly v5: the nightly timer off from Nov 23 at 9:53 pm until Nov 24 at 9:48 pm; the 10:00 pm check raised `missing_price` alerts 8, 9 and 10 for the Dow Jones, Nasdaq-100 and TSX Nov 24 closes at 10:00:00, and each cleared itself as its close was stored: 10:00:07, 10:00:19, 10:00:32; no close fetched before 10:00 pm; reconcile ok, "Nightly done?" true, no alert open; PROGRESS Nov 24. Reworded by the price fix: 9:00 pm → 10:00 pm, after the 9:00 and 9:30 pm tries. Before: ticked 2026-10-29 at 9:00 pm: the nightly timer off until 9:13 pm; the 9:30 pm check raised `missing_price` alerts 5, 6 and 7 for the Dow Jones, Nasdaq-100 and TSX Oct 29 closes at 9:30:00, and each cleared itself as its close was stored: 9:30:03, 9:30:15, 9:30:28; PROGRESS Oct 29)
 - [x] The morning health check is green on a normal day, and fails (emailing Dad) when anything is open (green Oct 13 and 14, 2026; red with GitHub's email on Oct 12, when a `backup_failed` alert was open)
-- [ ] The daily backup commits to GitHub every day, and the copy on Dad’s computer updates
+- [x] The daily backup commits to GitHub every day, and the copy on Dad’s computer updates (2026-11-24: big-bucks-backups has a backup commit on every Alberta day from Oct 10 to Nov 24, 46 of 46, none missing; OneDrive `Big Bucks backup\last-sync.txt`: "Synced 2026-11-24 21:52. Newest backup: … Backup 2026-11-25 …", the newest commit; the Task Scheduler task "Big Bucks backup copy": daily 9:30 am, last result 0, no missed runs; PROGRESS Nov 24, the ACCEPTANCE review)
 - [x] The Download backup button produces a complete zip (2026-10-10, on Dad's phone: csv and json folders, manifest.json, README.txt)
 - [ ] The project has never paused
 - [ ] “Something looks wrong?” sends Dad a question, and his reply shows in her history
