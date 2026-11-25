@@ -113,9 +113,9 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - **The 9:00 pm missing-close alert, which clears itself when the close arrives:** another evening, the timer off before 4:00 pm and back on at about 9:05 pm. The 9:30 pm kick finds that day's closes missing and raises one `missing_price` alert per fund (on the Dashboard; the next morning's Health check would report any still open), then fetches the closes; each alert settles as its close is stored. Suggested Thu Oct 22.
 
 **Before Stage 12 (nothing lost):**
-- **BLOCKER, the price fix** (Dad, 2026-11-05): the girls' real accounts don't open until it's done. **Plan approved 2026-11-05: `docs/plans/price-fix-plan.md`.** Closes final only when fetched at or after 9:00 pm Alberta (trades wait for them); the missing-close alert moves to 10:00 pm (ACCEPTANCE box reworded and re-tested); a 10-day `price_mismatch` check; "fix a close" corrects settled trades in her favour (missing units, or missing cents plus their interest), with a notice that leads with money. #17, #35, #37 and the 12 wrong DIA closes are corrected before the check goes live. Build Nov 10–13 in its own worktree and branch, Dad's review Sat Nov 14, production Sat Nov 21 after 11:45 am. The evening no-change window now runs until the nightly is done (RUNBOOK, CLAUDE.md).
+- ~~**BLOCKER, the price fix**~~ **Done (2026-11-24):** live since Nov 21 (`docs/runs/2026-11-21.md`), 23 closes fixed, the first confirmed closes Nov 23 matched Yahoo, the 10:00 pm box re-tested and ticked Nov 24. Was: (Dad, 2026-11-05): the girls' real accounts don't open until it's done. **Plan approved 2026-11-05: `docs/plans/price-fix-plan.md`.** Closes final only when fetched at or after 9:00 pm Alberta (trades wait for them); the missing-close alert moves to 10:00 pm (ACCEPTANCE box reworded and re-tested); a 10-day `price_mismatch` check; "fix a close" corrects settled trades in her favour (missing units, or missing cents plus their interest), with a notice that leads with money. #17, #35, #37 and the 12 wrong DIA closes are corrected before the check goes live. Build Nov 10–13 in its own worktree and branch, Dad's review Sat Nov 14, production Sat Nov 21 after 11:45 am. The evening no-change window now runs until the nightly is done (RUNBOOK, CLAUDE.md).
 - the daily-backup box above, after a few clean mornings;
-- the parent screens for **"record a market closure"** (`record_market_closure`, `record_early_close`) and **"fix a close"** (`correct_fund_price`); until then, RUNBOOK says "stop and ask";
+- the parent screen for **"record a market closure"** (`record_market_closure`, `record_early_close`); until then, RUNBOOK says "stop and ask". (**"Fix a close"** is done: the price fix's screen, used for the 23 fixes on Nov 21; its focus bug is below.)
 - **the install check on a girl's phone** (Family Link; Stage 12 entry above);
 - **Dad's fresh read-only audit** of changes since the third pre-launch audit, before the girls' real accounts;
 - **the maturity notice says "matured"** (Dad, 2026-10-20): "Your {term} GIC finished and earned …" becomes "matured", done as a reviewed money-function change to the nightly maturity job (plan, known-answer test, time machine), not a wording patch;
@@ -237,6 +237,7 @@ Saturday has no closes, so the evening is short: "Nightly done?" should read tru
 - **Reconcile:** no problems, no new alerts. **Alerts:** none open, none raised tonight, no `price_mismatch` ever (45 observations stored so far).
 - **Trades:** none waiting, no ledger rows tonight.
 - "Nightly done?" for Nov 23: **true**.
+- **Dad's check next morning (Nov 24):** all three against Yahoo's Close column, DIA $495.80, QQQ $651.03, XIC $54.50: **all match.** The snapshot problem is gone.
 
 #### Tue Nov 24: re-test the reworded ACCEPTANCE box ("A close still missing at 10:00 pm…")
 
@@ -248,6 +249,14 @@ The same way the 9:00 pm box was proven on Oct 29, an hour later. It needs Dad's
 3. **10:00 pm**, the first kick: it raises one `missing_price` alert per fund for Nov 24 (on the Dashboard), then calls the nightly function, which fetches the closes; as each is stored its alert clears itself.
 4. **About 10:15 pm, Buck checks read-only:** the three alerts, created at 10:00 pm and resolved a few seconds later; the closes fetched after 10:00 pm; nightly done; no alert open. Then the ACCEPTANCE box is ticked with the times.
 5. **Next morning:** the health check green (no open alert).
+
+**Result (read-only, Tue Nov 24 at 10:13 pm): passed; ACCEPTANCE ticked.** Dad switched `big-bucks-nightly` on at 9:48 pm (confirmed after a refresh); `big-bucks-morning` stayed on throughout.
+- **The 10:00 pm run** (the timer's only nightly run today) raised `missing_price` alerts 8 (Dow Jones), 9 (Nasdaq-100) and 10 (TSX) for Nov 24 at **10:00:00**, then queued one call (outbox 168), which stored the closes; each alert cleared itself as its close was stored: **10:00:07, 10:00:19, 10:00:32**.
+- **Closes, all fetched after 10:00 pm:** DIA $499.74, QQQ $638.10, XIC $54.34. `price_calls`: three daily calls at 10:00 pm, each ok; none earlier today.
+- **The call replied 200:** jobs ok through Nov 24 in one call, `mismatches: 0` (15 observations a fund; 90 so far), reconcile Nov 24 with no problems, done.
+- **Jobs, each once and ok** for Nov 24 (settle, monthly, gic_maturity, dividends, splits, notes, rate_notices, expire, auto_move, reconcile, badges); interest ok for Nov 23 ($95.18 at 1.0%). Nov 24's interest waits for tomorrow, as every night.
+- **No open alerts, no `price_mismatch` ever. "Nightly done?" true. Both timers on**, and they stay on from now (Dad).
+- **Noticed, harmless:** GitHub's backstop Backup ran 8 hours late, at 8:45 pm Alberta (02:45 UTC), and committed an extra backup (`3a9e63a`) labelled "Backup 2026-11-25", the UTC date. Its "fresh" check skips only when the newest backup is under 12 hours old, and the 7:00 am start always backs up, so tomorrow's morning backup is unaffected. Only the label is off.
 - **Dad to do by hand:** the production session and the two evening checks below.
 
 ### Nov 1 checks (Dad, on production as the test kid; recorded 2026-11-01)
