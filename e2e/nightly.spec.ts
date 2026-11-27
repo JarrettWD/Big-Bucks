@@ -643,7 +643,9 @@ test('Fix a close: the preview lists her buy, and Yes adds her missing units', a
       await expect(box).toBeFocused();
     }
     await expect(box).toHaveValue(lower.toFixed(2));
-    await expect(page.getByText(/^Stored close for .*: \$\d[\d,]*\.\d\d \(/)).toBeVisible();
+    // The stored close stays shown while typing, to the cent or more: the made-up local prices
+    // have 4 decimals, and the screen never rounds one away.
+    await expect(page.getByText(/^Stored close for .*: \$\d[\d,]*\.\d{2,8} \(/)).toBeVisible();
     await page.getByLabel('Where it comes from').fill('Test: the exchange’s closing price');
     await expect(page.getByText(/^Robin’s buy: Adds 0\.\d{8} units, worth/)).toBeVisible();
     await page.getByRole('button', { name: 'Yes, fix the close' }).click();
