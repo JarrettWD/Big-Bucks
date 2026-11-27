@@ -2,7 +2,7 @@
 
 Status: **proposed, not approved.** Item 1 (the Fix a close focus bug) is on its own branch, `fix-close-focus`.
 
-Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, section 3). **No money-function changes**: no change posts, moves, rounds or calculates money, rates, interest, dividends, trades, expiry or the nightly jobs. The only database changes are one data migration (the agreement text and a holiday flag) and replacements of read-only functions and a view. Every change is a new migration; none edits a committed one.
+Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, section 3). **No money-function changes**: no change posts, moves, rounds or calculates money, rates, interest, dividends, trades, expiry or the nightly jobs. The only database changes are two data migrations (the agreement text, and a holiday flag) and replacements of read-only functions and a view. Every change is a new migration; none edits a committed one.
 
 ## How it's built
 
@@ -177,4 +177,4 @@ The database's refusals show as written, for example:
 
 ## Totals
 
-About **5½ sessions**, plus ½ for the agreement test helpers, from Nov 28 to Dec 3. With the two droppable items left out, 3½.
+About **5½ sessions**, plus ½ for the agreement test helpers, from Nov 28 to Dec 3. With the two droppable items left out, about 4.
