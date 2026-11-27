@@ -157,6 +157,23 @@ Every unticked ACCEPTANCE box in the phase 1 groups (accounts and logins, reques
 - Dad to do by hand:
 -->
 
+### Nov 27: Stage 12 re-planned around Dad's travel (proposed, not approved)
+
+- **Dad's frame:** no rush, launch a finished product. Away Dec 9–23 (no PC); **production freeze Dec 7–23**, with the test account as a soak test; **launch Sat Jan 9**, after the Jan 4 dividend is proven live.
+- **The plan** (`docs/plans/stage-12-plan.md`, rewritten):
+  - block 1, non-money only, built Nov 28 – Dec 3 and shipped in **production session Sat Dec 5**;
+  - block 2, the "matured" notice (money) plus four slip-list items, built Dec 24–31 and shipped **Sat Jan 2**;
+  - the dividend check Tue Jan 5;
+  - the launch-day checklist for Jan 9;
+  - step-by-step test-account checks, withdrawal B first (started Nov 27 for the 7-day expiry).
+- **Found (read-only, Nov 27 7:15 am):**
+  - The closure functions (`record_market_closure`, `record_early_close`) already exist, so that screen is front end only.
+  - The database already refuses a GIC choice after `choice_ends` and a request approval after `expires_at`, so the passed-deadline card stays non-money unless the sweep finds another deadline.
+  - TSX Jan 1 is already treated as closed: `is_trading_day` ignores `confirmed`. Confirming it only changes the Dashboard's holiday warning, but it is a production change (a data migration), so it goes in on Dec 5. TSX's Feb 15 is the next unconfirmed date.
+  - The test kid has $95.18 in savings, units in all three funds and GICs #2 and #6.
+  - No holiday or GIC maturity falls inside the freeze.
+- **Open tonight:** the read-only check of the Nov 27 1:00 pm early close (after 9:30 pm).
+
 ### Nov 24: ACCEPTANCE review of the open phase 1 boxes (read-only)
 
 20 phase 1 boxes were open (not 19, as first said). Each was checked against this file and production's data, read-only.
