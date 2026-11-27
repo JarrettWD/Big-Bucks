@@ -16,7 +16,7 @@ Times are Alberta time (UTC−6 all year). Production changes only after 11:45 a
 | Wed Dec 2 | Read-only: the Dec 1 run posted November's savings interest. |
 | Fri Dec 4 | Dad's final review of block 1; full local run. Tonight's run should expire withdrawal B. |
 | **Sat Dec 5** | **Production session 1** (section 3). |
-| Sun Dec 6 | Spare day: rollback if needed; the install check on a girl's phone; a try-it session with each girl on the test account. |
+| Sun Dec 6 | Spare day: rollback if needed. **The girls see nothing of Big Bucks before launch** (Dad, Nov 27): Mom does the try-it session on the test account, and Dad does the install check on a girl's phone without her seeing the app, then removes it (section 7). |
 | Dec 6 – 8 (optional) | With Dad's OK, build one or two slip-list items locally on a branch, for Jan 2 (section 2). |
 | **Dec 7 – 23** | **Freeze.** Nothing changes production. Soak test (section 4). |
 | Thu Dec 24 | Back. Read-only soak review. Christmas Eve early close (1:00 pm, both markets): check it that evening. |
@@ -186,13 +186,19 @@ Tell me when each is done (with request numbers and times), and I'll check it re
 
 ## 7. Launch day: Sat Jan 9
 
+**The girls see nothing before launch** (Dad, 2026-11-27):
+- Their accounts don't exist until step 5 on Jan 9. Production has one account (the test kid) and two logins (Dad and the test kid), and "Allow new users to sign up" is off, so nobody can make an account from the app.
+- **Mom's try-it, Dec 6:** on the test account, on a phone Dad hands her. She reads the app as a girl would, and Dad notes anything that confuses her. Fixes go into the Jan 2 batch. The test kid finished onboarding in October, so the try-it shows the everyday screens, not the first-sign-in steps. To try those too: a fresh account on Dad's laptop (local, nothing on production), at phone size.
+- **The install check on a girl's phone, without her:** install from the live site, check it opens full screen from its icon and appears in the app list, and that Family Link doesn't hold it. Don't sign in. Then uninstall it and clear the site's data in Chrome (Settings → Site settings → All sites → the Big Bucks site → Delete data), so nothing is left on her phone until Jan 9.
+- **Elsewhere:** the test kid's app on Dad's phone, and the GitHub Pages address in his browser history, are worth keeping out of sight too.
+
 **Ready before the day (Jan 5–8):**
 - [ ] Every section 5 box ticked; the dividend box ticked on Jan 5.
 - [ ] ACCEPTANCE reviewed box by box: only the girl-dependent ones are open.
 - [ ] `prelaunch_reset()` rehearsed on a local restore of production's latest backup, showing exactly what it removes and keeps (SPEC: it clears the test history; it keeps every account and login, rates, settings, holidays, funds, prices, corrections, notes, job runs and the parent log).
 - [ ] Dad's fresh read-only audit since the third pre-launch audit.
 - [ ] The setup script ready on the laptop, with the girls' usernames and PINs typed only at runtime (never in the repo).
-- [ ] The girls' phones charged, with Big Bucks installable (the Dec 6 install check passed).
+- [ ] The girls' phones charged, with Big Bucks installable (the Dec 6 install check passed, and the app removed again so she hasn't seen it).
 - [ ] This checklist copied into RUNBOOK's "The pre-launch reset (Stage 12)" in the Jan 2 batch.
 
 **On the day** (one step at a time; Dad says OK after each):
