@@ -1,13 +1,13 @@
 # Block 1 plan: Stage 12 items 2–7 (for Dad's review, 2026-11-27)
 
-Status: **proposed, not approved.** Item 1 (the Fix a close focus bug) is on its own branch, `fix-close-focus`.
+Status: **approved by Dad 2026-11-27, with three additions** (the full agreement v2 text read by Dad before item 2 is built; item 4's wording fits each kind of request; screenshots of kid-facing wording in each report). Item 1 (the Fix a close focus bug) is on its own branch, `fix-close-focus`.
 
 Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, section 3). **No money-function changes**: no change posts, moves, rounds or calculates money, rates, interest, dividends, trades, expiry or the nightly jobs. The only database changes are two data migrations (the agreement text, and a holiday flag) and replacements of read-only functions and a view. Every change is a new migration; none edits a committed one.
 
 ## How it's built
 
 - **One branch, `block-1`, in its own worktree** (`../bb-block-1`), cut from main after `fix-close-focus` merges. One commit per item, each with its tests passing.
-- **A short report after each item:** what changed, the tests and screenshots at phone (360 px), tablet and desktop sizes, and anything for Dad to look at. Then I go straight on to the next item unless Dad says stop.
+- **A short report after each item:** what changed, the tests and screenshots at phone (360 px), tablet and desktop sizes, and anything for Dad to look at. **Every report includes screenshots of any kid-facing wording** (the agreement, the inflation switch, the deadline cards, the Graphs labels), which Dad reviews at his evening check-in. Then I go straight on to the next item unless Dad says stop.
 - **Order:** Dad's list, except the backup label moves up to fourth. That way the two items to drop if the week runs short (the closure screen, then the Graphs labels) come last:
   1. agreement v2 and TSX Jan 1;
   2. the inflation switch and the two nits;
@@ -25,6 +25,8 @@ Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, sec
   Then the expected `db push --dry-run` list, for Dad's review on Fri Dec 4.
 
 ## Item 2: agreement version 2 ("matures"), and TSX Jan 1 confirmed
+
+**Before building:** Dad reads the full version 2 text end to end (approved 2026-11-27).
 
 **What Dad and the girls see.** In rule 🔒 "A GIC is a promise.", "When a GIC finishes, you have 7 days to choose what's next…" becomes "When a GIC **matures**, you have 7 days to choose what's next…" (with the **?** for "Matures", as on her other screens). Nothing else changes, unless Dad wants another change now: **this is the last free chance before the girls sign.**
 
@@ -86,8 +88,12 @@ So nothing that acts on money changes. Before building, I'll recheck every other
 
 **What she sees:**
 - **The GIC card,** from the midnight after the deadline until the run: "⏰ Time's up for this GIC. Your {amount} goes into your savings tonight." The card stays visible, with "Choose what's next" greyed out and not tappable. The choice screen opened from an old link says the same.
-- **A request past its 7 days,** on her Buy / Sell waiting list: "This request ran out of time. It will be cancelled tonight, and its money is no longer on hold after that." (The hold is released by the run, so the wording says "after that", not "now".)
-- **Dad's Approvals:** "Ran out of time on {date}: it will be cancelled tonight", with Approve and Decline greyed out.
+- **A request past its 7 days,** on her Buy / Sell waiting list, worded for its kind (Dad, 2026-11-27). Only deposits and withdrawals wait for Dad and expire; a buy or sell waits for the close, never for Dad, so it never expires.
+  - **A withdrawal** (its money is held): "This request ran out of time. It will be cancelled tonight, and its money is no longer on hold after that." (The hold is released by the run, so it says "after that", not "now".)
+  - **A deposit** (holds nothing): "This request ran out of time. It will be cancelled tonight."
+- **Dad's Approvals,** with Approve and Decline greyed out:
+  - **A withdrawal:** "Ran out of time on {date}. It will be cancelled tonight, and the {amount} she had on hold goes back to her then."
+  - **A deposit:** "Ran out of time on {date}. It will be cancelled tonight."
 
 **Database:** migration `…_passed_deadlines.sql`, read-only:
 - The `gic_positions` view gains `choice_over` (`app_today() >= choice_ends`). Its grants are restated in the same file, and its row is checked in `explicit_grants_test`.
