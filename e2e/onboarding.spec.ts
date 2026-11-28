@@ -317,7 +317,7 @@ test('Dad: a highlighted card at the top of the Dashboard, the Approvals badge, 
        from public.parent_actions pa join public.profiles p on p.user_id = pa.done_by
       where pa.action = 'countersign_agreement' and pa.account_id = ${WREN}`,
   );
-  expect(log.summary).toBe("Signed Wren's Big Bucks agreement.");
+  expect(log.summary).toBe("Signed Wren's Big Bucks agreement (version 2).");
   await expect(page.locator('#agreements .appr__done')).toHaveText(
     `Done. ${log.summary} Recorded: ${log.who}, ${log.when}.`,
   );
