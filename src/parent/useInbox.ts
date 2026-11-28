@@ -22,6 +22,8 @@ export interface WaitingRequest {
   wait_seconds: number;
   expires: string;
   expires_seconds: number;
+  /** Block 1, item 4: tonight's run is still to come (else it's cancelled tomorrow evening). */
+  cancels_tonight?: boolean;
   savings_cents: Cents;
   held_cents: Cents;
   available_cents: Cents;

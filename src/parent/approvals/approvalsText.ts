@@ -52,9 +52,18 @@ export const waitLine = (r: WaitingRequest, left: number) =>
   `24-hour wait: you can approve from ${r.approve_from} (in ${formatWait(left)}).`;
 
 export function expiryLine(r: WaitingRequest, left: number): string {
-  if (left <= 0) return "This has expired. Tonight's run releases it, and she's told why.";
+  if (left <= 0) return ranOutLine(r);
   if (left < 24 * 3600) return `Expires in ${formatWait(left)} (${r.expires}) if you don't answer.`;
   return `Expires ${r.expires} if you don't answer.`;
+}
+
+/** Past its days, worded for its kind (Dad, 2026-11-27). Approve and Decline are greyed out;
+ * the evening run cancels it (tomorrow evening if tonight's expiry has already run). */
+export function ranOutLine(r: WaitingRequest): string {
+  const when = r.cancels_tonight === false ? 'tomorrow evening' : 'tonight';
+  return r.type === 'withdraw'
+    ? `Ran out of time on ${r.expires}. It will be cancelled ${when}, and the ${formatCents(r.amount_cents)} she had on hold goes back to her then.`
+    : `Ran out of time on ${r.expires}. It will be cancelled ${when}.`;
 }
 
 export const approveHeading = (r: WaitingRequest) =>

@@ -7,6 +7,7 @@ import {
   declineLine,
   expiryLine,
   formatWait,
+  ranOutLine,
   requestFacts,
   requestTitle,
   secondsLeft,
@@ -88,7 +89,26 @@ describe('request cards', () => {
       "Expires in 5 h (Oct 9 at 7:00 pm) if you don't answer.",
     );
     expect(expiryLine(base, 0)).toBe(
-      "This has expired. Tonight's run releases it, and she's told why.",
+      'Ran out of time on Oct 9 at 7:00 pm. It will be cancelled tonight.',
+    );
+  });
+  // Block 1, item 4 (Dad, 2026-11-27): worded for its kind; Approve and Decline greyed out.
+  it('says a request has run out of time, worded for its kind', () => {
+    expect(ranOutLine({ ...base, cancels_tonight: true })).toBe(
+      'Ran out of time on Oct 9 at 7:00 pm. It will be cancelled tonight.',
+    );
+    expect(ranOutLine({ ...withdrawal, expires: 'Oct 9 at 7:00 pm', cancels_tonight: true })).toBe(
+      'Ran out of time on Oct 9 at 7:00 pm. It will be cancelled tonight, and the $10.00 she had on hold goes back to her then.',
+    );
+  });
+  it("says tomorrow evening when tonight's run is already done", () => {
+    expect(ranOutLine({ ...base, cancels_tonight: false })).toBe(
+      'Ran out of time on Oct 9 at 7:00 pm. It will be cancelled tomorrow evening.',
+    );
+    expect(
+      ranOutLine({ ...withdrawal, expires: 'Oct 9 at 7:00 pm', cancels_tonight: false }),
+    ).toContain(
+      'cancelled tomorrow evening, and the $10.00 she had on hold goes back to her then.',
     );
   });
   it('confirms with the cash and her savings before and after, from the database', () => {

@@ -6,7 +6,7 @@
 // evening's work is done by the 9:30 pm run; the 4:30 pm run does what needs no price.
 import { expect, test } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
-import { parentSignIn } from './helpers';
+import { kid, kidSignIn, parentSignIn } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -677,4 +677,161 @@ test('Fix a close: the preview lists her buy, and Yes adds her missing units', a
   } finally {
     await withDb((db) => db.setClock(''));
   }
+});
+
+// Block 1, item 4 (Dad, 2026-11-24; wording 2026-11-27): a passed deadline shows straight away,
+// from the database's clock, until the evening run acts on it. Real actions only: Sky buys a
+// 1-month GIC; later she asks for a deposit in the morning and a withdrawal after the evening run.
+test('a passed deadline shows straight away; the run then acts on it', async ({ page }) => {
+  test.setTimeout(900_000);
+  const sky = kid('Sky');
+  await withDb(async (db) => {
+    const [me] = await db.q<{ user_id: string; account_id: string }>(
+      `select user_id::text, account_id::text from public.profiles where username = $1`,
+      [sky.username],
+    );
+    const SKY = { role: 'authenticated' as const, sub: me.user_id, aal: 'aal1' as const };
+    // Every evening's run from one day to another, one day at a time, as on production. (One
+    // call checks up to 5 days, and late in the suite that can pass the 8-second database
+    // limit: reported to Dad, Nov 27.)
+    const evenings = async (from: string, to: string) => {
+      const days = await db.q<{ d: string }>(
+        `select g::date::text as d from generate_series($1::date, $2::date, interval '1 day') g`,
+        [from, to],
+      );
+      for (const { d } of days) {
+        await db.setClock(`${d} 21:30`);
+        expect((await nightly()).done, d).toBe(true);
+      }
+    };
+    const [{ d: b }] = await db.q<{ d: string }>(
+      `select (coalesce(max(run_for_date), public.app_today()) + 1)::text as d from public.job_runs
+        where job = 'expire' and status = 'ok'`,
+    );
+    try {
+      // 1. A GIC whose days to choose run out. She buys a $10.00 1-month GIC.
+      await db.setClock(`${b} 10:00`);
+      const buy = await db.call(SKY, `select public.buy_gic(1000, 1)`);
+      expect(buy.ok, JSON.stringify(buy)).toBe(true);
+      const gicId = buy.ok ? Number(buy.value) : 0;
+      const [{ m }] = await db.q<{ m: string }>(
+        `select maturity_date::text as m from public.gic_holdings where id = $1`,
+        [gicId],
+      );
+      await evenings(b, m);
+      // Her days to choose, as the database set them when it matured.
+      const [{ ends }] = await db.q<{ ends: string }>(
+        `select choice_ends::text as ends from public.gic_holdings where id = $1`,
+        [gicId],
+      );
+      await evenings(await plus(db, m, 1), await plus(db, ends, -1));
+
+      // 12:01 am the day after her last day to choose: the card stays, greyed out.
+      await db.setClock(`${ends} 00:01`);
+      await kidSignIn(page, sky.username, sky.pin);
+      const card = page.locator('.banner__card--over');
+      await expect(card).toHaveCount(1);
+      await expect(card).toContainText("⏰ Time's up for this GIC.");
+      await expect(card).toContainText('Your $10.');
+      await expect(card).toContainText('goes into your savings tonight.');
+      await expect(card.getByRole('button', { name: "Choose what's next" })).toBeDisabled();
+      await expect(
+        page.locator('.gic__ready--over').getByRole('button', { name: 'Choose' }),
+      ).toBeDisabled();
+      // An old link to the choice screen says the same, with no choices.
+      await page.goto(`./kid/gic/${gicId}`);
+      await expect(page.getByRole('heading', { name: "Time's up for this GIC." })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Keep it growing|Yes, do it/ })).toHaveCount(0);
+
+      // That evening's run moves it to savings, and the card goes.
+      await evenings(ends, ends);
+      const [g] = await db.q<{ s: string }>(
+        `select status::text || '/' || maturity_choice::text as s from public.gic_holdings where id = $1`,
+        [gicId],
+      );
+      expect(g.s).toBe('matured/to_savings');
+      await page.goto('./kid');
+      await expect(page.getByText('Hi, Sky!')).toBeVisible();
+      await expect(page.locator('.banner__card--over')).toHaveCount(0);
+
+      // 2. Requests that run out of time. The next morning she asks to put in $10.00, and after
+      // that evening's run she asks to take out $5.00. Each runs out at the time the database set
+      // (the expiry setting may have been changed by the settings tests).
+      const d0 = await plus(db, ends, 1);
+      await db.setClock(`${d0} 10:00`);
+      const dep = await db.call(SKY, `select public.request_deposit(1000)`);
+      expect(dep.ok, JSON.stringify(dep)).toBe(true);
+      await evenings(d0, d0);
+      await db.setClock(`${d0} 22:00`);
+      const wd = await db.call(SKY, `select public.request_withdrawal(500)`);
+      expect(wd.ok, JSON.stringify(wd)).toBe(true);
+      const [x] = await db.q<{ e: string; dep_at: string; wd_at: string }>(
+        `select public.edmonton_local(d.expires_at)::date::text as e,
+                to_char(public.edmonton_local(d.expires_at) + interval '1 minute', 'YYYY-MM-DD HH24:MI') as dep_at,
+                to_char(public.edmonton_local(w.expires_at) + interval '1 minute', 'YYYY-MM-DD HH24:MI') as wd_at
+           from public.requests d, public.requests w where d.id = $1 and w.id = $2`,
+        [dep.ok ? dep.value : 0, wd.ok ? wd.value : 0],
+      );
+      await evenings(await plus(db, d0, 1), await plus(db, x.e, -1));
+
+      // A minute after the deposit's time is up: on her list and on Dad's Approvals.
+      await db.setClock(x.dep_at);
+      await page.goto('./kid/trade');
+      const over = page.locator('.waiting__over');
+      await expect(over).toHaveCount(1);
+      await expect(over).toContainText('Asked to put in $10.00');
+      await expect(over).toContainText(
+        'This request ran out of time. It will be cancelled tonight.',
+      );
+      await page.context().clearCookies();
+      await page.evaluate(() => localStorage.clear());
+      await parentSignIn(page);
+      await page.goto('./parent/approvals');
+      const dcard = page
+        .locator('.appr__card', { hasText: 'Deposit $10.00' })
+        .filter({ hasText: 'Ran out of time' });
+      await expect(dcard).toContainText(
+        /Ran out of time on \w{3} \d{1,2} at 10:00 am\. It will be cancelled tonight\./,
+      );
+      await expect(dcard.getByRole('button', { name: 'Approve' })).toBeDisabled();
+      await expect(dcard.getByRole('button', { name: 'Decline' })).toBeDisabled();
+
+      // That evening's run cancels the deposit.
+      await evenings(x.e, x.e);
+      const [d] = await db.q<{ s: string }>(
+        `select status::text as s from public.requests where id = $1`,
+        [dep.ok ? dep.value : 0],
+      );
+      expect(d.s).toBe('expired');
+
+      // A minute after the withdrawal's time is up, after tonight's run: tomorrow evening.
+      await db.setClock(x.wd_at);
+      await page.reload();
+      const wcard = page
+        .locator('.appr__card', { hasText: 'Withdrawal $5.00' })
+        .filter({ hasText: 'Ran out of time' });
+      await expect(wcard).toContainText(
+        /Ran out of time on \w{3} \d{1,2} at 10:00 pm\. It will be cancelled tomorrow evening, and the \$5\.00 she had on hold goes back to her then\./,
+      );
+      await expect(wcard.getByRole('button', { name: 'Approve' })).toBeDisabled();
+      await expect(wcard.getByRole('button', { name: 'Decline' })).toBeDisabled();
+      await page.context().clearCookies();
+      await page.evaluate(() => localStorage.clear());
+      await kidSignIn(page, sky.username, sky.pin);
+      await page.goto('./kid/trade');
+      await expect(page.locator('.waiting__over')).toContainText(
+        'This request ran out of time. It will be cancelled tomorrow evening, and its money is no longer on hold after that.',
+      );
+
+      // The next evening's run cancels it.
+      await evenings(await plus(db, x.e, 1), await plus(db, x.e, 1));
+      const [w] = await db.q<{ s: string }>(
+        `select status::text as s from public.requests where id = $1`,
+        [wd.ok ? wd.value : 0],
+      );
+      expect(w.s).toBe('expired');
+    } finally {
+      await db.setClock('');
+    }
+  });
 });

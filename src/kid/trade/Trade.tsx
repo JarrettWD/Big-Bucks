@@ -700,12 +700,14 @@ function WaitingList({ opts }: { opts: TradeOptions }) {
           {opts.waiting.map((w) => {
             const line = waitingLine(w, opts.funds);
             return (
-              <li key={w.request_id}>
-                <span aria-hidden="true">⏳</span>
+              <li key={w.request_id} className={line.over ? 'waiting__over' : undefined}>
+                <span aria-hidden="true">{line.over ? '⏰' : '⏳'}</span>
                 <span className="waiting__text">
                   <span className="waiting__title">{line.title}</span>
                   <span className="waiting__detail">
-                    {line.detail} · asked {formatDate(w.on_day, year)}
+                    {line.over
+                      ? line.detail
+                      : `${line.detail} · asked ${formatDate(w.on_day, year)}`}
                   </span>
                 </span>
               </li>

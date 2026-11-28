@@ -30,6 +30,8 @@ export interface Gic {
   maturity_choice: string | null;
   interest_at_maturity_cents: Cents;
   choose_by: string | null;
+  /** Her days to choose are over (from the database's clock); the evening run moves it. */
+  choice_over?: boolean;
 }
 
 export interface Fund {

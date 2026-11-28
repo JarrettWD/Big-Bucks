@@ -15,6 +15,7 @@ import { formatCents } from '../lib/money';
 import { checkMyBadges } from '../lib/badgeCheck';
 import { supabase } from '../lib/supabase';
 import { useKid } from './KidShell';
+import { GIC_TIME_UP, gicGoesToSavings } from './deadlineText';
 import { isWaiting, type Gic, type Rate } from './home/useHome';
 import { specialTag } from './trade/tradeText';
 import './home/Home.css';
@@ -82,6 +83,23 @@ export default function GicChoice() {
         <section className="card">
           <h1 className="choice__title">Nothing to choose</h1>
           <p className="muted">There's nothing to choose for this GIC right now.</p>
+          <Link className="btn" to="/kid">
+            Back to Home
+          </Link>
+        </section>
+      </div>
+    );
+
+  // Block 1, item 4: opened from an old link after her days to choose are over.
+  if (gic.choice_over && step !== 'done')
+    return (
+      <div className="choice">
+        <section className="card">
+          <h1 className="choice__title">
+            <span aria-hidden="true">⏰ </span>
+            {GIC_TIME_UP}
+          </h1>
+          <p>{gicGoesToSavings(gic.balance_cents)}</p>
           <Link className="btn" to="/kid">
             Back to Home
           </Link>

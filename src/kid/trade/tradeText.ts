@@ -6,6 +6,7 @@ import { formatDate, formatRate, termLabel, termWords } from '../../lib/format';
 import { formatCents, type Cents } from '../../lib/money';
 import type { Kind, Place } from './moves';
 import { fundLabel } from '../fundNames';
+import { requestRanOut } from '../deadlineText';
 
 // What the database sends ---------------------------------------------------------------------
 
@@ -63,6 +64,10 @@ export interface Waiting {
   settles: string | null;
   /** "Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6" (the price fix, 2c). */
   waiting_words?: string | null;
+  /** Block 1, item 4: a deposit or withdrawal past its days, from the database's clock. */
+  expired?: boolean;
+  /** Tonight's run is still to come (else it's cancelled tomorrow evening). */
+  cancels_tonight?: boolean;
 }
 
 export interface TradeOptions {
@@ -314,9 +319,19 @@ export function doneText(a: {
 
 // Her waiting requests ----------------------------------------------------------------------------
 
-export function waitingLine(w: Waiting, funds: TradeFund[]): { title: string; detail: string } {
+export function waitingLine(
+  w: Waiting,
+  funds: TradeFund[],
+): { title: string; detail: string; over?: boolean } {
   const fund = funds.find((f) => f.fund_id === w.fund_id)?.name ?? 'a fund';
   const amount = w.amount_cents === null ? 'all of it' : formatCents(w.amount_cents);
+  // Block 1, item 4: past its days. Only deposits and withdrawals wait for Dad, so only they expire.
+  if (w.expired && (w.type === 'deposit' || w.type === 'withdraw'))
+    return {
+      title: `Asked to ${w.type === 'deposit' ? 'put in' : 'take out'} ${amount}`,
+      detail: requestRanOut(w.type, w.cancels_tonight !== false),
+      over: true,
+    };
   if (w.type === 'deposit')
     return { title: `Asked to put in ${amount}`, detail: 'Waiting for Dad' };
   if (w.type === 'withdraw')

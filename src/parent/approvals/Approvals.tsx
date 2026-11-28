@@ -274,6 +274,10 @@ function RequestCard({
           <button
             type="button"
             className="appr__btn appr__btn--quiet"
+            // Block 1, item 4: greyed out once it has run out of time, like Approve. (The database
+            // refusal of a late Decline comes in block 2, Jan 2.)
+            disabled={expires <= 0}
+            aria-describedby={expires <= 0 ? `${id}-exp` : undefined}
             onClick={() => onOpen('decline')}
           >
             {TEXT.decline}

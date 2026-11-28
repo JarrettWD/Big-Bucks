@@ -341,6 +341,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 
 - **Total worth** · Watch your bucks grow.
 - **"Your GIC grew!" card:** Your {term} GIC earned {interest}, so you now have {total}. Choose what happens next by {last day to choose}. · **Choose what's next**
+- **Her days to choose are over** (block 1, item 4; Dad 2026-11-24): from the midnight after her last day to choose until the evening run, the card stays, calm, with the button greyed out: ⏰ **Time's up for this GIC.** Your {total} goes into your savings tonight. · **Choose what's next** (greyed out). The database says when (`gic_positions.choice_over`), never the phone's clock.
 - **Notices:** the newest unread notice, with **Got it**; under it, "1 more new notice" or "{n} more new notices". GIC "ready" notices aren't repeated here, because a waiting GIC has its own card.
 - **Savings:** On hold · Free to use (only while a request is holding money) · Earning {rate} a year, with the **?** for "Interest rate" (below) · Changing to {new rate} on {date} (when a change is announced)
   - **The Interest rate ? beside her rate** (Dad, 2026-10-26): the glossary words, then her own lines, worked out by the database (`kid_rate_help`):
@@ -350,6 +351,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
 - **GICs:** No GICs right now. A GIC locks your money away for a while and pays more interest than savings.
   - Each GIC: {amount} · {term} at {rate} · Ready {date} · {n} days to go · Earns {interest} by then
   - Matured and waiting: Ready now! · **Choose**
+  - Her days to choose are over (block 1, item 4): ⏰ Time's up for this GIC. Your {total} goes into your savings tonight. · **Choose** (greyed out)
 - **Stock funds:** Your mix · {fund} {n}% · Last market day, {date} (with the **?** for "Daily change")
   - Each fund: {fund} **?** · Yours: {value}, or You don't own any yet
   - The fund **?** (glossary, one per fund; Dad, 2026-10-19):
@@ -404,6 +406,7 @@ From the app's screens (`src/kid/home/`, `src/kid/GicChoice.tsx`, `src/kid/Histo
   - **Yes, do it** · **Go back**
 - **Done:** 🎉 Done! Your {total} is growing in a new {term} GIC. Great patience! · or: Your {total} is in savings. · **Back to Home**
 - **Nothing to choose** · There's nothing to choose for this GIC right now.
+- **Opened after her days to choose are over** (block 1, item 4): ⏰ **Time's up for this GIC.** Your {total} goes into your savings tonight. · **Back to Home**
 
 ### Glossary change
 
@@ -510,6 +513,11 @@ Each line ends with "· asked {date}". With nothing waiting: Nothing waiting rig
 
 - Asked to put in {amount} · Waiting for Dad
 - Asked to take out {amount} · Dad can say yes from {time} (after the 24 hours: Waiting for Dad)
+- **Past its days** (block 1, item 4; Dad 2026-11-27), with ⏰ instead of ⏳ and no "asked" date. Only deposits and withdrawals wait for Dad, so only they run out of time:
+  - Asked to take out {amount} · This request ran out of time. It will be cancelled tonight, and its money is no longer on hold after that.
+  - Asked to put in {amount} · This request ran out of time. It will be cancelled tonight.
+  - The run expires requests once each evening, so one that runs out after tonight's run says **tomorrow evening** instead of tonight (the database says which: `cancels_tonight`).
+  - **Dad's Approvals** (parent only), Approve and Decline greyed out: Ran out of time on {date and time}. It will be cancelled tonight, and the {amount} she had on hold goes back to her then. (A deposit: Ran out of time on {date and time}. It will be cancelled tonight.) The same "tomorrow evening" rule. Until Nov 2026: "This has expired. Tonight's run releases it, and she's told why."
 - Buying {fund}: {amount} · Waiting for today's 3:00 pm close (Nov 9) · asked Nov 6
 - Selling {fund}: {amount} or all of it · the same waiting line (see §7, History lines)
 

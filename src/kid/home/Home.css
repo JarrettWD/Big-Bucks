@@ -134,6 +134,19 @@
   border-color: var(--bb-gold);
   color: var(--bb-ink);
 }
+/* Block 1, item 4: her days to choose are over. Calm, not alarming; the button is greyed out. */
+.banner__card--over {
+  background: var(--bb-purple-tint);
+  border-color: var(--bb-purple-soft);
+  color: var(--bb-ink);
+}
+.gic__ready.gic__ready--over {
+  font-weight: 400;
+  color: var(--bb-ink);
+}
+.gic__ready.gic__ready--over > span {
+  flex: 1 1 12rem;
+}
 .banner__card--celebrate .btn--gold {
   background: var(--bb-purple);
   color: var(--bb-white);

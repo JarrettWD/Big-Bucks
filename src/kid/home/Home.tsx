@@ -32,6 +32,7 @@ import {
 } from '../learn/Inflation';
 import { TEXT as LEARN } from '../learn/learnText';
 import { ModeSwitch } from '../learn/ModeSwitch';
+import { GIC_TIME_UP, gicGoesToSavings } from '../deadlineText';
 import { ActivityList } from './ActivityList';
 import { Sparkline } from './Sparkline';
 import { isWaiting, useHome, type Cents, type Fund, type Gic, type HomeData } from './useHome';
@@ -246,32 +247,51 @@ function Banner({ data, year, onChange }: { data: HomeData; year: number; onChan
 
   return (
     <section className="banner" aria-label="Things for you">
-      {waiting.map((g) => (
-        <div key={g.gic_id} className="banner__card banner__card--celebrate">
-          <p className="banner__title">
-            <span aria-hidden="true">🎉 </span>Your GIC grew!
-          </p>
-          <p>
-            Your {termLabel(g.term_months)} GIC earned {formatCents(g.interest_at_maturity_cents)},
-            so you now have <strong>{formatCents(g.balance_cents)}</strong>. Choose what happens
-            next by <strong>{formatDate(g.choose_by!, year)}</strong>.
-          </p>
-          {view.viewing ? (
+      {waiting.map((g) =>
+        g.choice_over ? (
+          // Block 1, item 4: her days to choose are over; the card stays until the run moves it.
+          <div key={g.gic_id} className="banner__card banner__card--over">
+            <p className="banner__title" id={`gic-over-${g.gic_id}`}>
+              <span aria-hidden="true">⏰ </span>
+              {GIC_TIME_UP}
+            </p>
+            <p>{gicGoesToSavings(g.balance_cents)}</p>
             <button
               type="button"
               className="btn btn--gold"
               disabled
-              aria-describedby="viewing-banner"
+              aria-describedby={`gic-over-${g.gic_id}`}
             >
               Choose what's next
             </button>
-          ) : (
-            <Link className="btn btn--gold" to={`/kid/gic/${g.gic_id}`}>
-              Choose what's next
-            </Link>
-          )}
-        </div>
-      ))}
+          </div>
+        ) : (
+          <div key={g.gic_id} className="banner__card banner__card--celebrate">
+            <p className="banner__title">
+              <span aria-hidden="true">🎉 </span>Your GIC grew!
+            </p>
+            <p>
+              Your {termLabel(g.term_months)} GIC earned {formatCents(g.interest_at_maturity_cents)}
+              , so you now have <strong>{formatCents(g.balance_cents)}</strong>. Choose what happens
+              next by <strong>{formatDate(g.choose_by!, year)}</strong>.
+            </p>
+            {view.viewing ? (
+              <button
+                type="button"
+                className="btn btn--gold"
+                disabled
+                aria-describedby="viewing-banner"
+              >
+                Choose what's next
+              </button>
+            ) : (
+              <Link className="btn btn--gold" to={`/kid/gic/${g.gic_id}`}>
+                Choose what's next
+              </Link>
+            )}
+          </div>
+        ),
+      )}
       {shown.map((n) => (
         <div key={n.id} className="banner__card">
           <p className="banner__title">{n.title}</p>
@@ -400,7 +420,23 @@ function GicRow({
           {termLabel(g.term_months)} at {formatRate(g.rate)}
         </span>
       </div>
-      {waiting ? (
+      {waiting && g.choice_over ? (
+        // Block 1, item 4: her days to choose are over; tonight's run moves it to savings.
+        <div className="gic__ready gic__ready--over">
+          <span id={`gic-row-over-${g.gic_id}`}>
+            <span aria-hidden="true">⏰ </span>
+            {GIC_TIME_UP} {gicGoesToSavings(g.balance_cents)}
+          </span>
+          <button
+            type="button"
+            className="btn btn--small"
+            disabled
+            aria-describedby={`gic-row-over-${g.gic_id}`}
+          >
+            Choose
+          </button>
+        </div>
+      ) : waiting ? (
         <div className="gic__ready">
           <span>
             <span aria-hidden="true">🎉 </span>Ready now!
