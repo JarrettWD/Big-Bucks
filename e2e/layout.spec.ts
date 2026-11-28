@@ -220,7 +220,7 @@ for (const size of SIZES) {
       // welcome, a tour card with the rates, and the whole agreement.
       const wren = await wrenAccount();
       await page.goto(`./parent/view/${wren}`);
-      await expect(page.getByText("Let's set up your Big Bucks with Dad.")).toBeVisible();
+      await expect(page.getByText("Let's set up your Big Bucks with Mom or Dad.")).toBeVisible();
       await check(page, `onboarding-home-banner-${size.name}-${text.name}`, text.scale);
       await page.goto(`./parent/view/${wren}/welcome`);
       await expect(page.locator('.welcome__steps')).toBeVisible();

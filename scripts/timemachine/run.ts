@@ -278,9 +278,16 @@ async function main(): Promise<void> {
           case 'sign_agreement': {
             // She signs, then Dad countersigns: no money moves before both have
             // (pre-launch audit, 2026-10-08).
-            const signed = await db.call(kidWho(a.kid), 'select public.sign_agreement(1)');
+            const signed = await db.call(
+              kidWho(a.kid),
+              'select public.sign_agreement((select max(av.version) from public.agreement_versions av))',
+            );
             if (!signed.ok) return signed;
-            return db.call(PARENT, 'select public.countersign_agreement($1, 1)', [accounts[a.kid]]);
+            return db.call(
+              PARENT,
+              'select public.countersign_agreement($1, (select max(av.version) from public.agreement_versions av))',
+              [accounts[a.kid]],
+            );
           }
           case 'deposit':
             return db.call(kidWho(a.kid), 'select public.request_deposit($1)', [

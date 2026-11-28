@@ -60,10 +60,10 @@ begin
   insert into public.profiles (user_id, role, account_id, username, display_name)
     values (v_user, 'investor', v_acct, p_username, p_username);
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+    values (v_acct, (select max(av.version) from public.agreement_versions av), 'kid', v_user, '{}'::jsonb);
   if p_countersigned then
     insert into public.agreement_signatures (account_id, version, signer, signed_by)
-      values (v_acct, 1, 'parent', v_user);
+      values (v_acct, (select max(av.version) from public.agreement_versions av), 'parent', v_user);
   end if;
   return v_acct;
 end;

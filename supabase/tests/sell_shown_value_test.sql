@@ -53,8 +53,8 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   -- Stage 8 B4: she has signed the agreement, so she can ask for deposits.
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb),
-           (v_acct, 1, 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
+    values (v_acct, (select max(av.version) from public.agreement_versions av), 'kid', v_user, '{}'::jsonb),
+           (v_acct, (select max(av.version) from public.agreement_versions av), 'parent', v_user, null); -- Dad's countersignature (pre-launch audit)
   perform tests.as_kid(p_username);
   v_req := public.request_deposit(10000);
   perform tests.as_user('00000000-0000-0000-0000-00000000000f', 'aal2');

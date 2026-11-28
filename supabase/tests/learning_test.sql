@@ -55,7 +55,7 @@ begin
   insert into public.profiles (user_id, role, account_id, username, display_name)
     values (v_user, 'investor', v_acct, p_username, p_username);
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb), (v_acct, 1, 'parent', v_user, null);
+    values (v_acct, (select max(av.version) from public.agreement_versions av), 'kid', v_user, '{}'::jsonb), (v_acct, (select max(av.version) from public.agreement_versions av), 'parent', v_user, null);
   return v_acct;
 end;
 $$;

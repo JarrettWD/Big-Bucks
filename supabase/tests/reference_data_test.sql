@@ -1,6 +1,6 @@
 -- Known answers for the starting data: funds, rates, settings, glossary and holidays.
 begin;
-select plan(18);
+select plan(21);
 
 select results_eq(
   $$select id, name, proxy_symbol, market::text, colour from public.funds order by sort_order$$,
@@ -49,14 +49,14 @@ select is(
 -- Market holidays: counts per market and year
 select results_eq(
   $$select market::text, extract(year from holiday_date)::int, kind::text, confirmed, count(*)::int
-      from public.market_holidays group by 1, 2, 3, 4 order by 1, 2, 3$$,
+      from public.market_holidays group by 1, 2, 3, 4 order by 1, 2, 3, 4$$,
   $$values ('nyse', 2026, 'closed', true, 10), ('nyse', 2026, 'early_close', true, 2),
            ('nyse', 2027, 'closed', true, 10), ('nyse', 2027, 'early_close', true, 1),
            ('nyse', 2028, 'closed', true, 9),  ('nyse', 2028, 'early_close', true, 2),
            ('tsx', 2026, 'closed', true, 10),  ('tsx', 2026, 'early_close', true, 1),
-           ('tsx', 2027, 'closed', false, 10), ('tsx', 2027, 'early_close', false, 1),
+           ('tsx', 2027, 'closed', false, 9), ('tsx', 2027, 'closed', true, 1), ('tsx', 2027, 'early_close', false, 1),
            ('tsx', 2028, 'closed', false, 10)$$,
-  'holiday counts per market and year; only TSX 2027-2028 are unconfirmed');
+  'holiday counts per market and year; only TSX 2027-2028 are unconfirmed, except Jan 1, 2027');
 select is((select count(*) from public.market_holidays where extract(isodow from holiday_date) > 5), 0::bigint,
   'no holiday falls on a weekend');
 select ok(not exists (select 1 from public.market_holidays where market = 'nyse' and holiday_date = '2027-12-31'),
@@ -76,6 +76,18 @@ select is((select closes_at from public.market_holidays where market = 'nyse' an
 select is(
   (select count(*) from public.market_holidays where confirmed = false and market <> 'tsx'), 0::bigint,
   'every NYSE row is confirmed from the published calendar');
+
+select is(
+  (select confirmed from public.market_holidays where market = 'tsx' and holiday_date = '2027-01-01' and kind = 'closed'), true,
+  'TSX New Year''s Day 2027 is confirmed: TSX is closed every Jan 1 (Dad, 2026-11-27)');
+select is(
+  (select confirmed from public.market_holidays where market = 'tsx' and holiday_date = '2027-02-15'), false,
+  '...Family Day 2027 is still waiting for TSX''s published calendar');
+select is(
+  array[public.is_trading_day('tsx', date '2026-12-31'), public.is_trading_day('tsx', date '2027-01-01'),
+        public.is_trading_day('tsx', date '2027-01-04')],
+  array[true, false, true],
+  'confirming it moves no trading day: Dec 31 trades, Jan 1 is closed, Mon Jan 4 trades');
 
 select * from finish();
 rollback;

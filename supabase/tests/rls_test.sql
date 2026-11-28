@@ -171,7 +171,7 @@ begin
       values ('00000000-0000-0000-0000-00000000000f', 'approve_request', acct, 'Approved a test deposit.');
     -- Stage 8 B4: her signed agreement and the What's new she has seen.
     insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-      values (acct, 1, 'kid', gen_random_uuid(), '{}'::jsonb),
+      values (acct, (select max(av.version) from public.agreement_versions av), 'kid', gen_random_uuid(), '{}'::jsonb),
              (acct, 1, 'parent', gen_random_uuid(), null);
     insert into public.whats_new_seen (account_id, feature) values (acct, 'wishlist');
   end loop;

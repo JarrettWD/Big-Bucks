@@ -254,14 +254,14 @@ async function main(): Promise<void> {
         on(0, '08:40'),
         `${name} signs the agreement`,
         who,
-        'select public.sign_agreement(1)',
+        'select public.sign_agreement((select max(av.version) from public.agreement_versions av))',
         [],
       );
       act(
         on(0, '08:45'),
         `Dad countersigns ${name}'s agreement`,
         P,
-        'select public.countersign_agreement($1, 1)',
+        'select public.countersign_agreement($1, (select max(av.version) from public.agreement_versions av))',
         [account],
       );
       act(

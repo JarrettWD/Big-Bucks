@@ -171,12 +171,12 @@ Shown when she tries something the house rules don't allow. Nothing happens, and
 
 - Only a kid's account can do this.
 - **The agreement isn't fully signed** (pre-launch audit, 2026-10-08; withdrawals, fund trades, buying or breaking a GIC, finishing onboarding):
-  - Not signed yet: Sign your Big Bucks agreement with Dad first.
+  - Not signed yet: Sign your Big Bucks agreement with Dad first. (These refusals become "with Mom or Dad" in block 2, Jan 2: they sit in `require_agreement`, which guards money moves, so they don't change before the freeze. Onboarding's own step refusal already says "Sign your Big Bucks agreement with Mom or Dad first.")
   - A new version (only new deposits wait; everything else keeps working under the version they both signed: Dad, 2026-10-08):
     - She hasn't signed it yet: Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed.
     - She has, Dad hasn't yet: You signed the new agreement! New deposits wait until Dad signs it too.
   - Her first agreement, before Dad signs, a second deposit: Your first deposit is already waiting for Dad.
-  - **Her Home banner** while a new version waits: "Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed. Everything else works like before." · **Read it**; after she signs: "You signed the new agreement! New deposits wait until Dad signs it too."
+  - **Her Home banner** while a new version waits: "Dad changed the house rules. Read your new agreement with Mom or Dad and sign it. New deposits wait until you have both signed. Everything else works like before." · **Read it**; after she signs: "You signed the new agreement! New deposits wait until Dad signs it too."
   - Dad hasn't countersigned: Dad hasn't signed your agreement yet. As soon as he does, this will work.
 - **Dad, approving for a girl who never signed:** {name} hasn't signed her Big Bucks agreement yet, so nothing can be approved.
 - **Dad, approving before he has countersigned:** {name} signed her agreement and is waiting for you to sign it too. Sign it first (it's at the top of Approvals), then approve this.
@@ -719,28 +719,30 @@ One card at a time, and every card is part of onboarding (there is no skip). **B
 
 ### 4. Your Big Bucks agreement
 
-- **Title:** Your Big Bucks agreement
-- **Intro:** These are the house rules. Read them with Dad, and ask about anything that doesn't make sense. When you both agree, you each sign. A copy stays in your history.
+This is **version 2** (Dad, 2026-11-27; `20261128000000_agreement_v2.sql`), the one the girls sign at launch. "Mom or Dad" wherever it's about reading, talking or asking; "Dad" only where it's something only his parent sign-in can do. Version 1 stays in the database exactly as signed: its intro and sign line said "with Dad" ("When you both agree, you each sign."), rule 2 ended at "grow past {cap}.", rule 8 said "When a GIC finishes", and rule 14 said "tell Dad."
+
+- **Title:** Your Big Bucks agreement (version 2)
+- **Intro:** These are the house rules. Read them with Mom or Dad, and ask about anything that doesn't make sense. When you agree, you sign, and then Dad signs too. A copy stays in your history.
 - **The rules:**
   1. 💵 **The money is real.** Dad keeps the cash, and Big Bucks keeps track of every cent he owes you.
-  2. 🐷 **New money goes into savings first.** You can put in up to {cap} altogether. Taking money out gives you room again. Interest and growth don't count, so your money can grow past {cap}.
+  2. 🐷 **New money goes into savings first.** You can put in up to {cap} altogether. Taking money out gives you room again. Interest and growth don't count, so your money can grow past {cap}. Money comes out of savings too. To cash out a fund or GIC, move it to savings first.
   3. 🎁 **Birthday money and allowance can go in too.** Ask for a deposit the usual way, and it has to fit under your deposit cap.
   4. 🙋 **Dad says yes first** when money goes in or out, because real cash changes hands. Dad has up to {expiry_days} days to answer. If he hasn't answered by then, the request is cancelled and you can ask again.
   5. 😴 **Sleep on it.** When you ask to take money out, Dad waits at least {withdraw_wait_hours} hours before he can say yes, so you have time to think it over.
   6. ✋ **Money on hold.** While a request is waiting, its money is on hold **?**, so you can't use the same money twice.
   7. 🔢 **The smallest amounts** are {min_savings} for savings, and {min_invest} for a GIC or a stock fund.
-  8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC finishes, you have {gic_choice_days} days to choose what's next, or it moves to your savings. (Still "finishes": this is the signed agreement; changing it means a new version for the girls to sign.)
+  8. 🔒 **A GIC is a promise.** You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC matures **?**, you have {gic_choice_days} days to choose what's next, or it moves to your savings.
   9. 📉 **Stock funds go up and down, and losses are real.** If a fund is worth less when you sell, you get less. A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time.
   10. 📈 **One trade per fund each day.** You can buy or sell each fund once a day. Buys and sells happen at the next market close.
   11. 📣 **Rates can change**, like at a real bank. If a rate or your deposit cap is going down, Big Bucks tells you at least {cut_notice_days} days before. Good news, like a higher rate, can start right away. A GIC you already have keeps its rate.
   12. ⚖️ **Fair for both of you.** You and your sister get the same rates and the same rules.
   13. 🔍 **Ask any time.** If something ever looks wrong, tap "Something looks wrong?" and Dad will answer. If there's a mistake, Dad fixes it openly, with a note you can read, and rounding always goes your way.
-  14. 🔑 **Your PIN is yours.** Don't share it, not even with your sister. If you think someone knows it, tell Dad.
+  14. 🔑 **Your PIN is yours.** Don't share it, not even with your sister. If you think someone knows it, tell Mom or Dad.
   15. 👀 **Mom and Dad can see your account.** They can look at your Big Bucks screens any time, just like your wish list.
      - If the Wish List is off for her, the sentence ends at "any time."
 - **Dad's promises:** Dad keeps your cash safe, answers your requests, and fixes any mistake openly, with a note, rounding in your favour.
 - **Her signature:**
-  - I've read these rules with Dad, and I agree. — {name}
+  - I've read these rules with Mom or Dad, and I agree. — {name}
   - **Button:** Sign my agreement
 - **After she signs:**
   - You signed it! Now it's Dad's turn.
@@ -758,7 +760,7 @@ Only when a rule itself changes: a new rule, or a rule reworded. A number changi
 
 - **Notice** (to the bell):
   - Title: Your Big Bucks agreement has changed
-  - Body: Dad changed the house rules. Read the new version with Dad, and sign it when you both agree. Your old agreement stays in your history.
+  - Body: Dad changed the house rules. Read the new version with Mom or Dad, and sign it when you agree. Your old agreement stays in your history.
 - **Home banner:** Your Big Bucks agreement has changed. · **Read it**
 - **The new version:**
   - Title: Your Big Bucks agreement (version {n})
@@ -820,7 +822,7 @@ Shown once, the first time she opens the app after Dad switches a feature on for
 
 ### Added while building the screens (B4, new: not in Dad's reviewed draft)
 
-- **In Dad's "View as" only, on her Home until she's set up:** 👋 Let's set up your Big Bucks with Dad. (before she signs) · 👋 Let's finish setting up your Big Bucks. (after). She never sees these: she's on her welcome screens.
+- **In Dad's "View as" only, on her Home until she's set up:** 👋 Let's set up your Big Bucks with Mom or Dad. (before she signs) · 👋 Let's finish setting up your Big Bucks. (after). She never sees these: she's on her welcome screens.
 - **The tour's cards:** a count above each title, for example "2 / 5".
 - **After she signs, once Dad has signed too:** ✍️ Dad has signed it too.
 - **The first decision, after choosing a GIC or a fund:** the same "You made your first money decision. Nice thinking!" and "You're all set. Welcome to Big Bucks!", with **Go to Buy / Sell** instead of Go to Home (she makes the move there).

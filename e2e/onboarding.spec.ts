@@ -84,7 +84,7 @@ test("Dad's View as Wren shows her welcome read-only", async ({ page }) => {
   await parentSignIn(page);
   const { id } = await one<{ id: string }>(`select ${WREN}::text as id`);
   await page.goto(`./parent/view/${id}`);
-  await expect(page.getByText("Let's set up your Big Bucks with Dad.")).toBeVisible();
+  await expect(page.getByText("Let's set up your Big Bucks with Mom or Dad.")).toBeVisible();
   await page.goto(`./parent/view/${id}/welcome?step=agreement`);
   await expect(page.getByRole('heading', { name: 'Your Big Bucks agreement' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign my agreement' })).toBeDisabled();
@@ -172,24 +172,34 @@ test("she signs the agreement: Dad's reviewed wording, today's numbers", async (
     `select public.house_rules() ->> 'cap' as cap, public.house_rules() ->> 'expiry_days' as days,
             public.house_rules() ->> 'cut_notice_days' as notice`,
   );
+  await expect(page.locator('.agree > p').first()).toHaveText(
+    "These are the house rules. Read them with Mom or Dad, and ask about anything that doesn't make sense. When you agree, you sign, and then Dad signs too. A copy stays in your history.",
+  );
   await expect(rules.nth(1)).toContainText(`You can put in up to ${h.cap} altogether.`);
+  await expect(rules.nth(1)).toContainText(
+    'Money comes out of savings too. To cash out a fund or GIC, move it to savings first.',
+  );
+  await expect(rules.nth(7)).toContainText('When a GIC matures, you have');
+  await expect(rules.nth(7).getByRole('button')).toHaveCount(1); // the ? for "Matures"
   await expect(rules.nth(3)).toContainText(`Dad has up to ${h.days} days to answer.`);
   await expect(rules.nth(10)).toContainText(
     `Big Bucks tells you at least ${h.notice} days before. Good news, like a higher rate, can start right away.`,
   );
   await expect(rules.nth(13)).toHaveText(
-    "🔑Your PIN is yours. Don't share it, not even with your sister. If you think someone knows it, tell Dad.",
+    "🔑Your PIN is yours. Don't share it, not even with your sister. If you think someone knows it, tell Mom or Dad.",
   );
   await expect(rules.nth(14)).toContainText('They can look at your Big Bucks screens any time.');
   await expect(page.locator('.agree__promises')).toContainText(
     'Dad keeps your cash safe, answers your requests, and fixes any mistake openly, with a note, rounding in your favour.',
   );
-  await expect(page.getByText("I've read these rules with Dad, and I agree. — Wren")).toBeVisible();
+  await expect(
+    page.getByText("I've read these rules with Mom or Dad, and I agree. — Wren"),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Sign my agreement' }).click();
   await expect(page.getByText("✍️ You signed it! Now it's Dad's turn.")).toBeVisible();
   const sig = await one<{ n: string; same: boolean }>(
-    `select count(*)::text as n, bool_and(s.copy = public.agreement_render(1, s.account_id)) as same
+    `select count(*)::text as n, bool_and(s.copy = public.agreement_render((select max(av.version) from public.agreement_versions av), s.account_id)) as same
        from public.agreement_signatures s where s.account_id = ${WREN} and s.signer = 'kid'`,
   );
   expect(sig).toEqual({ n: '1', same: true });
@@ -368,7 +378,7 @@ test('once both have signed and her first deposit is in, the app is hers: a GIC 
   const on = await one<{ d: string }>(`select public.fmt_date(public.app_today()) as d`);
   const line = page.locator('#agreement .activity__row');
   await expect(line).toHaveText(
-    new RegExp(`Your Big Bucks agreement · signed ${on.d}, Dad signed ${on.d}`),
+    new RegExp(`Your Big Bucks agreement \\(version 2\\) · signed ${on.d}, Dad signed ${on.d}`),
   );
   await line.click();
   await expect(page.locator('#agreement .agree__rule')).toHaveCount(15);

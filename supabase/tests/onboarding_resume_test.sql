@@ -74,11 +74,11 @@ select is(tests.err($$select public.save_onboarding_step('wish')$$), 'There''s n
   'not a step whose feature is off for her');
 select is(tests.err($$select public.save_onboarding_step('tour', -1)$$), 'There''s no card -1 in the tour.',
   'only real tour cards');
-select is(tests.err($$select public.save_onboarding_step('decision')$$), 'Sign your Big Bucks agreement with Dad first.',
+select is(tests.err($$select public.save_onboarding_step('decision')$$), 'Sign your Big Bucks agreement with Mom or Dad first.',
   'not to her first decision before she signs');
 
 -- Once she signs, her place is her first decision, wherever she says she is.
-select public.sign_agreement(1);
+select public.sign_agreement(2);
 select is(tests.place(), 'decision 0', 'after signing she resumes at her first decision');
 select public.save_onboarding_step('tour', 2);
 select is(tests.place(), 'decision 0', '...even if she looks back at the tour');
@@ -111,7 +111,7 @@ select tests.as_kid('kid_a');
 select is(public.onboarding_state(tests.acct('kid_a')) ->> 'unlocked', 'false',
   'Dad hasn''t signed yet: still locked');
 select tests.as_parent();
-select public.countersign_agreement(tests.acct('kid_a'), 1);
+select public.countersign_agreement(tests.acct('kid_a'), 2);
 select public.approve_request((select id from dep));
 select tests.as_kid('kid_a');
 select is((select (s ->> 'unlocked') || ' ' || (s ->> 'done') from (select public.onboarding_state(tests.acct('kid_a')) s) x),
@@ -132,10 +132,10 @@ select tests.new_kid('kid_c');
 update public.accounts set is_test = true where id = tests.acct('kid_c');
 select tests.clock('2026-10-07 09:00');
 select tests.as_kid('kid_c');
-select public.sign_agreement(1);
+select public.sign_agreement(2);
 select tests.clock('2026-10-07 11:00');
 select tests.as_kid('kid_b');
-select public.sign_agreement(1);
+select public.sign_agreement(2);
 select tests.as_parent();
 select is((select jsonb_agg(k ->> 'kid') from jsonb_array_elements(public.parent_agreements()) k),
   '["Kid A", "Kid B", "Kid C"]'::jsonb,

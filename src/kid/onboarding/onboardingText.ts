@@ -299,10 +299,10 @@ export const TEXT = {
   allSet: 'You made your first money decision. Nice thinking!',
   welcomeAboard: "You're all set. Welcome to Big Bucks!",
   goHome: 'Go to Home',
-  setupBanner: "👋 Let's set up your Big Bucks with Dad.",
+  setupBanner: "👋 Let's set up your Big Bucks with Mom or Dad.",
   setupContinue: "👋 Let's finish setting up your Big Bucks.",
   changedBanner:
-    'Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed. Everything else works like before.',
+    'Dad changed the house rules. Read your new agreement with Mom or Dad and sign it. New deposits wait until you have both signed. Everything else works like before.',
   changedWaiting: 'You signed the new agreement! New deposits wait until Dad signs it too.',
   readIt: 'Read it',
   historyTitle: 'Your Big Bucks agreement',

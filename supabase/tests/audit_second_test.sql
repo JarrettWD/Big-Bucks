@@ -59,7 +59,7 @@ begin
   insert into public.profiles (user_id, role, account_id, username, display_name)
     values (v_user, 'investor', v_acct, p_username, p_username);
   insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-    values (v_acct, 1, 'kid', v_user, '{}'::jsonb), (v_acct, 1, 'parent', v_user, null);
+    values (v_acct, (select max(av.version) from public.agreement_versions av), 'kid', v_user, '{}'::jsonb), (v_acct, (select max(av.version) from public.agreement_versions av), 'parent', v_user, null);
   return v_acct;
 end;
 $$;
@@ -105,24 +105,24 @@ select tests.fund('kid_r', 50000);
 -- 1. A new agreement version holds up only new deposits -------------------------------------------
 
 select tests.as_kid('kid_v');
-create temp table v1dep as select public.request_deposit(1000) as id;  -- asked under version 1
+create temp table v1dep as select public.request_deposit(1000) as id;  -- asked under version 2
 select tests.nobody();
 insert into public.agreement_versions (version, intro, rules, promises, sign_line)
-values (2, 'Version 2', '[{"icon": "🧪", "title": "New", "text": "A new rule."}]', 'Promises.', 'Sign here.');
+values (3, 'Version 3', '[{"icon": "🧪", "title": "New", "text": "A new rule."}]', 'Promises.', 'Sign here.');
 
 select tests.as_kid('kid_v');
 select is(tests.err('select public.request_deposit(1000)'),
   'Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed.',
   'a new version: new deposits wait until she signs it');
-select lives_ok('select public.request_withdrawal(500)', '...but a withdrawal still works under version 1');
+select lives_ok('select public.request_withdrawal(500)', '...but a withdrawal still works under version 2');
 select lives_ok($$select public.request_trade('dow', 'buy', 1000)$$, '...and a fund trade');
 select lives_ok('select public.buy_gic(1000, 1)', '...and buying a GIC');
 select is((select (s ->> 'needs_signature')::boolean from (select public.onboarding_state(tests.acct('kid_v')) s) x), true,
   'her Home banner asks her to sign (needs_signature)');
-select isnt(public.sign_agreement(2), null, 'she signs version 2');
+select isnt(public.sign_agreement(3), null, 'she signs version 3');
 select is(tests.err('select public.request_deposit(1000)'),
   'You signed the new agreement! New deposits wait until Dad signs it too.',
-  'new deposits still wait for Dad''s signature on version 2');
+  'new deposits still wait for Dad''s signature on version 3');
 select is((select (s ->> 'countersigned')::boolean from (select public.onboarding_state(tests.acct('kid_v')) s) x), false,
   'her Home shows she''s waiting for Dad (countersigned = false)');
 
@@ -131,9 +131,9 @@ select is(tests.err('select public.approve_request((select id from v1dep))'),
   'Test kid_v signed her agreement and is waiting for you to sign it too. Sign it first (it''s at the top of Approvals), then approve this.',
   'Dad approves only after signing the latest version she signed');
 select is((select a ->> 'signed_version' from jsonb_array_elements(public.parent_agreements()) a
-            where a ->> 'account_id' = tests.acct('kid_v')::text), '2',
+            where a ->> 'account_id' = tests.acct('kid_v')::text), '3',
   '...and that''s the version Approvals offers him, so there''s no dead end');
-select lives_ok($$select public.countersign_agreement(tests.acct('kid_v'), 2)$$, 'Dad signs version 2');
+select lives_ok($$select public.countersign_agreement(tests.acct('kid_v'), 3)$$, 'Dad signs version 3');
 select lives_ok('select public.approve_request((select id from v1dep))', 'now he can approve');
 select tests.as_kid('kid_v');
 select lives_ok('select public.request_deposit(1000)', 'and new deposits work again');

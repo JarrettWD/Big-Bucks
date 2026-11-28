@@ -55,11 +55,11 @@ begin
     values (v_user, 'investor', v_acct, p_username, p_username);
   if p_signed in ('kid', 'both') then
     insert into public.agreement_signatures (account_id, version, signer, signed_by, copy)
-      values (v_acct, 1, 'kid', v_user, '{}'::jsonb);
+      values (v_acct, (select max(av.version) from public.agreement_versions av), 'kid', v_user, '{}'::jsonb);
   end if;
   if p_signed = 'both' then
     insert into public.agreement_signatures (account_id, version, signer, signed_by)
-      values (v_acct, 1, 'parent', v_user);
+      values (v_acct, (select max(av.version) from public.agreement_versions av), 'parent', v_user);
   end if;
   return v_acct;
 end;

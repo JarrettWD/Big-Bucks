@@ -1,10 +1,10 @@
 -- Stage 8 B4: onboarding, the account agreement and What's new. Known answers:
 -- the house-rule numbers (from the settings in force, and fixed rules that match
--- the engine), version 1 word for word (Dad's reviewed wording), signing before the
+-- the engine), versions 1 and 2 word for word (Dad's reviewed wording), signing before the
 -- first deposit, the frozen copy, Dad's countersignature, a new version, finishing
 -- onboarding, and What's new.
 begin;
-select plan(85);
+select plan(89);
 
 -- Test helpers ----------------------------------------------------------------
 
@@ -130,18 +130,53 @@ select is((select r ->> 'text' from jsonb_array_elements(public.agreement_render
 select is((select r ->> 'glossary' from jsonb_array_elements(public.agreement_render(1, tests.acct('kid_a')) -> 'rules') r
             where r ->> 'icon' = '✋'), 'On hold', '"on hold" has its ? explanation');
 
+-- 3b. Version 2 is Dad's reviewed wording (2026-11-27), word for word -----------------------------
+
+select is(public.agreement_render(2, tests.acct('kid_a')) - 'rules',
+  '{"version": 2, "title": "Your Big Bucks agreement (version 2)",
+    "intro": "These are the house rules. Read them with Mom or Dad, and ask about anything that doesn''t make sense. When you agree, you sign, and then Dad signs too. A copy stays in your history.",
+    "promises": "Dad keeps your cash safe, answers your requests, and fixes any mistake openly, with a note, rounding in your favour.",
+    "sign_line": "I''ve read these rules with Mom or Dad, and I agree.", "name": "Kid A"}'::jsonb,
+  'version 2: the title, intro and signature line say Mom or Dad; Dad''s promises unchanged');
+select is(tests.rule_lines(public.agreement_render(2, tests.acct('kid_a'))),
+  $$💵 The money is real.|Dad keeps the cash, and Big Bucks keeps track of every cent he owes you.
+🐷 New money goes into savings first.|You can put in up to $1,000.00 altogether. Taking money out gives you room again. Interest and growth don't count, so your money can grow past $1,000.00. Money comes out of savings too. To cash out a fund or GIC, move it to savings first.
+🎁 Birthday money and allowance can go in too.|Ask for a deposit the usual way, and it has to fit under your deposit cap.
+🙋 Dad says yes first|when money goes in or out, because real cash changes hands. Dad has up to 7 days to answer. If he hasn't answered by then, the request is cancelled and you can ask again.
+😴 Sleep on it.|When you ask to take money out, Dad waits at least 24 hours before he can say yes, so you have time to think it over.
+✋ Money on hold.|While a request is waiting, its money is on hold, so you can't use the same money twice.
+🔢 The smallest amounts|are $5.00 for savings, and $10.00 for a GIC or a stock fund.
+🔒 A GIC is a promise.|You leave the money for the whole term. If you break the promise early, you get your money back but you lose all its interest. When a GIC matures, you have 7 days to choose what's next, or it moves to your savings.
+📉 Stock funds go up and down, and losses are real.|If a fund is worth less when you sell, you get less. A big drop can turn $100 into $80, and sometimes less, for a while. Markets have usually come back, but it can take a long time.
+📈 One trade per fund each day.|You can buy or sell each fund once a day. Buys and sells happen at the next market close.
+📣 Rates can change|, like at a real bank. If a rate or your deposit cap is going down, Big Bucks tells you at least 7 days before. Good news, like a higher rate, can start right away. A GIC you already have keeps its rate.
+⚖️ Fair for both of you.|You and your sister get the same rates and the same rules.
+🔍 Ask any time.|If something ever looks wrong, tap "Something looks wrong?" and Dad will answer. If there's a mistake, Dad fixes it openly, with a note you can read, and rounding always goes your way.
+🔑 Your PIN is yours.|Don't share it, not even with your sister. If you think someone knows it, tell Mom or Dad.
+👀 Mom and Dad can see your account.|They can look at your Big Bucks screens any time.$$,
+  'version 2''s 15 rules: cashing out through savings, "matures", "tell Mom or Dad"; the rest as version 1');
+select is((select jsonb_agg(jsonb_build_array(r ->> 'icon', r ->> 'glossary', r ->> 'mark'))
+             from jsonb_array_elements(public.agreement_render(2, tests.acct('kid_b')) -> 'rules') r
+            where r ? 'glossary' or r ? 'mark'),
+  '[["✋", "On hold", null], ["🔒", "Matures", null]]'::jsonb,
+  'the ? for "On hold" and "Matures", and no New or Changed marks (her first agreement at launch)');
+select is((select r ->> 'text' from jsonb_array_elements(public.agreement_render(2, tests.acct('kid_b')) -> 'rules') r
+            where r ->> 'icon' = '👀'),
+  'They can look at your Big Bucks screens any time, just like your wish list.',
+  'with her Wish List on, rule 15 still mentions it');
+
 -- 4. She can look around before signing, but can't put money in -------------------------------
 
 select tests.as_kid('kid_a');
 -- resume_step, resume_card, pending_deposit_cents, unlocked and last_answer: see onboarding_resume_test.sql.
 select is((select s - 'agreement' - 'rules' - 'resume_step' - 'resume_card' - 'pending_deposit_cents' - 'unlocked' - 'last_answer'
              from (select public.onboarding_state(tests.acct('kid_a')) s) x),
-  jsonb_build_object('name', 'Kid A', 'done', false, 'current_version', 1, 'signed_version', null,
+  jsonb_build_object('name', 'Kid A', 'done', false, 'current_version', 2, 'signed_version', null,
     'countersigned', false, 'needs_signature', true, 'steps', '["welcome", "tour", "agreement", "decision"]'::jsonb,
     'first_deposit_cents', null, 'free_cents', 0, 'min_invest_cents', 1000),
   'before anything: not signed, nothing in, and the steps (no Wish List or Make it yours for her)');
-select is(public.onboarding_state(tests.acct('kid_a')) -> 'agreement', public.agreement_render(1, tests.acct('kid_a')),
-  'the agreement she reads is version 1 with today''s numbers');
+select is(public.onboarding_state(tests.acct('kid_a')) -> 'agreement', public.agreement_render(2, tests.acct('kid_a')),
+  'the agreement she reads is version 2 with today''s numbers');
 create temporary table fp as select tests.footprint() as f;
 select is(tests.err('select public.request_deposit(1000)'),
   'Before you can put money in, sign your Big Bucks agreement with Dad.',
@@ -159,24 +194,24 @@ select is(public.onboarding_state(tests.acct('kid_b')) -> 'steps', '["welcome", 
 -- 5. Signing -------------------------------------------------------------------------------------
 
 select tests.as_kid('kid_a');
-select is(tests.err('select public.sign_agreement(2)'),
+select is(tests.err('select public.sign_agreement(1)'),
   'That isn''t the latest agreement. Please go back and read the latest one.', 'only the latest version can be signed');
-create temporary table sig_a as select public.sign_agreement(1) as id;
+create temporary table sig_a as select public.sign_agreement(2) as id;
 select results_eq(
   $$select account_id, version, signer, signed_by, signed_at, copy from public.agreement_signatures where id = (select id from sig_a)$$,
-  $$select tests.acct('kid_a'), 1, 'kid', (select user_id from public.profiles where username = 'kid_a'), public.app_now(),
-           public.agreement_render(1, tests.acct('kid_a'))$$,
+  $$select tests.acct('kid_a'), 2, 'kid', (select user_id from public.profiles where username = 'kid_a'), public.app_now(),
+           public.agreement_render(2, tests.acct('kid_a'))$$,
   'her signature: who, when, and a copy of exactly what she read');
 select is((select agreement_signed_at from public.accounts where id = tests.acct('kid_a')), public.app_now(),
   'her account remembers when she signed');
-select is(tests.err('select public.sign_agreement(1)'), 'You''ve already signed this agreement.', 'once is enough');
+select is(tests.err('select public.sign_agreement(2)'), 'You''ve already signed this agreement.', 'once is enough');
 select isnt(public.request_deposit(1000), null, 'now she can ask to put money in');
 select is((select s ->> 'needs_signature' from (select public.onboarding_state(tests.acct('kid_a')) s) x), 'false',
   'she doesn''t need to sign again');
 select tests.as_parent();
-select is(tests.err('select public.sign_agreement(1)'), 'Only a kid''s account can do this.', 'Dad can''t sign for her');
+select is(tests.err('select public.sign_agreement(2)'), 'Only a kid''s account can do this.', 'Dad can''t sign for her');
 select tests.as_kid('kid_b');
-select isnt(public.sign_agreement(1), null, 'kid B (a test account) signs too');
+select isnt(public.sign_agreement(2), null, 'kid B (a test account) signs too');
 
 -- 6. Her copy is frozen; numbers that change reach her by notice ----------------------------------
 
@@ -185,11 +220,11 @@ insert into public.settings (key, value, effective_date) values ('request_expiry
 select tests.as_kid('kid_a');
 select is((select r ->> 'text' from jsonb_array_elements(public.onboarding_state(tests.acct('kid_a')) -> 'agreement' -> 'rules') r
             where r ->> 'icon' = '🐷'),
-  'You can put in up to $1,250.00 altogether. Taking money out gives you room again. Interest and growth don''t count, so your money can grow past $1,250.00.',
+  'You can put in up to $1,250.00 altogether. Taking money out gives you room again. Interest and growth don''t count, so your money can grow past $1,250.00. Money comes out of savings too. To cash out a fund or GIC, move it to savings first.',
   'the agreement as read today has the new cap...');
 select is((select r ->> 'text' from jsonb_array_elements(public.my_agreements(tests.acct('kid_a')) -> 0 -> 'copy' -> 'rules') r
             where r ->> 'icon' = '🐷'),
-  'You can put in up to $1,000.00 altogether. Taking money out gives you room again. Interest and growth don''t count, so your money can grow past $1,000.00.',
+  'You can put in up to $1,000.00 altogether. Taking money out gives you room again. Interest and growth don''t count, so your money can grow past $1,000.00. Money comes out of savings too. To cash out a fund or GIC, move it to savings first.',
   '...but the copy she signed keeps the cap of the day she signed');
 select is((select r ->> 'text' from jsonb_array_elements(public.my_agreements(tests.acct('kid_a')) -> 0 -> 'copy' -> 'rules') r
             where r ->> 'icon' = '🙋') like '%up to 7 days%', true, '...and the 7 days Dad had then');
@@ -199,22 +234,22 @@ select is((select s ->> 'needs_signature' from (select public.onboarding_state(t
 -- 7. Dad countersigns on his own phone ------------------------------------------------------------
 
 select tests.as_parent();
-select is(public.agreement_preview(tests.acct('kid_c'), 1) ->> 'problem', 'Kid C hasn''t signed this agreement yet.',
+select is(public.agreement_preview(tests.acct('kid_c'), 2) ->> 'problem', 'Kid C hasn''t signed this agreement yet.',
   'Dad can''t sign before she does');
 delete from fp;
 insert into fp select tests.footprint();
-select is(public.agreement_preview(tests.acct('kid_a'), 1) - 'copy',
-  '{"problem": null, "summary": "Signed Kid A''s Big Bucks agreement.",
+select is(public.agreement_preview(tests.acct('kid_a'), 2) - 'copy',
+  '{"problem": null, "summary": "Signed Kid A''s Big Bucks agreement (version 2).",
     "notices": [{"title": "Your agreement is signed!", "body": "Dad signed it too. You can read it any time in your history."}]}'::jsonb,
   'the preview: the log line and her notice');
-select is(public.agreement_preview(tests.acct('kid_a'), 1) -> 'copy',
+select is(public.agreement_preview(tests.acct('kid_a'), 2) -> 'copy',
   (select copy from public.agreement_signatures where id = (select id from sig_a)),
   'Dad reads the copy she signed');
 select is(tests.footprint(), (select f from fp), 'the preview leaves nothing behind');
-create temporary table csig as select public.countersign_agreement(tests.acct('kid_a'), 1) as id;
+create temporary table csig as select public.countersign_agreement(tests.acct('kid_a'), 2) as id;
 select results_eq(
   $$select account_id, version, signer, signed_by, signed_at, copy from public.agreement_signatures where id = (select id from csig)$$,
-  $$select tests.acct('kid_a'), 1, 'parent', '00000000-0000-0000-0000-00000000000f'::uuid, public.app_now(), null::jsonb$$,
+  $$select tests.acct('kid_a'), 2, 'parent', '00000000-0000-0000-0000-00000000000f'::uuid, public.app_now(), null::jsonb$$,
   'Dad''s signature row');
 select results_eq(
   $$select title, body from public.notifications where account_id = tests.acct('kid_a') and type = 'agreement'$$,
@@ -222,17 +257,17 @@ select results_eq(
   'her notice, word for word as previewed');
 select results_eq(
   $$select action, account_id, target_id, summary from public.parent_actions where action = 'countersign_agreement'$$,
-  $$select 'countersign_agreement', tests.acct('kid_a'), (select id from csig), 'Signed Kid A''s Big Bucks agreement.'$$,
+  $$select 'countersign_agreement', tests.acct('kid_a'), (select id from csig), 'Signed Kid A''s Big Bucks agreement (version 2).'$$,
   'one log row, word for word as previewed');
-select is(tests.err($$select public.countersign_agreement(tests.acct('kid_a'), 1)$$),
+select is(tests.err($$select public.countersign_agreement(tests.acct('kid_a'), 2)$$),
   'You''ve already signed Kid A''s agreement.', 'Dad signs once');
 select tests.as_parent('aal1');
-select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 1)$$),
+select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 2)$$),
   'Only a parent signed in with the second step (the authenticator code) can do this.', 'not without the code');
 select tests.as_kid('kid_b');
-select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 1)$$),
+select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 2)$$),
   'Only a parent signed in with the second step (the authenticator code) can do this.', 'and never by a kid');
-select is(tests.err($$select public.agreement_preview(tests.acct('kid_b'), 1)$$),
+select is(tests.err($$select public.agreement_preview(tests.acct('kid_b'), 2)$$),
   'Only a parent signed in with the second step (the authenticator code) can do this.', '...or its preview');
 
 -- The preview runs with in_preview() on; the real thing with it off.
@@ -247,9 +282,9 @@ $$;
 create trigger t_preview_sig before insert on public.agreement_signatures for each row
   when (new.signer = 'parent') execute function tests.must_be_in_preview();
 select tests.as_parent();
-select is(public.agreement_preview(tests.acct('kid_b'), 1) ->> 'problem', null,
+select is(public.agreement_preview(tests.acct('kid_b'), 2) ->> 'problem', null,
   'the countersign preview runs its dry run with in_preview() on');
-select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 1)$$), 'outside preview',
+select is(tests.err($$select public.countersign_agreement(tests.acct('kid_b'), 2)$$), 'outside preview',
   '...and the real countersignature with it off');
 select is(public.in_preview(), false, 'the flag is off again afterwards');
 drop trigger t_preview_sig on public.agreement_signatures;
@@ -258,16 +293,16 @@ drop trigger t_preview_sig on public.agreement_signatures;
 
 select tests.as_kid('kid_a');
 select is((select jsonb_agg(a - 'copy') from jsonb_array_elements(public.my_agreements(tests.acct('kid_a'))) a),
-  '[{"version": 1, "signed_on": "Oct 5", "dad_signed_on": "Oct 5"}]'::jsonb, 'her history: signed Oct 5, Dad signed Oct 5');
+  '[{"version": 2, "signed_on": "Oct 5", "dad_signed_on": "Oct 5"}]'::jsonb, 'her history: signed Oct 5, Dad signed Oct 5');
 select is((select s ->> 'countersigned' from (select public.onboarding_state(tests.acct('kid_a')) s) x), 'true',
   'her welcome screens know Dad has signed');
 select is(tests.err($$select public.my_agreements(tests.acct('kid_b'))$$), 'You can only see your own account.',
   'not her sister''s');
 select tests.as_parent();
 select is((select jsonb_agg(k - 'account_id' - 'signed_at' - 'dad_signed_at') from jsonb_array_elements(public.parent_agreements()) k),
-  '[{"kid": "Kid A", "is_test": false, "onboarding_done": false, "current_version": 1, "signed_version": 1},
-    {"kid": "Kid C", "is_test": false, "onboarding_done": false, "current_version": 1, "signed_version": null},
-    {"kid": "Kid B", "is_test": true, "onboarding_done": false, "current_version": 1, "signed_version": 1}]'::jsonb,
+  '[{"kid": "Kid A", "is_test": false, "onboarding_done": false, "current_version": 2, "signed_version": 2},
+    {"kid": "Kid C", "is_test": false, "onboarding_done": false, "current_version": 2, "signed_version": null},
+    {"kid": "Kid B", "is_test": true, "onboarding_done": false, "current_version": 2, "signed_version": 2}]'::jsonb,
   'Dad''s list: real kids first, who has signed which version');
 select is((select k ->> 'dad_signed_at' from jsonb_array_elements(public.parent_agreements()) k where k ->> 'kid' = 'Kid A'),
   'Oct 5 at 10:00 am', '...and when he signed');
@@ -286,7 +321,7 @@ select tests.as_kid('kid_b');
 select is(tests.err('select public.finish_onboarding()'), 'Dad hasn''t signed your agreement yet. As soon as he does, this will work.',
   'kid B can''t finish before Dad signs her agreement too (pre-launch audit)');
 select tests.as_parent();
-select public.countersign_agreement(tests.acct('kid_b'), 1);
+select public.countersign_agreement(tests.acct('kid_b'), 2);
 select tests.as_kid('kid_b');
 select lives_ok('select public.finish_onboarding()', 'kid B finishes too (her Wish List was on during onboarding)');
 select is((select array_agg(feature) from public.whats_new_seen where account_id = tests.acct('kid_b')), array['wishlist'],
@@ -328,38 +363,38 @@ select is(tests.err($$select public.whats_new()$$), 'Only a kid''s account can d
 
 -- 11. A new version of the rules -------------------------------------------------------------------
 
-insert into public.agreement_versions (version, intro, rules, promises, sign_line) values (2,
+insert into public.agreement_versions (version, intro, rules, promises, sign_line) values (3,
   'Some house rules have changed. Read them with Dad, and ask about anything that doesn''t make sense. When you both agree, you each sign.',
   '[{"icon": "💵", "title": "The money is real.", "text": "Dad keeps the cash."},
     {"icon": "🧪", "title": "A new rule.", "text": "Up to {cap}.", "mark": "new"}]'::jsonb,
   'Dad keeps your cash safe.', 'I''ve read these rules with Dad, and I agree.');
-select is(public.agreement_changed_notices(2), 2, 'the girls who signed version 1 are told');
+select is(public.agreement_changed_notices(3), 2, 'the girls who signed version 2 are told');
 select results_eq(
   $$select title, body from public.notifications where account_id = tests.acct('kid_a') and dedupe_key like 'agreement_changed:%'$$,
   $$values ('Your Big Bucks agreement has changed',
-            'Dad changed the house rules. Read the new version with Dad, and sign it when you both agree. Your old agreement stays in your history.')$$,
+            'Dad changed the house rules. Read the new version with Mom or Dad, and sign it when you agree. Your old agreement stays in your history.')$$,
   'her notice');
-select is(public.agreement_changed_notices(2), 2, 'running it again...');
+select is(public.agreement_changed_notices(3), 2, 'running it again...');
 select is((select count(*)::int from public.notifications where dedupe_key like 'agreement_changed:%'), 2,
   '...tells nobody twice');
 select tests.as_kid('kid_a');
 select is((select s ->> 'needs_signature' || ' ' || (s ->> 'signed_version') || ' ' || (s -> 'agreement' ->> 'title')
              from (select public.onboarding_state(tests.acct('kid_a')) s) x),
-  'true 1 Your Big Bucks agreement (version 2)', 'she has version 2 to sign');
+  'true 2 Your Big Bucks agreement (version 3)', 'she has version 3 to sign');
 select is((select r ->> 'mark' || ' ' || (r ->> 'text')
              from jsonb_array_elements(public.onboarding_state(tests.acct('kid_a')) -> 'agreement' -> 'rules') r where r ->> 'icon' = '🧪'),
   'new Up to $1,250.00.', 'a new rule is marked new, with today''s numbers');
 select is(tests.err('select public.request_deposit(1000)'),
   'Dad changed the house rules. Read your new agreement and sign it with Dad. New deposits wait until you have both signed.',
-  'until she has signed version 2 (and Dad too), new deposits wait (Dad, 2026-10-08)');
-select isnt(public.sign_agreement(2), null, 'she signs version 2');
+  'until she has signed version 3 (and Dad too), new deposits wait (Dad, 2026-10-08)');
+select isnt(public.sign_agreement(3), null, 'she signs version 3');
 select is((select jsonb_agg(jsonb_build_object('version', a -> 'version', 'title', a -> 'copy' -> 'title', 'dad', a -> 'dad_signed_on'))
              from jsonb_array_elements(public.my_agreements(tests.acct('kid_a'))) a),
-  '[{"version": 2, "title": "Your Big Bucks agreement (version 2)", "dad": null},
-    {"version": 1, "title": "Your Big Bucks agreement", "dad": "Oct 5"}]'::jsonb,
-  'both stay in her history, newest first; Dad hasn''t signed version 2 yet');
+  '[{"version": 3, "title": "Your Big Bucks agreement (version 3)", "dad": null},
+    {"version": 2, "title": "Your Big Bucks agreement (version 2)", "dad": "Oct 5"}]'::jsonb,
+  'both stay in her history, newest first; Dad hasn''t signed version 3 yet');
 select tests.as_parent();
-select is(public.agreement_preview(tests.acct('kid_a'), 2) ->> 'summary', 'Signed Kid A''s Big Bucks agreement (version 2).',
+select is(public.agreement_preview(tests.acct('kid_a'), 3) ->> 'summary', 'Signed Kid A''s Big Bucks agreement (version 3).',
   'Dad''s log line names the version');
 
 -- 12. Who may call, and nothing is edited ---------------------------------------------------------
@@ -409,8 +444,8 @@ reset role;
 
 select tests.clock('2026-10-05 11:00');
 select tests.as_parent();
--- Dad signs version 2 too, so money can move again (pre-launch audit).
-select public.countersign_agreement(tests.acct('kid_a'), 2);
+-- Dad signs version 3 too, so money can move again (pre-launch audit).
+select public.countersign_agreement(tests.acct('kid_a'), 3);
 select public.approve_request((select id from public.requests where account_id = tests.acct('kid_a') and status = 'pending'
                                 order by id limit 1));
 select tests.as_kid('kid_a');
