@@ -59,7 +59,7 @@ As approved on Nov 14 (PROGRESS, Stage 12 item 1).
 
 **What she sees (detailed mode only, remembered per device, as now):**
 - **The button:** "🛒 Will my money buy as much next year?" with a tag: **Show** when off, **Hide** when on (`aria-pressed` kept).
-- **When on:** under the button, "The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them." Each added line starts with 🛒 instead of 💡 (💡 stays for Buy / Sell tips).
+- **When on:** under the button, "The 🛒 lines on your cards show what your money could buy later on. Tap again to hide them." Each added line starts with 🛒 instead of 💡 (💡 stays for Buy / Sell tips).
 - **The Total card**, with her own figures instead of today's general note: "Prices go up about {rate}% a year, so if it didn't grow at all, next year your {total} would buy about what {real} buys today. Growing your money is how you keep up. That's why GICs and funds matter."
 - **Nit (a):** "at today's 1% savings rate" becomes "1.0%", the same rate format as everywhere else (`formatRate`).
 - **Nit (b):** the Inflation **?** gains "At 1.0%, your savings grow to about $75.95, about 67¢ behind prices."

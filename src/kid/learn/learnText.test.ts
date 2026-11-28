@@ -218,7 +218,7 @@ describe('the inflation view', () => {
     expect(TEXT.whatBuy).toBe('🛒 Will my money buy as much next year?');
     expect([TEXT.whatBuyShow, TEXT.whatBuyHide]).toEqual(['Show', 'Hide']);
     expect(TEXT.whatBuyHint).toBe(
-      'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
+      'The 🛒 lines on your cards show what your money could buy later on. Tap again to hide them.',
     );
   });
   it('is never scary', () => {

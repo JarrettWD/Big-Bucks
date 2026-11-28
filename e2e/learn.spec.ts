@@ -44,7 +44,7 @@ test('detailed: "Will my money buy as much next year?" adds the 🛒 lines', asy
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(toggle.locator('.infl__tag')).toHaveText('Hide');
   await expect(page.locator('.infl__hint')).toHaveText(
-    'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
+    'The 🛒 lines on your cards show what your money could buy later on. Tap again to hide them.',
   );
   const savingsLine = page.locator('.home__savings .infl__line');
   await expect(savingsLine).toContainText(/^🛒 In a year, at today's \d+\.\d+% savings rate/);

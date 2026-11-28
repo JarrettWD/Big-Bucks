@@ -17,7 +17,7 @@ export const TEXT = {
   whatBuyShow: 'Show',
   whatBuyHide: 'Hide',
   whatBuyHint:
-    'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
+    'The 🛒 lines on your cards show what your money could buy later on. Tap again to hide them.',
   // What-if
   whatIfTitle: 'What if? 🤔',
   whatIfIntro:

@@ -211,7 +211,12 @@ Tell me when each is done (with request numbers and times), and I'll check it re
 3. **`prelaunch_reset('clear the test history')`**: the database owner, in the SQL Editor (never with a sign-in). Then read-only: the cleared tables are empty, the kept ones are unchanged, and there's one row in `prelaunch_resets`.
 4. **`launched_at` set.** Then check that `prelaunch_reset` now refuses.
 5. **The girls' accounts** with the setup script.
-6. **Every phase 2 feature switched to "Everyone"** in Settings.
+6. **Every phase 2 feature switched to "Everyone"** in Settings, **before either girl signs in** (Dad, 2026-11-27). When she finishes onboarding, every feature already on for her is marked as seen, so she never gets its "What's new" card (some of those cards were written before later wording changes, for example the inflation switch's old name). A feature switched on after that would show her its card.
+   - All nine switches: wish list, personalisation, badges, inflation, what-if, compare the markets, reflection, statements, view modes.
+   - Start date **Jan 9, today**. A switch counts only from its start date, so a Jan 10 start would still be off when she onboards.
+   - **Read-only check before step 7** (SQL Editor): every row says `true`.
+     `select a.name, f.name as feature, public.feature_enabled(f.name, a.id) from public.accounts a cross join public.feature_list() f where not a.is_test order by 1, f.sort_order;`
+     If any row says `false`, stop: don't let a girl sign in until it's fixed.
 7. **Each girl, one at a time:** install on her phone, log in with her username and PIN, onboarding, the agreement (version 2, "matures") signed by her and countersigned by Dad.
 8. **The deposit cap:** if Dad wants a different starting cap than $1,000, change it now. Both girls get the notice, which ticks that box. Otherwise it's ticked the first time it changes.
 9. **Read-only:** reconcile clean for both girls; no alerts; the parent log has every step.
