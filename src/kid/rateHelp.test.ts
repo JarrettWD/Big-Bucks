@@ -71,6 +71,47 @@ describe('the Inflation ?', () => {
   it('leaves out her line when she has nothing saved', () => {
     expect(inflationLines({ ...help, need_cents: null })).toHaveLength(1);
   });
+  // Dad's Nov 8 example, the database's figures (inflation_total_test.sql).
+  const dads = {
+    ...help,
+    balance_cents: '7511',
+    need_cents: '7662',
+    year_total_cents: '7595',
+    gap_cents: '67',
+  };
+  it('ends with where her savings get to and how far behind prices (Dad, 2026-11-08)', () => {
+    expect(inflationLines(dads)).toEqual([
+      'At 2.0% a year, something that costs $100 now costs $102 next year.',
+      'Your $75.11 in savings would need to grow to $76.62 to buy the same things.',
+      'At 1.0%, your savings grow to about $75.95, about 67¢ behind prices.',
+    ]);
+  });
+  it('says ahead or keeping up when her rate beats prices or matches them', () => {
+    expect(
+      inflationLines({
+        ...dads,
+        savings_rate: '3.000',
+        year_total_cents: '7746',
+        gap_cents: '-84',
+      })[2],
+    ).toBe('At 3.0%, your savings grow to about $77.46, about 84¢ ahead of prices.');
+    expect(
+      inflationLines({
+        ...dads,
+        savings_rate: '2.000',
+        year_total_cents: '7662',
+        gap_cents: '0',
+      })[2],
+    ).toBe('At 2.0%, your savings grow to about $76.62, keeping up with prices.');
+    expect(
+      inflationLines({ ...dads, savings_rate: '0', year_total_cents: '7511', gap_cents: '151' })[2],
+    ).toBe('At 0.0%, your savings stay at $75.11, about $1.51 behind prices.');
+  });
+  it('has no gap line when she has nothing saved', () => {
+    expect(
+      inflationLines({ ...dads, need_cents: null, year_total_cents: null, gap_cents: null }),
+    ).toHaveLength(1);
+  });
 });
 
 describe('amounts and the special tag', () => {

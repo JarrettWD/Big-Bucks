@@ -11,6 +11,7 @@ import {
   savingsInflation,
   startLine,
   TEXT,
+  totalInflation,
   totalInflationNote,
 } from './learnText';
 
@@ -86,8 +87,17 @@ describe('the inflation view', () => {
         '2.0',
       ),
     ).toBe(
-      "In a year, at today's 2% savings rate, your $183.67 would grow to about $187.38. Prices usually go up too, about 2% a year right now, so it would buy about what $183.70 buys today.",
+      "In a year, at today's 2.0% savings rate, your $183.67 would grow to about $187.38. Prices usually go up too, about 2.0% a year right now, so it would buy about what $183.70 buys today.",
     );
+  });
+  it('writes rates the same way as everywhere else: "1.0%", never "1%" (Dad, 2026-11-08)', () => {
+    const line = savingsInflation(
+      { now_cents: 7511, savings_rate: '1.000', in_a_year_cents: 7595, buys_like_cents: 7446 },
+      '2.0',
+    );
+    expect(line).toContain("at today's 1.0% savings rate");
+    expect(line).toContain('about 2.0% a year right now');
+    expect(line).not.toMatch(/\b1%|\b2%/);
   });
   it('words a GIC to when it matures', () => {
     expect(
@@ -191,9 +201,31 @@ describe('the inflation view', () => {
     );
     expect(totalInflationNote('2.5')).toContain('about 2.5% right now');
   });
+  it('the Total card uses her own figures from the database (block 1, item 3)', () => {
+    // $95.18 at 2.0%: the database's 9518 / 1.02 = $93.31 (inflation_total_test.sql).
+    expect(totalInflation({ now_cents: 9518, buys_like_cents: 9331 }, '2.0')).toBe(
+      "Prices go up about 2.0% a year, so if it didn't grow at all, next year your $95.18 would buy about what $93.31 buys today. Growing your money is how you keep up. That's why GICs and funds matter.",
+    );
+    expect(totalInflation({ now_cents: '123456', buys_like_cents: '121035' }, '2.0')).toContain(
+      'your $1,234.56 would buy about what $1,210.35 buys today',
+    );
+    // Nothing at all yet: the general note, not "$0.00 would buy about what $0.00 buys".
+    expect(totalInflation({ now_cents: 0, buys_like_cents: 0 }, '2.0')).toBe(
+      totalInflationNote('2.0'),
+    );
+  });
+  it('the switch asks a question, says what a tap does, and explains the 🛒 lines', () => {
+    expect(TEXT.whatBuy).toBe('🛒 Will my money buy as much next year?');
+    expect([TEXT.whatBuyShow, TEXT.whatBuyHide]).toEqual(['Show', 'Hide']);
+    expect(TEXT.whatBuyHint).toBe(
+      'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
+    );
+  });
   it('is never scary', () => {
     const words = [
       totalInflationNote('2.0'),
+      totalInflation({ now_cents: 9518, buys_like_cents: 9331 }, '2.0'),
+      TEXT.whatBuyHint,
       fundsInflation([{ ...dow, year_change_pct: '-3' }], '2.0').closing,
       savingsInflation(
         { now_cents: 1, savings_rate: 1, in_a_year_cents: 1, buys_like_cents: 1 },

@@ -22,6 +22,10 @@ export interface RateHelp {
   infl_100_cents: Cents;
   infl_exact: boolean;
   need_cents: Cents | null;
+  /** Her savings in a year at the regular rate (the savings line's figure). */
+  year_total_cents?: Cents | null;
+  /** need_cents − year_total_cents: above 0 she's behind prices, below 0 ahead. */
+  gap_cents?: Cents | null;
 }
 
 /** "96¢" under a dollar, "$1" for whole dollars, "$2.13" otherwise. */
@@ -61,6 +65,22 @@ export function inflationLines(h: RateHelp | null): string[] {
     lines.push(
       `Your ${formatCents(h.balance_cents)} in savings would need to grow to ${formatCents(h.need_cents)} to buy the same things.`,
     );
+  // Block 1, item 3 (Dad's nit, 2026-11-08): where her savings get to in a year, and how that
+  // compares with prices. Both figures come from the database.
+  if (h.year_total_cents != null && h.gap_cents != null) {
+    const gap = toCents(h.gap_cents);
+    const grows =
+      toCents(h.year_total_cents) > toCents(h.balance_cents)
+        ? `your savings grow to about ${formatCents(h.year_total_cents)}`
+        : `your savings stay at ${formatCents(h.year_total_cents)}`;
+    const compare =
+      gap > 0n
+        ? `about ${shortAmount(gap)} behind prices`
+        : gap < 0n
+          ? `about ${shortAmount(-gap)} ahead of prices`
+          : 'keeping up with prices';
+    lines.push(`At ${formatRate(h.savings_rate)}, ${grows}, ${compare}.`);
+  }
   return lines;
 }
 

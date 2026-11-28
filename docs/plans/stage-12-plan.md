@@ -66,6 +66,10 @@ About **6 sessions** realistically fit in those 8 days (Christmas included). Mus
 
 **Fits: 1–5 (6 sessions). Doesn't fit: 6 and 7 (2½ sessions)**, which arrive after launch as "What's new" surprises. Neither touches money. Item 6 shows how existing interest was worked out, so it gets a known-answer test when it comes.
 
+**Also in the Jan 2 batch (Dad, 2026-11-27, small and with item 1's review):**
+- **(a) The agreement title shows "(version N)" only when she re-signs a changed agreement, never on her first one.** Today `agreement_render` adds it to any version after 1, so the girls' first agreement at launch would read "Your Big Bucks agreement (version 2)". A replacement of that read-only function, with a pgTAP test for both cases.
+- **(b) The "Sign your Big Bucks agreement with Dad first" refusals become "with Mom or Dad".** They sit in `require_agreement`, which guards deposits and moves, so they wait for the money review.
+
 **If Dad has Dec 6–8 at the PC:** building #4 and #5 then (on a branch, shipped Jan 2; nothing reaches production in the freeze) frees two sessions, so #6 fits too. That's Dad's call.
 
 **Review points:** each item's plan and diff as in block 1. #1 gets Moose's plan review, since it's money. **Thu Dec 31, the release candidate**: everything merged, the full local suite, end-to-end twice, **`npm run timemachine` locally** (block 2 has a money change), `rollback:check`, CI green.

@@ -1,7 +1,7 @@
 // The wording for the learning features (stage 11, MESSAGES §14). Every amount comes from
 // the database; these only put words around them.
 
-import { formatDate } from '../../lib/format';
+import { formatDate, formatRate } from '../../lib/format';
 import { formatCents } from '../../lib/money';
 import { fundLabel } from '../fundNames';
 
@@ -11,7 +11,13 @@ export const TEXT = {
   moreDetail: '🔎 More detail',
   simplerNote: 'Big numbers and fewer graphs. You can switch back any time.',
   // Inflation
-  whatBuy: '💡 What will it buy?',
+  // The switch made obvious (block 1, item 3; Dad 2026-11-14): a question, a Show / Hide tag,
+  // and a hint while it's on. Its lines start with 🛒 (💡 stays for Buy / Sell tips).
+  whatBuy: '🛒 Will my money buy as much next year?',
+  whatBuyShow: 'Show',
+  whatBuyHide: 'Hide',
+  whatBuyHint:
+    'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
   // What-if
   whatIfTitle: 'What if? 🤔',
   whatIfIntro:
@@ -92,7 +98,8 @@ export const gicsGrowing = (n: number) =>
     ? `GIC interest is paid when each GIC matures. ${n === 1 ? '1 is' : `${n} are`} still growing.`
     : null;
 
-/** "In a year, at today's 2% savings rate, your $183.67 would grow to about $187.38. ..." */
+/** "In a year, at today's 2.0% savings rate, your $183.67 would grow to about $187.38. ..."
+ * Rates as everywhere else: "1.0%", never "1%" (Dad's nit, 2026-11-08). */
 export function savingsInflation(
   s: {
     now_cents: number | string;
@@ -102,7 +109,7 @@ export function savingsInflation(
   },
   inflation: string,
 ): string {
-  return `In a year, at today's ${Number(s.savings_rate)}% savings rate, your ${formatCents(s.now_cents)} would grow to about ${formatCents(s.in_a_year_cents)}. Prices usually go up too, about ${Number(inflation)}% a year right now, so it would buy about what ${formatCents(s.buys_like_cents)} buys today.`;
+  return `In a year, at today's ${formatRate(s.savings_rate)} savings rate, your ${formatCents(s.now_cents)} would grow to about ${formatCents(s.in_a_year_cents)}. Prices usually go up too, about ${formatRate(inflation)} a year right now, so it would buy about what ${formatCents(s.buys_like_cents)} buys today.`;
 }
 
 export function gicInflation(
@@ -135,7 +142,19 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * follows one on another card.
  */
 export function totalInflationNote(inflation: string): string {
-  return `Prices usually go up a little each year (about ${pct1(Number(inflation))} right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.`;
+  return `Prices usually go up a little each year (about ${formatRate(inflation)} right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.`;
+}
+
+/**
+ * Under her total, with her own figures (block 1, item 3; Dad 2026-11-14). The figure she'd buy
+ * is worked out by the database (kid_inflation). With nothing at all yet, the general note.
+ */
+export function totalInflation(
+  t: { now_cents: number | string; buys_like_cents: number | string },
+  inflation: string,
+): string {
+  if (BigInt(t.now_cents) <= 0n) return totalInflationNote(inflation);
+  return `Prices go up about ${formatRate(inflation)} a year, so if it didn't grow at all, next year your ${formatCents(t.now_cents)} would buy about what ${formatCents(t.buys_like_cents)} buys today. Growing your money is how you keep up. That's why GICs and funds matter.`;
 }
 
 export interface FundYear {

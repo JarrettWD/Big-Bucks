@@ -15,6 +15,7 @@ Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, sec
   4. the backup label;
   5. the Graphs labels;
   6. the closure screen.
+- **The flaky Approvals layout test (Dad, 2026-11-27).** `layout.spec.ts` "parent screens fit at tablet-portrait" timed out once clicking **Answer** (passed in four full runs). If it fails again in any run, it gets fixed, not retried.
 - **Thu Dec 3, the freeze candidate:** everything merged to main, then:
   - `supabase test db`, `npm test`, lint and types;
   - end-to-end twice from fresh demos;

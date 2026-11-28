@@ -1,7 +1,8 @@
 // The learning features (Stage 11) against the LOCAL Supabase (demo data). Sky is the demo's test
 // account; all six switches are on for test accounts only. These change Sky's view mode and sell a
 // little of a fund, so they run in order, last:
-//   - detailed: "What will it buy?" adds a line to her savings; What if? and Markets on Graphs;
+//   - detailed: "🛒 Will my money buy as much next year?" (Show / Hide) adds 🛒 lines, her own
+//     Total card and the Inflation ?'s gap line; What if? and Markets on Graphs;
 //   - statements: a ready month adds up and ends at the Total worth graph's figure; print layout;
 //   - "Why did you sell?" after a real sell, with "Mom and Dad can see this.", then in her history;
 //   - basic: big numbers, three graphs plus What if?, the simple statement; and back again;
@@ -9,6 +10,7 @@
 //   - every new screen fits each screen size, in both views, with large text too.
 import { expect, test, type Page } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
+import { formatRate } from '../src/lib/format';
 import { formatCents } from '../src/lib/money';
 import { kid, kidSignIn, parentSignIn } from './helpers';
 import { check, SIZES, TEXT } from './layoutCheck';
@@ -31,20 +33,43 @@ async function signInSky(page: Page) {
   await expect(page.getByText('Hi, Sky!')).toBeVisible();
 }
 
-test('detailed: "What will it buy?" adds a line to her savings', async ({ page }) => {
+test('detailed: "Will my money buy as much next year?" adds the 🛒 lines', async ({ page }) => {
   await signInSky(page);
-  const toggle = page.getByRole('button', { name: '💡 What will it buy?' });
+  // The button's name stays the question; the Show / Hide tag says what a tap does (block 1, item 3).
+  const toggle = page.getByRole('button', { name: '🛒 Will my money buy as much next year?' });
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(toggle.locator('.infl__tag')).toHaveText('Show');
+  await expect(page.locator('.infl__hint')).toHaveCount(0);
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('.home__savings .infl__line')).toContainText('In a year, at today');
-  await expect(page.locator('.home__savings .infl__line')).toContainText(
-    'so it would buy about what',
+  await expect(toggle.locator('.infl__tag')).toHaveText('Hide');
+  await expect(page.locator('.infl__hint')).toHaveText(
+    'The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.',
   );
-  // The Total card has the whole thought, never only its last sentence (Dad, 2026-11-03).
+  const savingsLine = page.locator('.home__savings .infl__line');
+  await expect(savingsLine).toContainText(/^🛒 In a year, at today's \d+\.\d+% savings rate/);
+  await expect(savingsLine).toContainText(/about \d+\.\d+% a year right now/);
+  await expect(savingsLine).toContainText('so it would buy about what');
+  // The Total card, with her own figures from the database (block 1, item 3).
+  const [t] = await sql<{ t: { now_cents: number; buys_like_cents: number }; r: string }>(
+    `select public.kid_inflation(${SKY}) -> 'total' as t, public.kid_inflation(${SKY}) ->> 'inflation_rate' as r`,
+  );
   await expect(page.locator('.infl__total')).toHaveText(
-    /^Prices usually go up a little each year \(about \d+\.\d% right now\), so the same money buys a bit less later\. That's normal\. It's one reason people use GICs and funds too\.$/,
+    `🛒 Prices go up about ${formatRate(t.r)} a year, so if it didn't grow at all, next year your ${formatCents(t.t.now_cents)} would buy about what ${formatCents(t.t.buys_like_cents)} buys today. Growing your money is how you keep up. That's why GICs and funds matter.`,
   );
+  // The Inflation ? ends with where her savings get to and the gap to prices (Dad, 2026-11-08).
+  const [h] = await sql<{ h: { year_total_cents: number; gap_cents: number } }>(
+    `select public.kid_rate_help(${SKY}) as h`,
+  );
+  await savingsLine.getByRole('button', { name: 'What does "Inflation" mean?' }).click();
+  const gap = Number(h.h.gap_cents);
+  const compare =
+    gap > 0 ? 'behind prices' : gap < 0 ? 'ahead of prices' : 'keeping up with prices';
+  const gapLine = page.locator('.explain__live').last();
+  await expect(gapLine).toHaveText(/^At \d+\.\d+%, your savings (grow to about|stay at) \$/);
+  await expect(gapLine).toContainText(`${formatCents(h.h.year_total_cents)}, `);
+  await expect(gapLine).toContainText(`${compare}.`);
+  await page.getByRole('dialog').getByRole('button', { name: 'Got it' }).click();
   // One card for her funds, a line per fund she owns, and a closing line (Dad, 2026-11-03).
   const [owns] = await sql<{ n: number }>(
     `select jsonb_array_length(public.kid_inflation(${SKY}) -> 'funds') as n`,
@@ -149,7 +174,9 @@ test('basic: big numbers, fewer graphs, the simple statement; then back', async 
   await signInSky(page);
   await page.getByRole('button', { name: '👀 Simpler view' }).click();
   await expect(page.getByRole('heading', { name: 'Your money' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '💡 What will it buy?' })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: '🛒 Will my money buy as much next year?' }),
+  ).toHaveCount(0);
   const [v] = await sql<{ m: string }>(
     `select view_mode::text as m from public.accounts where id = ${SKY}`,
   );
@@ -161,7 +188,9 @@ test('basic: big numbers, fewer graphs, the simple statement; then back', async 
   await expect(page.locator('.stmt__line').filter({ hasText: 'Dividends' })).toHaveCount(0);
   await page.goto('./kid');
   await page.getByRole('button', { name: '🔎 More detail' }).click();
-  await expect(page.getByRole('button', { name: '💡 What will it buy?' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '🛒 Will my money buy as much next year?' }),
+  ).toBeVisible();
 });
 
 test('Dad\'s "View as" reads her statements, read-only', async ({ page }) => {
@@ -197,6 +226,17 @@ for (const mode of ['detailed', 'basic'] as const)
           await page.waitForLoadState('networkidle');
           await check(page, `learn-${mode}-${name}-${size.name}-${text.name}`, text.scale);
         }
+      // Home with the 🛒 lines showing (block 1, item 3): the tag, the hint and her Total card fit.
+      if (mode === 'detailed') {
+        await page.evaluate(() => localStorage.setItem('bb:what-will-it-buy', 'on'));
+        for (const text of TEXT) {
+          await page.goto('./kid');
+          await expect(page.locator('.infl__total')).toBeVisible();
+          await page.waitForLoadState('networkidle');
+          await check(page, `learn-${mode}-home-whatbuy-${size.name}-${text.name}`, text.scale);
+        }
+        await page.evaluate(() => localStorage.removeItem('bb:what-will-it-buy'));
+      }
       await sql(`update public.accounts set view_mode = 'detailed' where id = ${SKY}`);
     });
   }

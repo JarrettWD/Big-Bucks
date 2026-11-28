@@ -1,4 +1,5 @@
-// The inflation view (stage 11): "What will it buy?" on Home. When she turns it on (remembered
+// The inflation view (stage 11): "🛒 Will my money buy as much next year?" on Home (the switch
+// made obvious in block 1, item 3). When she turns it on (remembered
 // on this device only, like a graph range), each option card gets one line about what its
 // money will buy, worked out by the database (kid_inflation). Never in basic mode.
 
@@ -7,13 +8,7 @@ import { Explain } from '../../components/Glossary';
 import { useKid } from '../KidShell';
 import { kidRpc } from '../kidView';
 import { inflationLines, useRateHelp } from '../rateHelp';
-import {
-  fundsInflation,
-  gicInflation,
-  savingsInflation,
-  TEXT,
-  totalInflationNote,
-} from './learnText';
+import { fundsInflation, gicInflation, savingsInflation, TEXT, totalInflation } from './learnText';
 import './Learn.css';
 
 export interface InflationData {
@@ -25,6 +20,7 @@ export interface InflationData {
     in_a_year_cents: number;
     buys_like_cents: number;
   };
+  total: { now_cents: number; buys_like_cents: number };
   gics: {
     gic_id: number;
     at_maturity_cents: number;
@@ -88,10 +84,18 @@ export function InflationProvider({
     }
   };
 
+  // The tag says what a tap does. aria-pressed tells a screen reader the state, so the tag is
+  // hidden from it and the button's name stays the question.
   const toggle = available ? (
-    <button type="button" className="infl__toggle" aria-pressed={on} onClick={flip}>
-      {TEXT.whatBuy}
-    </button>
+    <>
+      <button type="button" className="infl__toggle" aria-pressed={on} onClick={flip}>
+        <span>{TEXT.whatBuy}</span>{' '}
+        <span className="infl__tag" aria-hidden="true">
+          {on ? TEXT.whatBuyHide : TEXT.whatBuyShow}
+        </span>
+      </button>
+      {on && <p className="infl__hint">{TEXT.whatBuyHint}</p>}
+    </>
   ) : null;
 
   return (
@@ -104,7 +108,7 @@ export function InflationProvider({
 function Line({ children }: { children: ReactNode }) {
   return (
     <p className="infl__line">
-      <span aria-hidden="true">💡 </span>
+      <span aria-hidden="true">🛒 </span>
       {children}
     </p>
   );
@@ -147,7 +151,7 @@ export function FundsInflation() {
   return (
     <div className="infl__line infl__funds">
       <p>
-        <span aria-hidden="true">💡 </span>
+        <span aria-hidden="true">🛒 </span>
         {t.intro}
       </p>
       <ul>
@@ -164,5 +168,10 @@ export function FundsInflation() {
 export function TotalInflation() {
   const { data } = useContext(Ctx);
   if (!data) return null;
-  return <p className="infl__total">{totalInflationNote(data.inflation_rate)}</p>;
+  return (
+    <p className="infl__total">
+      <span aria-hidden="true">🛒 </span>
+      {totalInflation(data.total, data.inflation_rate)}
+    </p>
+  );
 }

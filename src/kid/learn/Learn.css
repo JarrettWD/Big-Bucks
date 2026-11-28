@@ -17,6 +17,21 @@
   background: var(--bb-white);
   color: var(--bb-purple);
 }
+/* The Show / Hide tag says what a tap does (block 1, item 3). */
+.infl__tag {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: var(--bb-gold);
+  color: var(--bb-ink);
+  font-size: 0.875em;
+  white-space: nowrap;
+}
+.infl__hint {
+  margin: 0.5rem 0 0;
+  line-height: 1.45;
+}
 .infl__total {
   margin: 0.5rem 0 0;
   line-height: 1.45;

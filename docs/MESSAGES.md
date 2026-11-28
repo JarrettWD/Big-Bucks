@@ -1004,21 +1004,26 @@ The last line is added only when "Make it yours" is on for her.
 - **Basic Home:** Total worth (very large) · Your money: 🐷 Savings · 🔒 GICs · 📈 Stock funds, each with its amount · Recent activity (3 lines) and See all.
 - **Basic Graphs:** Total worth, Mix, Money in, and What if? (when on).
 
-### What will it buy? (detailed only)
+### Will my money buy as much next year? (detailed only)
 
-- **The toggle (in Total worth):** 💡 What will it buy?
-- **Savings:** In a year, at today's {savings rate}% savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation}% a year right now, so it would buy about what {buys like} buys today. **?** Inflation
+Made obvious in block 1, item 3 (Dad, 2026-11-14; `20261128020000_inflation_total.sql`). Every line it adds starts with 🛒 (💡 stays for Buy / Sell tips). Rates are written as everywhere else: 1.0%, never 1%.
+
+- **The switch (in Total worth):** 🛒 Will my money buy as much next year? with a tag: **Show** when off, **Hide** when on (the tag is hidden from screen readers, which hear the pressed state instead). Until Nov 2026 it read "💡 What will it buy?".
+- **While it's on, under the switch:** The 🛒 lines on your cards show what your money will buy next year. Tap again to hide them.
+- **Savings:** 🛒 In a year, at today's {savings rate} savings rate, your {savings} would grow to about {in a year}. Prices usually go up too, about {inflation} a year right now, so it would buy about what {buys like} buys today. **?** Inflation
   - {in a year} is worked out like the real interest, monthly with each month rounded up (since 2026-10-26), at the regular savings rate (never a special), so it agrees with the Interest rate **?** to the cent.
-  - **The Inflation ?** (Dad, 2026-10-26): the glossary words, then: At {inflation} a year, something that costs $100 now costs {amount} next year. · Your {savings} in savings would need to grow to {need} to buy the same things. (Not shown with nothing saved.)
-- **Each GIC:** When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
+  - **The Inflation ?** (Dad, 2026-10-26): the glossary words, then: At {inflation} a year, something that costs $100 now costs {amount} next year. · Your {savings} in savings would need to grow to {need} to buy the same things. (Not shown with nothing saved.) · At {savings rate}, your savings grow to about {in a year}, about {gap} behind prices. (Dad, 2026-11-08; with a rate above inflation: about {gap} ahead of prices; equal: keeping up with prices; at 0%: your savings stay at {savings}, …). Example: At 1.0%, your savings grow to about $75.95, about 67¢ behind prices. {in a year} is the savings line's figure; {gap} is worked out by the database.
+- **Each GIC:** 🛒 When it matures on {date} (with the **?** for "Matures"), it pays {at maturity}. With prices going up meanwhile, that buys about what {buys like} buys today.
 - **Her funds, one card** (Dad, 2026-11-03; it replaced a line per fund that repeated the same sentence):
-  - Funds don't have a set rate. They go up and down. Over the past year:
+  - 🛒 Funds don't have a set rate. They go up and down. Over the past year:
   - one line per fund she owns: {fund}: up {x.x}% / down {x.x}% / no change / not a full year of prices yet
   - then one closing line that says only what's true, comparing each fund with prices at the same one-decimal figures she sees:
     - all ahead: All 3 grew more than prices did (about {inflation}%). (Both … for two; It … for one.)
     - otherwise, in this order, only the parts that apply: The {funds} grew more than prices did (about {inflation}%). · The {funds} grew about as much as prices did (about {inflation}%). · The {funds} grew less than prices did (about {inflation}%), so it buys / they buy a little less than a year ago. · The {funds} went down, so it buys / they buy less than a year ago.
   - Example (Nov 3, 2026): Dow Jones fund (DIA): up 8.7% · Nasdaq-100 fund (QQQ): up 8.9% · TSX fund (XIC): up 17.4% · All 3 grew more than prices did (about 2.0%).
-- **Under her total** (Dad, 2026-11-03: the whole thought, never half of one): Prices usually go up a little each year (about {inflation}% right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.
+- **Under her total** (Dad, 2026-11-14, her own figures; the whole thought, never half of one): 🛒 Prices go up about {inflation} a year, so if it didn't grow at all, next year your {total} would buy about what {real} buys today. Growing your money is how you keep up. That's why GICs and funds matter.
+  - {total} is her Total worth; {real} = {total} ÷ (1 + inflation), rounded to the nearest cent, worked out by the database. Example: $95.18 at 2.0% → $93.31.
+  - With nothing at all yet ($0.00), the general note instead: Prices usually go up a little each year (about {inflation} right now), so the same money buys a bit less later. That's normal. It's one reason people use GICs and funds too.
 - **? Inflation:** the existing glossary entry (since stage 1): Prices slowly going up over time. If things cost 2% more next year, your money needs to grow at least 2% just to buy the same stuff.
 
 ### What if? (Graphs)
