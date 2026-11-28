@@ -216,3 +216,7 @@ Tell me when each is done (with request numbers and times), and I'll check it re
 12. **Sun Jan 10 morning:** backup and health check green. **Stage 12 is done.** Then the first monthly money meeting.
 
 **If something goes wrong on the day:** stop at that step. Before step 3, nothing has changed. After step 3, the hand backup from step 2 is the way back (RUNBOOK, "Rebuilding production from a backup"). After step 4, `prelaunch_reset` can never run again, so a mistake is fixed with correcting entries, as always.
+
+## 8. After launch (not scheduled yet)
+
+- **The database suite fails loudly if it runs short (Dad, 2026-11-27).** Run on a database the demo or the end-to-end tests have just loaded, `supabase test db` gives about 1,549 tests instead of 2,386 and says FAIL in among the output. That's easy to misread as a real result. The fix: a wrapper (`npm run test:db`) that resets the local database first, then fails with a plain message if the total is below the expected count, with the expected count kept in one place in the repo and raised whenever tests are added. CI uses the same wrapper. Test tooling only; no money logic.

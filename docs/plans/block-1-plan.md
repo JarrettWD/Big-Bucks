@@ -28,10 +28,12 @@ Ships in **production session 1, Sat Dec 5** (`docs/plans/stage-12-plan.md`, sec
 
 **Before building:** Dad reads the full version 2 text end to end (approved 2026-11-27).
 
-**What Dad and the girls see.** In rule 🔒 "A GIC is a promise.", "When a GIC finishes, you have 7 days to choose what's next…" becomes "When a GIC **matures**, you have 7 days to choose what's next…" (with the **?** for "Matures", as on her other screens). Nothing else changes, unless Dad wants another change now: **this is the last free chance before the girls sign.**
+**What Dad and the girls see.** In rule 🔒 "A GIC is a promise.", "When a GIC finishes, you have 7 days to choose what's next…" becomes "When a GIC **matures**, you have 7 days to choose what's next…" (with the **?** for "Matures", as on her other screens). **This is the last free chance before the girls sign.**
+
+**Mom or Dad (Dad, 2026-11-27):** "Mom or Dad" wherever it's about reading, talking or asking; "Dad" only where it's something only his parent sign-in can do (saying yes, countersigning, answering in the app, fixing). In version 2 that changes three places: the intro ("Read them with Mom or Dad… When you agree, you sign, and then Dad signs too."), rule 🔑 ("tell Mom or Dad") and the sign line ("I've read these rules with Mom or Dad, and I agree."). Two onboarding lines around the agreement follow the same rule: the Home banner "Let's set up your Big Bucks with Mom or Dad." and the changed-rules banner "…Read your new agreement with Mom or Dad and sign it." Every other "Dad" stays. The full text is in Dad's review message of 2026-11-27, and must be approved before item 2 is built.
 
 **Database:** migration `…_agreement_v2.sql`:
-- Inserts version 2: version 1's intro, promises and sign line word for word, and its rules with only that one sentence changed. `agreement_versions` is append-only and takes inserts, so no guard is switched off.
+- Inserts version 2: version 1's promises word for word, the intro, rule 🔑 and sign line with "Mom or Dad", and rule 🔒 with "matures". `agreement_versions` is append-only and takes inserts, so no guard is switched off.
 - Calls `agreement_changed_notices(2)`. On production that tells only the test kid, "Your Big Bucks agreement has changed".
 - **Effect on the test account from Dec 5:** her version 1 signature still covers everything except new deposits. She sees the Home banner asking her to sign version 2, signs it, and Dad countersigns. That is the real re-sign path, tested live before the girls ever need it. Do **test C (a deposit over the cap)** before Dec 5, so it isn't mixed up with the re-sign.
 - At launch, `prelaunch_reset` clears every signature, and the girls sign version 2 from the start.
