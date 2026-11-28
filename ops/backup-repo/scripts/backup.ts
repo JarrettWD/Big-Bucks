@@ -239,11 +239,39 @@ export async function take(
   rmSync(dest, { recursive: true, force: true });
   renameSync(tmp, dest);
 
-  const message =
-    `Backup ${summary.taken_at.slice(0, 10)}: ${Object.keys(summary.tables).length} tables, ${rows} rows, ` +
-    `${summary.tables['public.transactions'].rows} ledger rows` +
-    (reset ? ' (after the pre-launch reset)' : '');
+  const message = backupMessage(
+    summary.taken_at,
+    Object.keys(summary.tables).length,
+    rows,
+    summary.tables['public.transactions'].rows,
+    reset,
+  );
   return { summary, message };
+}
+
+/**
+ * The Alberta date of a UTC moment: UTC−6 all year (Dad, 2026-10-12; the same rule as
+ * sync-backup.ps1 and the database). A backup at 8:45 pm on Nov 24 in Alberta is
+ * 02:45 UTC on Nov 25, but its label is Nov 24.
+ */
+export function albertaDate(takenAtUtc: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(takenAtUtc))
+    throw new Error(`Can't read the backup time "${takenAtUtc}" (expected UTC, ending in Z).`);
+  return new Date(Date.parse(takenAtUtc) - 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** The backup's commit message, labelled by the Alberta date (counts.json keeps UTC). */
+export function backupMessage(
+  takenAtUtc: string,
+  tables: number,
+  rows: number,
+  ledgerRows: number,
+  reset: boolean,
+): string {
+  return (
+    `Backup ${albertaDate(takenAtUtc)}: ${tables} tables, ${rows} rows, ${ledgerRows} ledger rows` +
+    (reset ? ' (after the pre-launch reset)' : '')
+  );
 }
 
 export async function record(url: string, repo: string): Promise<string> {

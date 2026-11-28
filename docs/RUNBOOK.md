@@ -316,7 +316,7 @@ With your OK, Claude clones the empty repo to `C:\BigBucksBackup\big-bucks-backu
 ### 7. ✋ The first backup
 
 1. The `big-bucks-backups` repo → **Actions** → **Backup** → **Run workflow** → **Run workflow**.
-2. It takes about 2 minutes. When it's green, **Code** shows a commit like "Backup 2026-10-15: 34 tables, … rows, … ledger rows", and a `backup` folder.
+2. It takes about 2 minutes. When it's green, **Code** shows a commit like "Backup 2026-10-15: 34 tables, … rows, … ledger rows", and a `backup` folder. From Dec 6 the date in it is the Alberta date (an evening backup is labelled by its own day, not the next UTC day); `counts.json` keeps the exact time in UTC.
 3. If it's red, the message says why. "password authentication failed" or "Tenant or user not found" means the connection string (step 4); "certificate verify failed" or "self-signed certificate" means the certificate (step 4.5). Check it; if it still fails, stop and ask. Don't switch the login to `postgres`.
 
 ### 8. ✋ The health check from its new home
