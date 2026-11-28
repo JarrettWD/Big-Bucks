@@ -174,12 +174,19 @@ export const NOTES_HEADING = 'Big market days';
 export const COL_PRICE = 'Unit price';
 export const COL_CHANGE = 'Change';
 export const COL_YOU = 'You';
+/** The glossary term for the **?** beside a fixed trade (Settings → ? explanations). */
+export const PRICE_FIXED_TERM = 'Price fixed';
+export const PRICE_FIXED = 'price fixed';
+export const PRICE_FIXED_KEPT = 'price fixed, you kept the better price';
 export function tradeWords(t: {
   side: 'buy' | 'sell';
   amount_cents: Cents;
   price: number | string;
+  fixed?: 'fixed' | 'kept';
 }): string {
-  return `${t.side === 'buy' ? BUY : SELL} ${formatCents(t.amount_cents)} at ${formatPrice(t.price)}`;
+  const tag =
+    t.fixed === 'fixed' ? ` · ${PRICE_FIXED}` : t.fixed === 'kept' ? ` · ${PRICE_FIXED_KEPT}` : '';
+  return `${t.side === 'buy' ? BUY : SELL} ${formatCents(t.amount_cents)} at ${formatPrice(t.price)}${tag}`;
 }
 export const FUND_PCT_LABEL = 'The fund’s change while you had it';
 export const MONEY_LABEL = 'Your money’s change';

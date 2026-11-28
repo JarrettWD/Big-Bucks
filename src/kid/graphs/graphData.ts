@@ -258,6 +258,9 @@ export interface FundChart {
     price: number | string;
     units: number | string;
     amount_cents: Cents;
+    /** "Fix a close" changed this trade's close: 'fixed' if it added units or money (price and
+     * money as fixed), 'kept' if the old close was in her favour (the price she got). */
+    fixed?: 'fixed' | 'kept';
   }[];
   notes: { d: string; body: string }[];
   range_growth_pct: number | string | null;

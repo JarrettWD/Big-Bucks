@@ -1213,6 +1213,12 @@ function FundGraph({ base }: { base: Base }) {
                   {c.trades.map((t, i) => (
                     <li key={i}>
                       <strong>{formatDate(t.d, base.year)}</strong> · {T.tradeWords(t)}
+                      {t.fixed && (
+                        <>
+                          {' '}
+                          <Explain term={T.PRICE_FIXED_TERM} />
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>

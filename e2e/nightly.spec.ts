@@ -6,7 +6,9 @@
 // evening's work is done by the 9:30 pm run; the 4:30 pm run does what needs no price.
 import { expect, test } from '@playwright/test';
 import { LocalDb } from '../scripts/timemachine/db.ts';
+import { formatPrice } from '../src/kid/graphs/graphData.ts';
 import { kid, kidSignIn, parentSignIn } from './helpers';
+import { layoutProblems, SIZES } from './layoutCheck';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -674,6 +676,32 @@ test('Fix a close: the preview lists her buy, and Yes adds her missing units', a
       /^The TSX fund's \w{3} \d{1,2} close was really \$[\d.]+, not \$[\d.]+, so your buy should have got a little more\. We added the missing bit — worth (about \d+¢|less than 1¢)\. A fix like this can only add, never take away\.$/,
     );
     expect(fix.summary).toMatch(/^Fixed the TSX close for .*1 trade corrected/);
+
+    // Block 1 item 5 (Dad, 2026-11-16): her Graphs tab labels the buy at the fixed close, with a
+    // ? that explains, at a small phone, a tablet and a desktop.
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+    const robin = kid('Robin');
+    await kidSignIn(page, robin.username, robin.pin);
+    await expect(page.getByText('Hi, Robin!')).toBeVisible();
+    await page.goto('./kid/graphs?g=funds');
+    await page.getByRole('button', { name: /^TSX/ }).click();
+    const label = `You bought $10.00 at ${formatPrice(lower.toFixed(2))} · price fixed`;
+    const item = page.locator('.graph__list li', { hasText: label });
+    await expect(item).toHaveCount(1);
+    for (const size of SIZES.filter((s) =>
+      ['small-phone', 'tablet-portrait', 'desktop'].includes(s.name),
+    )) {
+      await page.setViewportSize({ width: size.width, height: size.height });
+      await item.scrollIntoViewIfNeeded();
+      expect(await layoutProblems(page), `layout problems at ${size.name}`).toEqual([]);
+      await item.screenshot({ path: `test-results/layout/fixed-trade-${size.name}.png` });
+    }
+    await item.getByRole('button', { name: 'What does "Price fixed" mean?' }).click();
+    await expect(page.getByRole('dialog')).toContainText(
+      'The price Big Bucks first used for this day was wrong. Mom and Dad fixed it, and you got everything you were owed. Your notice has the details.',
+    );
+    await page.getByRole('dialog').getByRole('button', { name: 'Got it' }).click();
   } finally {
     await withDb((db) => db.setClock(''));
   }

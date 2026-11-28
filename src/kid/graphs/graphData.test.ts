@@ -16,7 +16,32 @@ import {
   type FundChart,
   type Ranges,
 } from './graphData';
-import { earnedNote, earnedSentence, flowWords, fundChange, fundFigures } from './graphText';
+import {
+  earnedNote,
+  earnedSentence,
+  flowWords,
+  fundChange,
+  fundFigures,
+  tradeWords,
+} from './graphText';
+
+describe('trade labels after "Fix a close" (Dad, 2026-11-16)', () => {
+  it('a fixed buy shows the fixed close, tagged', () => {
+    expect(tradeWords({ side: 'buy', amount_cents: 1000, price: '523.33', fixed: 'fixed' })).toBe(
+      'You bought $10.00 at $523.33 · price fixed',
+    );
+  });
+  it('a fixed sale where the old close was in her favour says she kept it', () => {
+    expect(tradeWords({ side: 'sell', amount_cents: 2000, price: '650.1', fixed: 'kept' })).toBe(
+      'You sold $20.00 at $650.10 · price fixed, you kept the better price',
+    );
+  });
+  it('a trade at a close never fixed is as before', () => {
+    expect(tradeWords({ side: 'buy', amount_cents: 1000, price: '519.02' })).toBe(
+      'You bought $10.00 at $519.02',
+    );
+  });
+});
 
 const RANGES: Ranges = {
   today: '2026-11-06',

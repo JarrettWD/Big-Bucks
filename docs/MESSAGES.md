@@ -636,6 +636,10 @@ From the app's screens (`src/kid/graphs/graphText.ts`), so edits are a code chan
 - **The whole fund:** Over the whole time shown, the {fund} went up {percent}. / …went down {percent}. / …didn't change.
 - The marks: ▲ **You bought** · ▼ **You sold** · ◆ **Big market days**
 - Her trades: {date} · You bought {amount} at {price} / You sold {amount} at {price}
+  - **After "Fix a close" added units or money** (Stage 12 block 1, Dad 2026-11-16): the fixed close and what the fix gave her, then "· price fixed **?**". Example: "You bought $10.00 at $523.33 · price fixed". A fixed sale of everything shows the money the fix added (not its interest).
+  - **After a fix that changed nothing for her** (the old close was in her favour): the price she got, then "· price fixed, you kept the better price **?**". Example: "You sold $20.00 at $650.10 · price fixed, you kept the better price".
+  - The **?** (glossary "Price fixed", editable in Settings → ? explanations): "The price Big Bucks first used for this day was wrong. Mom and Dad fixed it, and you got everything you were owed. Your notice has the details."
+  - The graph's pop-up and the table's "You" column say the same, without the **?**.
 - **Big market days:** {date} · {the market-move note}
 - Buying low and selling high is hard to time. Nobody knows tomorrow's price.
 - **Table:** Day · Unit price · Change · You
