@@ -635,7 +635,17 @@ test('Fix a close: the preview lists her buy, and Yes adds her missing units', a
     await page.goto(`./parent/fix-close?fund=tsx&date=${snapDay}`);
     await expect(page.getByRole('heading', { name: 'Fix a close' })).toBeVisible();
     await expect(page.getByText(/^Stored close for /)).toBeVisible();
-    await page.getByLabel('The official close').fill(lower.toFixed(2));
+    // Typed one key at a time, as Dad does: the box keeps focus throughout (Dad, 2026-11-21).
+    const box = page.getByLabel('The official close');
+    await box.click();
+    for (const key of lower.toFixed(2)) {
+      await box.press(key);
+      await expect(box).toBeFocused();
+    }
+    await expect(box).toHaveValue(lower.toFixed(2));
+    // The stored close stays shown while typing, to the cent or more: the made-up local prices
+    // have 4 decimals, and the screen never rounds one away.
+    await expect(page.getByText(/^Stored close for .*: \$\d[\d,]*\.\d{2,8} \(/)).toBeVisible();
     await page.getByLabel('Where it comes from').fill('Test: the exchange’s closing price');
     await expect(page.getByText(/^Robin’s buy: Adds 0\.\d{8} units, worth/)).toBeVisible();
     await page.getByRole('button', { name: 'Yes, fix the close' }).click();

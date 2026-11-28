@@ -13,6 +13,7 @@ import {
   adjustmentLine,
   cleanClose,
   closeLooksOk,
+  price2,
   type ClosePreview,
 } from './fixCloseText';
 import '../settings/Settings.css';
@@ -44,10 +45,16 @@ export default function FixClose() {
     problem: string | null;
   } | null>(null);
   const seq = useRef(0);
+  // The stored close for the chosen fund and day, kept while Dad types. Each keystroke asks for a
+  // new preview, and the "right close" card must not wait for it: if it did, the box would vanish
+  // and lose focus after every keystroke (Dad, 2026-11-21).
+  const scope = JSON.stringify([fund, day]);
+  const [stored, setStored] = useState<{ scope: string; data: ClosePreview } | null>(null);
 
   useEffect(() => {
     const a = JSON.parse(args) as { p_fund_id: string; p_date: string; p_close: string | null };
     if (a.p_fund_id === '' || a.p_date === '') return;
+    const forScope = JSON.stringify([a.p_fund_id, a.p_date]);
     const mine = ++seq.current;
     const t = window.setTimeout(async () => {
       const { data, error } = await supabase.rpc('close_fix_preview', {
@@ -56,6 +63,7 @@ export default function FixClose() {
         p_close: a.p_close,
       });
       if (mine !== seq.current) return;
+      if (!error) setStored({ scope: forScope, data: data as ClosePreview });
       setPreview({
         key: args,
         data: error ? null : (data as ClosePreview),
@@ -72,6 +80,9 @@ export default function FixClose() {
   const chosen = fund !== '' && day !== '';
   const current = chosen && preview?.key === args ? preview : null;
   const p = current?.data ?? null;
+  // What the "which close" line and the "right close" card show: today's stored close for this
+  // fund and day, from the latest preview that had one.
+  const base = chosen && stored?.scope === scope ? stored.data : null;
   const typed = closeOk && source.trim() !== '';
   const same = p !== null && p.new_close_words !== null && p.new_close_words === p.old_close_words;
   const ready = typed && p !== null && current?.problem === null && !same;
@@ -92,7 +103,7 @@ export default function FixClose() {
       setFailed(error.message);
       return;
     }
-    setDone(TEXT.done(p.fund_name, p.day_words, p.new_close_words ?? cleanClose(close)));
+    setDone(TEXT.done(p.fund_name, p.day_words, price2(p.new_close_words) ?? cleanClose(close)));
     setClose('');
     setSource('');
     setVersion((v) => v + 1);
@@ -148,16 +159,16 @@ export default function FixClose() {
           <div aria-live="polite">
             {!chosen ? (
               <p className="set__muted">{TEXT.waiting}</p>
+            ) : base ? (
+              <p className="set__facts">{TEXT.stored(base)}</p>
             ) : current === null ? (
               <p className="set__muted">{TEXT.checking}</p>
-            ) : p ? (
-              <p className="set__facts">{TEXT.stored(p)}</p>
             ) : null}
           </div>
         </div>
       </section>
 
-      {p && (
+      {base && (
         <section className="set__card" aria-labelledby={`${id}-fix`}>
           <h2 id={`${id}-fix`}>{TEXT.rightClose}</h2>
           <div className="set__change">
@@ -214,7 +225,8 @@ export default function FixClose() {
             ) : (
               <>
                 <p className="set__facts">
-                  {p.fund_name}, {p.day_words}: {p.old_close_words} → {p.new_close_words}
+                  {p.fund_name}, {p.day_words}: {price2(p.old_close_words)} →{' '}
+                  {price2(p.new_close_words)}
                 </p>
                 {p.adjustments.length === 0 ? (
                   <p className="set__muted">{TEXT.nothingUsed}</p>

@@ -35,11 +35,12 @@ export const TEXT = {
   fund: 'Fund',
   day: 'Day of the close',
   stored: (p: ClosePreview) =>
-    `Stored close for ${p.day_words}: ${p.old_close_words} (fetched ${p.fetched_words}${p.final ? '' : ', not final yet'}).`,
+    `Stored close for ${p.day_words}: ${price2(p.old_close_words)} (fetched ${p.fetched_words}${p.final ? '' : ', not final yet'}).`,
   rightClose: 'The right close',
   official: 'The official close',
   officialHelp: 'Type it exactly as published, for example 647.05.',
-  officialBad: 'That doesn’t look like a price. Type numbers only, for example 647.05.',
+  officialBad:
+    'That doesn’t look like a price. Type numbers only, with at most 2 after the dot, for example 647.05.',
   source: 'Where it comes from',
   sourceHelp: 'For example "Yahoo Finance daily history, checked Nov 21". It goes in the log.',
   checking: 'Checking…',
@@ -55,10 +56,26 @@ export const TEXT = {
   back: 'Back to the dashboard',
 };
 
-/** A light check of the price box, so the database is only asked about something that looks like a price. */
+/**
+ * A light check of the price box, so the database is only asked about something that looks like a
+ * price. Official closes are published to the cent, so at most 2 decimals (Dad, 2026-11-21).
+ */
 export function closeLooksOk(text: string): boolean {
   const t = text.replace(/[$,\s]/g, '');
-  return /^\d+(\.\d{1,8})?$/.test(t) && /[1-9]/.test(t);
+  return /^\d+(\.\d{1,2})?$/.test(t) && /[1-9]/.test(t);
+}
+
+/**
+ * A price from the database ("$518.9200") shown to the cent ("$518.92"). Text only, no arithmetic:
+ * zeros past the cents are dropped, and any other digit is kept, so a price is never rounded.
+ */
+export function price2(words: string): string;
+export function price2(words: string | null): string | null;
+export function price2(words: string | null): string | null {
+  if (words === null) return null;
+  const m = /^(-?\$[\d,]+\.\d\d)(\d*)$/.exec(words);
+  if (!m) return words;
+  return m[1] + m[2].replace(/0+$/, '');
 }
 
 /** The price as the database takes it: digits and a point. */

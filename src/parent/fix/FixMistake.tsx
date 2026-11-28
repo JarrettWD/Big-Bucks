@@ -101,6 +101,10 @@ export default function FixMistake() {
   };
   const argsKey = JSON.stringify(args);
   const [preview, setPreview] = useState<{ key: string; result: FixPreview } | null>(null);
+  // The latest preview that knew who she is. A preview that fails outright has no kid, and the
+  // form is drawn from this one, so a failed call can't unmount the boxes while Dad types (the
+  // Fix a close focus bug, 2026-11-21).
+  const [kept, setKept] = useState<FixPreview | null>(null);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -110,10 +114,9 @@ export default function FixMistake() {
         p_args: JSON.parse(argsKey),
       });
       if (mine !== seq.current) return;
-      setPreview({
-        key: argsKey,
-        result: error ? { ...NOTHING, problem: error.message } : (data as FixPreview),
-      });
+      const result = error ? { ...NOTHING, problem: error.message } : (data as FixPreview);
+      if (result.kid !== null) setKept(result);
+      setPreview({ key: argsKey, result });
     }, 400);
     return () => window.clearTimeout(t);
   }, [argsKey]);
@@ -141,7 +144,7 @@ export default function FixMistake() {
 
   // The latest context (kid, line, savings) stays shown while a new preview loads.
   const current = preview && preview.key === argsKey ? preview.result : null;
-  const ctx = preview?.result ?? null;
+  const ctx = kept ?? preview?.result ?? null;
   const kid = ctx?.kid ?? 'her';
   const typed = direction !== '' && amountLooksOk(amount) && note.trim() !== '';
   const ready = typed && current !== null && current.problem === null && current.cents !== null;
